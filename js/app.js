@@ -376,7 +376,7 @@
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ passcode: v })
           });
-          if (r.ok) { sessionStorage.setItem("ubr:admin", "1"); STATE.adminAuthed = true; render(); }
+          if (r.ok) { sessionStorage.setItem("ubr:admin", "1"); sessionStorage.setItem("ubr:admin-pass", v); STATE.adminAuthed = true; render(); }
           else toast("Incorrect passcode", "error");
         } catch { toast("Network error — try again", "error"); }
       } else {
@@ -472,10 +472,11 @@
 
     "admin-publish": async () => {
       const cfg = window.UBR_CONFIG || {};
+      const passcode = sessionStorage.getItem("ubr:admin-pass") || cfg.ADMIN_PASSCODE || "";
       const btn = document.getElementById("publish-btn");
       if (btn) { btn.disabled = true; btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span> Publishing…`; }
       try {
-        const result = await CATALOG.publish(cfg.FUNCTIONS_BASE, cfg.ADMIN_PASSCODE || "");
+        const result = await CATALOG.publish(cfg.FUNCTIONS_BASE, passcode);
         toast(`${result.count} products published — live now!`, "cloud_done");
       } catch (err) {
         toast("Publish failed: " + err.message, "error");
