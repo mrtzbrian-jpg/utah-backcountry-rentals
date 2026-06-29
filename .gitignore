@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit these. Keys live in Netlify's env-var settings instead.
+.env
+.env.*
+
+# Netlify local state
+.netlify/
+
+# OS / editor cruft
+.DS_Store
+*.log

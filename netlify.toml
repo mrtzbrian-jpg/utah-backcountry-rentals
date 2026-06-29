@@ -1,0 +1,22 @@
+# Netlify deployment config for Utah Backcountry Rentals.
+# The site is plain static files, so there's no build step — Netlify just serves
+# this folder. Functions (serverless backend) live in netlify/functions when added.
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Hash-based routing means every page is index.html already, but this catch-all
+# keeps deep links working if we later switch to real URLs. Existing files
+# (css/, js/, images/) are served directly and are not affected.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
