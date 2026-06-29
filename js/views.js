@@ -227,18 +227,22 @@ window.VIEWS = (function () {
 
     let cells = "";
     for (let i = 0; i < firstDow; i++) cells += `<div></div>`;
+    const booked = window.STATE.unavailable || new Set();
     for (let d = 1; d <= daysIn; d++) {
       const date = new Date(year, month, d);
       const iso = fmt.iso(date);
       const past = date < today;
+      const full = !past && booked.has(iso);
       let cls = "text-on-surface hover:bg-surface-container";
       let style = "";
       if (start && iso === start) { cls = "cal-end"; style = "border-radius:9999px 0 0 9999px"; }
       if (end && iso === end) { cls = "cal-end"; style = "border-radius:0 9999px 9999px 0"; }
       if (start && end && iso > start && iso < end) cls = "cal-mid";
       if (start && !end && iso === start) { cls = "cal-end"; style = "border-radius:9999px"; }
+      if (full) cls = "text-outline line-through pointer-events-none";
       if (past) cls = "text-surface-dim pointer-events-none";
-      cells += `<button ${past ? "disabled" : ""} data-action="cal-day" data-date="${iso}"
+      cells += `<button ${(past || full) ? "disabled" : ""} data-action="cal-day" data-date="${iso}"
+        title="${full ? "Fully booked" : ""}"
         class="cal-day h-11 flex items-center justify-center text-body-md ${cls}" style="${style}">${d}</button>`;
     }
 
@@ -277,7 +281,7 @@ window.VIEWS = (function () {
           <div class="w-24 h-24 shrink-0">${gearTile(item, { h: "h-24" })}</div>
           <div class="min-w-0">
             <h2 class="font-heading text-headline-sm text-on-surface">${item.name}</h2>
-            <p class="text-body-md text-on-surface-variant line-clamp-2">${item.tagline || item.desc}</p>
+            <p class="text-body-md text-on-surface-variant line-clamp-2">${item.tagline || item.desc || ""}</p>
             <p class="mt-1 text-label-md text-secondary">${fmt.money(item.price)} rental</p>
           </div>
         </section>
@@ -763,7 +767,7 @@ window.VIEWS = (function () {
       <div class="w-14 h-14 shrink-0 rounded-md gear-tile relative overflow-hidden flex items-center justify-center">${mediaLayer(item, 28)}</div>
       <div class="min-w-0 flex-1">
         <p class="text-label-md text-on-surface truncate">${item.name}</p>
-        <p class="text-label-sm text-outline truncate">${item.category} · ${fmt.money(item.price)} · ${item.deposit ? fmt.money(item.deposit) + " deposit" : "no deposit"}</p>
+        <p class="text-label-sm text-outline truncate">${item.category} · ${fmt.money(item.price)} · qty ${item.quantity != null ? item.quantity : 1}${item.deposit ? " · " + fmt.money(item.deposit) + " dep" : ""}</p>
       </div>
       <button data-action="admin-edit" data-id="${item.id}" class="p-2 rounded-full hover:bg-surface-container press shrink-0"><span class="material-symbols-outlined text-on-surface-variant">edit</span></button>
       <button data-action="admin-delete" data-id="${item.id}" class="p-2 rounded-full hover:bg-error-container press shrink-0"><span class="material-symbols-outlined text-error">delete</span></button>
@@ -821,6 +825,11 @@ window.VIEWS = (function () {
               <input id="admin-deposit" type="number" min="0" value="${item.deposit != null ? item.deposit : ""}" placeholder="400"
                 class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
           </div>
+
+          <label class="block"><span class="text-label-md text-on-surface-variant">Quantity in stock</span>
+            <input id="admin-quantity" type="number" min="0" step="1" value="${item.quantity != null ? item.quantity : 1}" placeholder="1"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" />
+            <span class="block text-label-sm text-outline mt-1">How many you own. Once all units are booked for a date, that date greys out in the calendar.</span></label>
 
           <div><span class="text-label-md text-on-surface-variant">Icon (shown when there's no photo)</span>
             <div class="mt-1 grid grid-cols-7 gap-1">${icons}</div></div>

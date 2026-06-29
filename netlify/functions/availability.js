@@ -1,29 +1,18 @@
-/* Returns the date ranges that are already booked for an item, so the calendar
- * can grey them out. Reads from Supabase with the server-only service key. */
-const { createClient } = require("@supabase/supabase-js");
+/* Returns availability for an item so the calendar can grey out fully-booked
+ * days. `fullDays` are dates where every unit is already reserved. Reads from
+ * Supabase with the server-only service key. */
+const { inventoryFor } = require("./_inventory");
 
 exports.handler = async (event) => {
   const itemId = (event.queryStringParameters || {}).itemId;
-  const supaUrl = process.env.SUPABASE_URL;
-  const supaKey = process.env.SUPABASE_SERVICE_KEY;
-  if (!supaUrl || !supaKey) return json(200, { ranges: [] });
+  if (!itemId) return json(200, { quantity: 1, fullDays: [] });
 
   try {
-    const supabase = createClient(supaUrl, supaKey);
-    let q = supabase
-      .from("bookings")
-      .select("item_id,start_date,end_date")
-      .eq("status", "confirmed");
-    if (itemId) q = q.eq("item_id", itemId);
-
-    const { data, error } = await q;
-    if (error) return json(200, { ranges: [] });
-    const ranges = (data || [])
-      .filter((r) => r.start_date && r.end_date)
-      .map((r) => ({ start: r.start_date, end: r.end_date }));
-    return json(200, { ranges });
+    const { quantity, bookedByDay } = await inventoryFor(itemId);
+    const fullDays = Object.keys(bookedByDay).filter((iso) => bookedByDay[iso] >= quantity);
+    return json(200, { quantity, fullDays });
   } catch (e) {
-    return json(200, { ranges: [] });
+    return json(200, { quantity: 1, fullDays: [] });
   }
 };
 

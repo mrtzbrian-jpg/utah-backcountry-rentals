@@ -7,6 +7,7 @@ create table if not exists bookings (
   paypal_order    text unique,          -- ties the row to the PayPal payment
   item_id         text,
   item_name       text,
+  qty             int not null default 1, -- units reserved (for inventory math)
   start_date      date,                 -- pickup date
   end_date        date,
   days            int,
@@ -14,10 +15,16 @@ create table if not exists bookings (
   deposit_cents   int default 0,        -- refundable deposit to COLLECT AT PICKUP
   customer_email  text,
   customer_name   text,
+  emailed         boolean not null default false, -- confirmation/owner emails sent
   status          text not null default 'confirmed'
 );
 
+-- If the bookings table already exists, add the newer columns:
+alter table bookings add column if not exists qty int not null default 1;
+alter table bookings add column if not exists emailed boolean not null default false;
+
 create index if not exists bookings_dates_idx on bookings (start_date, end_date);
+create index if not exists bookings_item_idx on bookings (item_id, status);
 
 -- Server-only access: just the SERVICE key (used by the Netlify functions) can
 -- read/write. The public anon key gets no access, so customer info stays private.
@@ -43,10 +50,14 @@ create table if not exists products (
   img           text,             -- base64 data URL or relative path
   badge         text,
   weight        numeric(6,2),
+  quantity      int not null default 1, -- how many units you own (inventory)
   includes      jsonb,            -- string array of what's in the bundle
   active        boolean not null default true,
   updated_at    timestamptz not null default now()
 );
+
+-- If the products table already exists, add the inventory column:
+alter table products add column if not exists quantity int not null default 1;
 
 create index if not exists products_sort_idx on products (sort_order) where active = true;
 

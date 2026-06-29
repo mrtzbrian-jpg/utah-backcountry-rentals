@@ -48,7 +48,10 @@
     safetyAccepted: false,
     adminAuthed: sessionStorage.getItem("ubr:admin") === "1",
     adminEdit: null,
-    bookings: storedBookings
+    bookings: storedBookings,
+    unavailable: new Set(),   // ISO dates fully booked for the current item
+    itemQty: 1,               // units in stock for the current item
+    availItem: null           // which itemId STATE.unavailable was loaded for
   };
 
   const persist = () => {
@@ -134,6 +137,35 @@
     }
   }
 
+  /* ---------------- availability ---------------- */
+  // Inclusive list of ISO days between two ISO dates.
+  window.daysBetween = function (startIso, endIso) {
+    const out = [];
+    if (!startIso) return out;
+    let d = fmt.parse(startIso);
+    const last = fmt.parse(endIso || startIso);
+    let guard = 0;
+    while (d <= last && guard++ < 400) { out.push(fmt.iso(d)); d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); }
+    return out;
+  };
+
+  // Pull the fully-booked days for an item so the calendar can grey them out.
+  async function loadAvailability(itemId) {
+    const cfg = window.UBR_CONFIG || {};
+    STATE.availItem = itemId;
+    STATE.unavailable = new Set();
+    STATE.itemQty = 1;
+    if (!cfg.BACKEND_ENABLED || !itemId || itemId === "custom") return;
+    try {
+      const r = await fetch(cfg.FUNCTIONS_BASE + "/availability?itemId=" + encodeURIComponent(itemId));
+      const d = await r.json();
+      STATE.unavailable = new Set(d.fullDays || []);
+      STATE.itemQty = d.quantity || 1;
+      // Re-render only if we're still looking at this item's calendar.
+      if (STATE.draft && STATE.draft.id === itemId) render();
+    } catch (_) { /* offline → no greying, checkout still re-checks server-side */ }
+  }
+
   /* ---------------- modal ---------------- */
   function openModal(html) { document.getElementById("modal-root").innerHTML = html; }
   function closeModal() { document.getElementById("modal-root").innerHTML = ""; }
@@ -163,6 +195,8 @@
           STATE.draft = item; STATE.dates = { start: null, end: null };
         }
         if (!item) { html = window.VIEWS.notFound(); }
+        // Load availability if we haven't for this item yet (e.g. page refresh).
+        else if (STATE.availItem !== id) loadAvailability(id);
       }
       html = html || window.VIEWS.gear();
     } else if (parts[0] === "builder") {
@@ -220,6 +254,7 @@
       STATE.qty = 1;
       STATE.dates = { start: null, end: null };
       STATE.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      loadAvailability(item.id);
       go("#/gear/" + item.id);
     },
 
@@ -233,10 +268,16 @@
     "cal-next": () => { const m = STATE.calMonth; STATE.calMonth = new Date(m.getFullYear(), m.getMonth() + 1, 1); render(); },
     "cal-day": (el) => {
       const iso = el.dataset.date;
+      if (STATE.unavailable.has(iso)) { toast("That day is fully booked", "event_busy"); return; }
       const { start, end } = STATE.dates;
       if (!start || (start && end)) STATE.dates = { start: iso, end: null };
       else if (iso < start) STATE.dates = { start: iso, end: null };
-      else STATE.dates = { start, end: iso };
+      else {
+        // Reject a range that spans any fully-booked day.
+        const blocked = window.daysBetween(start, iso).some(d => STATE.unavailable.has(d));
+        if (blocked) { toast("Some days in that range are booked", "event_busy"); return; }
+        STATE.dates = { start, end: iso };
+      }
       render();
     },
 
@@ -399,6 +440,7 @@
       if (!name) { toast("Give the product a name", "error"); return; }
       const e = STATE.adminEdit || {};
       const current = e.id ? (CATALOG.get(e.id) || {}) : {};
+      const qRaw = parseInt(val("admin-quantity"), 10);
       const patch = {
         name,
         category: val("admin-cat") || "Bundles",
@@ -406,6 +448,7 @@
         price: parseFloat(val("admin-price")) || 0,
         unit: "rental",
         deposit: parseFloat(val("admin-deposit")) || 0,
+        quantity: Number.isFinite(qRaw) ? Math.max(0, qRaw) : 1,
         icon: e.icon || current.icon || "backpack"
       };
       if (e.img !== undefined) patch.img = e.img || undefined;

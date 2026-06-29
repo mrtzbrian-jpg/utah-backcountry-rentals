@@ -3,6 +3,7 @@
  * call more than once: if the order was already captured we just read it back. */
 const { captureOrder, getOrder } = require("./_paypal");
 const { getSupabase } = require("./_supabase");
+const { notifyBooking } = require("./_email");
 
 exports.handler = async (event) => {
   const orderId = (event.queryStringParameters || {}).orderId ||
@@ -10,10 +11,12 @@ exports.handler = async (event) => {
   if (!orderId) return json(400, { error: "Missing order id." });
 
   let order;
+  let freshCapture = true;
   try {
     order = await captureOrder(orderId);
   } catch (e) {
     // Already captured (e.g. a page refresh) — fall back to reading the order.
+    freshCapture = false;
     try { order = await getOrder(orderId); } catch (_) { return json(502, { error: e.message }); }
   }
 
@@ -21,11 +24,18 @@ exports.handler = async (event) => {
   if (!booking) return json(502, { error: "Could not read order details." });
 
   const supabase = getSupabase();
+  let alreadyRecorded = false;
   if (supabase) {
+    // Was this order already in the table? (Determines whether to send emails.)
+    const { data: existing } = await supabase
+      .from("bookings").select("paypal_order,emailed").eq("paypal_order", booking.orderId).maybeSingle();
+    alreadyRecorded = !!(existing && existing.emailed);
+
     const { error } = await supabase.from("bookings").upsert({
       paypal_order: booking.orderId,
       item_id: booking.itemId,
       item_name: booking.name,
+      qty: booking.qty || 1,
       start_date: booking.startDate || null,
       end_date: booking.endDate || null,
       days: booking.days || null,
@@ -36,6 +46,14 @@ exports.handler = async (event) => {
       status: "confirmed"
     }, { onConflict: "paypal_order" });
     if (error) return json(500, { error: "DB write failed: " + error.message });
+  }
+
+  // Send confirmation + owner emails once, on the first successful capture.
+  if (freshCapture && !alreadyRecorded) {
+    try {
+      await notifyBooking(booking);
+      if (supabase) await supabase.from("bookings").update({ emailed: true }).eq("paypal_order", booking.orderId);
+    } catch (_) { /* email failures must never block the confirmation */ }
   }
 
   return json(200, booking);

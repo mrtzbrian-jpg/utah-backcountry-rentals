@@ -33,6 +33,7 @@ exports.handler = async (event) => {
     img: p.img || null,
     badge: p.badge || null,
     weight: parseFloat(p.weight) || null,
+    quantity: Number.isFinite(parseInt(p.quantity, 10)) ? Math.max(0, parseInt(p.quantity, 10)) : 1,
     includes: p.includes || null,
     active: true,
     updated_at: new Date().toISOString()

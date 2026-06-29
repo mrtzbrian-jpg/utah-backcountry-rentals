@@ -1,69 +1,84 @@
 /* Server-side source of truth for prices (flat USD per item) and deposits.
  *
  * IMPORTANT: never trust an amount sent from the browser — a user could edit it.
- * We recompute every charge here from the item id(s) and quantity. If you change a
- * price/deposit in js/data.js, change it here too (keep the two maps in sync).
- * (When the catalog moves into the database, this file is replaced by a DB lookup.)
+ * We recompute every charge here.
+ *
+ * Catalog items (everything the owner manages in the "Manage Gear" admin) are
+ * priced from the Supabase `products` table — the same data the storefront
+ * shows — so prices always stay in sync with what the owner published.
+ *
+ * The pack-builder library is fixed gear that isn't in the products table, so
+ * those prices live here. ADDONS likewise.
  */
+const { getSupabase } = require("./_supabase");
 
-// Flat rental price per item (what the customer pays online). A pack's total is
-// the sum of its items. Quantity multiplies the whole thing.
-const PRICES = {
-  // Home-feed gear
-  "master-safety-kit": 65,
-  "garmin-inreach": 30,
-  "osprey-aether-65": 40,
-  "bearvault-bv500": 12,
-  "nemo-disco-15": 25,
-  "msr-hubba-tent": 30,
-  "winter-traction-kit": 35,
-  "water-filter": 10,
-  // Pack-builder library
-  "osprey-rook-65": 40,
-  "naturehike-cloudup-1": 30,
-  "kelty-cosmic-20": 25,
-  "klymit-static-v": 15,
-  "brs-3000t": 10,
-  "bearvault-bv450": 15,
-  "anker-10k": 12,
-  "bear-spray": 12
+// Pack-builder library: flat rental price (USD) per component item.
+const PACK_PRICES = {
+  "osprey-rook-65": 40, "naturehike-cloudup-1": 30, "kelty-cosmic-20": 25,
+  "klymit-static-v": 15, "brs-3000t": 10, "garmin-inreach": 30,
+  "bearvault-bv450": 15, "anker-10k": 12, "bear-spray": 12
 };
 
-const ADDONS = { batteries: 5, poncho: 3, "map-kit": 10 };
-
-// Refundable security deposit (USD) = YOUR replacement cost for the gear, held at
-// pickup. MUST match js/data.js DEPOSITS.
-const DEPOSITS = {
-  "master-safety-kit": 850, "garmin-inreach": 400, "osprey-aether-65": 300,
-  "bearvault-bv500": 90, "nemo-disco-15": 200, "msr-hubba-tent": 450,
-  "winter-traction-kit": 350, "water-filter": 50,
-  "osprey-rook-65": 250, "naturehike-cloudup-1": 200, "kelty-cosmic-20": 180,
-  "klymit-static-v": 90, "brs-3000t": 50, "bearvault-bv450": 80,
-  "anker-10k": 40, "bear-spray": 50
+// Pack-builder library: refundable deposit (USD) per component item.
+const PACK_DEPOSITS = {
+  "osprey-rook-65": 80, "naturehike-cloudup-1": 60, "kelty-cosmic-20": 50,
+  "klymit-static-v": 30, "brs-3000t": 20, "garmin-inreach": 100,
+  "bearvault-bv450": 25, "anker-10k": 15, "bear-spray": 15
 };
 
-function sumOver(map, { itemId, components = [], addons = [] }) {
-  let dollars = 0;
-  if (itemId === "custom") {
-    (components || []).forEach((id) => { dollars += map[id] || 0; });
-    (addons || []).forEach((id) => { dollars += ADDONS[id] || 0; }); // add-ons have no deposit
-  } else {
-    dollars = map[itemId] || 0;
-  }
-  return dollars;
+const ADDONS = { batteries: 5, poncho: 3, "map-kit": 10 }; // add-ons carry no deposit
+
+// Last-resort fallback for the original built-in catalog ids, used only if the
+// database is unreachable. The live catalog normally comes from Supabase.
+const FALLBACK_PRICES = {
+  "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40,
+  "bearvault-bv500": 12, "nemo-disco-15": 25, "msr-hubba-tent": 30,
+  "winter-traction-kit": 35, "water-filter": 10
+};
+const FALLBACK_DEPOSITS = {
+  "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80,
+  "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,
+  "winter-traction-kit": 100, "water-filter": 20
+};
+
+// Read a published product's price/deposit/quantity straight from the DB.
+async function productRow(itemId) {
+  const supabase = getSupabase();
+  if (!supabase || !itemId) return null;
+  const { data, error } = await supabase
+    .from("products")
+    .select("price,deposit,quantity")
+    .eq("id", itemId)
+    .single();
+  if (error || !data) return null;
+  return data;
 }
 
 /** Authoritative rental charge in cents (price × quantity). */
-function quoteCents({ itemId, qty = 1, components = [], addons = [] }) {
+async function quoteCents({ itemId, qty = 1, components = [], addons = [] }) {
   const q = Math.max(1, parseInt(qty, 10) || 1);
-  return Math.round(sumOver(PRICES, { itemId, components, addons }) * q * 100);
+  let dollars = 0;
+  if (itemId === "custom") {
+    (components || []).forEach((id) => { dollars += PACK_PRICES[id] || 0; });
+    (addons || []).forEach((id) => { dollars += ADDONS[id] || 0; });
+  } else {
+    const row = await productRow(itemId);
+    dollars = row ? Number(row.price) || 0 : (FALLBACK_PRICES[itemId] || 0);
+  }
+  return Math.round(dollars * q * 100);
 }
 
 /** Refundable deposit in cents to collect at pickup (deposit × quantity). */
-function depositCents({ itemId, qty = 1, components = [] }) {
+async function depositCents({ itemId, qty = 1, components = [] }) {
   const q = Math.max(1, parseInt(qty, 10) || 1);
-  // add-ons excluded from deposit (sumOver only adds DEPOSITS for components)
-  return Math.round(sumOver(DEPOSITS, { itemId, components, addons: [] }) * q * 100);
+  let dollars = 0;
+  if (itemId === "custom") {
+    (components || []).forEach((id) => { dollars += PACK_DEPOSITS[id] || 0; });
+  } else {
+    const row = await productRow(itemId);
+    dollars = row ? Number(row.deposit) || 0 : (FALLBACK_DEPOSITS[itemId] || 0);
+  }
+  return Math.round(dollars * q * 100);
 }
 
-module.exports = { quoteCents, depositCents, PRICES, ADDONS, DEPOSITS };
+module.exports = { quoteCents, depositCents, productRow, PACK_PRICES, ADDONS };
