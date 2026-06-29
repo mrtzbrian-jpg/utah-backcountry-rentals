@@ -55,8 +55,7 @@ Then **Deploys → Trigger deploy → Deploy site**.
   the amount is shown to the customer and saved with each booking.)
 - **Prices:** the rental price per day lives in `js/data.js` (display) and
   `_pricing.js` (the actual charge) — keep those in sync too.
-- [`js/config.js`](js/config.js): set `BACKEND_ENABLED: true`, and change
-  `ADMIN_PASSCODE` from `"trailhead"`.
+- [`js/config.js`](js/config.js): set `BACKEND_ENABLED: true`. Admin passcode is set via `UBR_ADMIN_PASSCODE` in Netlify env vars — never in code.
 - [`index.html`](index.html): change every `?v=8` to `?v=9` so browsers load the new files.
 Commit → it auto-deploys.
 

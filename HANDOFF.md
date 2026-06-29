@@ -62,7 +62,7 @@ Then **Deploys → Trigger deploy**.
 - **Deposit amounts:** update the `DEPOSITS` map in **both** `js/data.js` **and**
   `netlify/functions/_pricing.js` (keep them identical). These are the deposits the
   owner collects at pickup.
-- **`js/config.js`:** set `BACKEND_ENABLED: true`; change `ADMIN_PASSCODE` from `"trailhead"`.
+- **`js/config.js`:** set `BACKEND_ENABLED: true`; set UBR_ADMIN_PASSCODE in Netlify env vars.
 - **`index.html`:** change every `?v=8` to `?v=9`.
 Commit → auto-deploys.
 

@@ -366,13 +366,23 @@
     },
 
     /* ---- admin: Manage Gear ---- */
-    "admin-login": () => {
+    "admin-login": async () => {
       const v = (document.getElementById("admin-pass") || {}).value || "";
-      const pass = (window.UBR_CONFIG && window.UBR_CONFIG.ADMIN_PASSCODE) || "";
-      if (v && v === pass) {
-        sessionStorage.setItem("ubr:admin", "1");
-        STATE.adminAuthed = true; render();
-      } else { toast("Incorrect passcode", "error"); }
+      if (!v) return;
+      const cfg = window.UBR_CONFIG || {};
+      if (cfg.BACKEND_ENABLED) {
+        try {
+          const r = await fetch(cfg.FUNCTIONS_BASE + "/verify-admin", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ passcode: v })
+          });
+          if (r.ok) { sessionStorage.setItem("ubr:admin", "1"); STATE.adminAuthed = true; render(); }
+          else toast("Incorrect passcode", "error");
+        } catch { toast("Network error — try again", "error"); }
+      } else {
+        // Demo mode: accept any non-empty passcode for local preview
+        sessionStorage.setItem("ubr:admin", "1"); STATE.adminAuthed = true; render();
+      }
     },
     "admin-logout": () => {
       sessionStorage.removeItem("ubr:admin");

@@ -10,8 +10,7 @@ window.UBR_CONFIG = {
   BACKEND_ENABLED: true,
   FUNCTIONS_BASE: "/.netlify/functions",
 
-  // Passcode for the owner's "Manage Gear" admin (open it at /#/admin).
-  // ⚠️ In demo mode this is a soft lock only — change it from the default.
-  // Real protection comes from the server ADMIN_TOKEN once Supabase is connected.
-  ADMIN_PASSCODE: "trailhead"
+  // Admin passcode is verified server-side via the verify-admin function.
+  // Never store the passcode here — set UBR_ADMIN_PASSCODE in Netlify env vars.
+  ADMIN_PASSCODE: ""
 };
