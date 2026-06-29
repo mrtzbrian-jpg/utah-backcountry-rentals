@@ -24,3 +24,33 @@ create index if not exists bookings_dates_idx on bookings (start_date, end_date)
 alter table bookings enable row level security;
 -- (No public policies on purpose. View/manage rows in the Supabase Table Editor,
 --  where you can also see each booking's deposit_cents to collect at pickup.)
+
+-- ---------------------------------------------------------------------------
+-- Products catalog — published by the Manage Gear admin, read by all visitors.
+-- ---------------------------------------------------------------------------
+create table if not exists products (
+  id            text primary key,
+  sort_order    int not null default 0,
+  name          text not null,
+  category      text,
+  tagline       text,
+  description   text,
+  price         numeric(10,2) not null default 0,
+  deposit       numeric(10,2) not null default 0,
+  icon          text,
+  tint          text,
+  unit          text,
+  img           text,             -- base64 data URL or relative path
+  badge         text,
+  weight        numeric(6,2),
+  includes      jsonb,            -- string array of what's in the bundle
+  active        boolean not null default true,
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists products_sort_idx on products (sort_order) where active = true;
+
+-- Allow anyone to read products (needed by visitors loading the catalog).
+alter table products enable row level security;
+create policy "public read products" on products for select using (active = true);
+-- Writes go through the service key in the Netlify function (no insert/update policy needed).

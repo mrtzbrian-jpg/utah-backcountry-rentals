@@ -458,6 +458,27 @@
         catch (err) { toast("Import failed: " + err.message, "error"); }
       };
       reader.readAsText(f);
+    },
+
+    "admin-publish": async () => {
+      const cfg = window.UBR_CONFIG || {};
+      const btn = document.getElementById("publish-btn");
+      if (btn) { btn.disabled = true; btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span> Publishing…`; }
+      try {
+        const result = await CATALOG.publish(cfg.FUNCTIONS_BASE, cfg.ADMIN_PASSCODE || "");
+        toast(`${result.count} products published — live now!`, "cloud_done");
+      } catch (err) {
+        toast("Publish failed: " + err.message, "error");
+      }
+      render();
+    },
+
+    "admin-load": async () => {
+      const cfg = window.UBR_CONFIG || {};
+      toast("Loading from database…", "cloud_download");
+      const changed = await CATALOG.loadFromBackend(cfg.FUNCTIONS_BASE);
+      render();
+      toast(changed ? "Catalog refreshed from database" : "Already up to date", "check_circle");
     }
   };
 
@@ -537,4 +558,13 @@
   window.addEventListener("hashchange", render);
   window.addEventListener("DOMContentLoaded", render);
   if (document.readyState !== "loading") render();
+
+  // If backend is enabled, load the live catalog from Supabase and re-render
+  // if it differs from the locally cached version.
+  const _cfg = window.UBR_CONFIG || {};
+  if (_cfg.BACKEND_ENABLED) {
+    window.CATALOG.loadFromBackend(_cfg.FUNCTIONS_BASE)
+      .then(changed => { if (changed) render(); })
+      .catch(() => {});
+  }
 })();

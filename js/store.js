@@ -64,6 +64,36 @@ window.CATALOG = (function () {
       if (!Array.isArray(arr)) throw new Error("File must be a list of products");
       list = arr;
       save();
+    },
+
+    /* Fetch the published catalog from Supabase. Returns true if the list
+     * changed (so the caller knows to re-render). Silent on network errors. */
+    loadFromBackend(baseUrl) {
+      return fetch(baseUrl + "/get-catalog")
+        .then(r => r.ok ? r.json() : Promise.reject("HTTP " + r.status))
+        .then(data => {
+          if (!Array.isArray(data) || !data.length) return false;
+          const before = JSON.stringify(list);
+          list = data;
+          save();
+          return JSON.stringify(list) !== before;
+        })
+        .catch(() => false);
+    },
+
+    /* Push the current catalog to Supabase (admin-only). Resolves with
+     * { ok, count } or rejects with an Error. */
+    publish(baseUrl, passcode) {
+      return fetch(baseUrl + "/save-catalog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-passcode": passcode },
+        body: JSON.stringify(gear())
+      })
+        .then(r => r.json().then(d => ({ d, ok: r.ok })))
+        .then(({ d, ok }) => {
+          if (!ok) throw new Error(d.error || "Publish failed");
+          return d;
+        });
     }
   };
 })();

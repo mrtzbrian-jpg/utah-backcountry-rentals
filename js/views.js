@@ -753,6 +753,33 @@ window.VIEWS = (function () {
   function admin() {
     const items = window.CATALOG.gear();
     const customized = window.CATALOG.isCustomized();
+    const cfg = window.UBR_CONFIG || {};
+    const backendOn = !!cfg.BACKEND_ENABLED;
+
+    // Pre-compute conditional snippets to avoid deep nested template literals
+    const publishBlock = backendOn
+      ? '<button id="publish-btn" data-action="admin-publish" class="w-full mt-md rounded-xl py-3.5 bg-primary text-on-primary text-label-md font-semibold press flex items-center justify-center gap-2 shadow-lift hover:bg-primary-container"><span class="material-symbols-outlined text-[20px]">cloud_upload</span>Publish to site</button><p class="text-label-sm text-outline text-center mt-1.5">Makes your changes live for all customers instantly.</p>'
+      : "";
+    const loadBtn = backendOn
+      ? '<button data-action="admin-load" class="bg-surface-container text-on-surface rounded-full px-md py-2.5 text-label-md press flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">cloud_download</span>Load from site</button>'
+      : "";
+    const resetBtn = customized
+      ? '<button data-action="admin-reset" class="text-on-surface-variant rounded-full px-md py-2.5 text-label-md press flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">restart_alt</span>Reset</button>'
+      : "";
+    const dragHint = backendOn
+      ? "Drag to reorder. Tap <strong>Publish to site</strong> when ready."
+      : "Drag to reorder. Changes save automatically to this browser.";
+    const emptyMsg = items.length
+      ? items.map(adminProductRow).join("")
+      : '<p class="text-center text-on-surface-variant py-lg">No products yet — tap "Add product".</p>';
+    const infoClass = backendOn
+      ? "bg-primary-container/30 text-on-primary-container"
+      : "bg-surface-container text-on-surface-variant";
+    const infoIcon = backendOn ? "cloud_done" : "info";
+    const infoText = backendOn
+      ? "<strong>Live mode:</strong> edit products below, then tap <strong>Publish to site</strong> to make changes visible to all customers. Use <strong>Export</strong> to back up your catalog."
+      : "<strong>Demo mode:</strong> edits save in this browser only. Once your database is connected, the Publish button appears and changes go live for all customers.";
+
     const inner = `
       <header class="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-surface-container">
         <div class="flex items-center gap-2 px-md py-sm max-w-container-max mx-auto">
@@ -762,26 +789,23 @@ window.VIEWS = (function () {
         </div>
       </header>
       <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[100px]">
+        ${publishBlock}
         <div class="mt-md flex flex-wrap gap-2">
           <button data-action="admin-new" class="bg-secondary text-on-secondary rounded-full px-md py-2.5 text-label-md press flex items-center gap-1 hover:bg-secondary-container"><span class="material-symbols-outlined text-[18px]">add</span>Add product</button>
           <button data-action="admin-export" class="bg-surface-container text-on-surface rounded-full px-md py-2.5 text-label-md press flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">download</span>Export</button>
           <label class="bg-surface-container text-on-surface rounded-full px-md py-2.5 text-label-md press flex items-center gap-1 cursor-pointer"><span class="material-symbols-outlined text-[18px]">upload</span>Import
             <input type="file" accept="application/json" data-action="admin-import" class="hidden" /></label>
-          ${customized ? `<button data-action="admin-reset" class="text-on-surface-variant rounded-full px-md py-2.5 text-label-md press flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">restart_alt</span>Reset</button>` : ""}
+          ${loadBtn}
+          ${resetBtn}
         </div>
-
         <p class="text-label-sm text-outline mt-sm flex items-center gap-1.5">
           <span class="material-symbols-outlined text-[16px]">drag_indicator</span>
-          Drag a product to reorder it. Changes save automatically to this browser.
+          ${dragHint}
         </p>
-
-        <div id="admin-list" class="mt-sm space-y-2">
-          ${items.length ? items.map(adminProductRow).join("") : `<p class="text-center text-on-surface-variant py-lg">No products yet — tap “Add product”.</p>`}
-        </div>
-
-        <div class="mt-md rounded-xl bg-surface-container p-md text-label-sm text-on-surface-variant flex gap-2">
-          <span class="material-symbols-outlined text-[18px] text-primary">info</span>
-          <p>You're in <strong>demo mode</strong>: edits are saved in this browser so you can design your catalog. Once your database is connected, this same screen will publish to all customers. Use <strong>Export</strong> to back up your catalog.</p>
+        <div id="admin-list" class="mt-sm space-y-2">${emptyMsg}</div>
+        <div class="mt-md rounded-xl p-md text-label-sm flex gap-2 ${infoClass}">
+          <span class="material-symbols-outlined text-[18px] text-primary">${infoIcon}</span>
+          <p>${infoText}</p>
         </div>
       </main>
       ${window.STATE.adminEdit ? adminForm() : ""}`;
