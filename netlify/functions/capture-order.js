@@ -45,23 +45,29 @@ function normalize(order) {
   if (!order) return null;
   const pu = (order.purchase_units || [])[0] || {};
   const cap = ((pu.payments || {}).captures || [])[0] || {};
-  const parts = String(pu.custom_id || "").split("|"); // itemId|days|start|end|depositCents
+  const parts = String(pu.custom_id || "").split("|"); // itemId|qty|start|end|depositCents
   const amountVal = (cap.amount && cap.amount.value) || (pu.amount && pu.amount.value) || "0";
   const payer = order.payer || {};
   const nm = payer.name || {};
-  const descName = String(pu.description || "Gear rental").split(" — ")[0];
+  const start = parts[2] || "", end = parts[3] || "";
   return {
     orderId: order.id,
     itemId: parts[0] || "",
-    name: descName,
-    days: parts[1] ? parseInt(parts[1], 10) : null,
-    startDate: parts[2] || "",
-    endDate: parts[3] || "",
+    name: String(pu.description || "Gear rental"),
+    qty: parts[1] ? parseInt(parts[1], 10) : 1,
+    days: dayCount(start, end),
+    startDate: start,
+    endDate: end,
     deposit: parts[4] ? parseInt(parts[4], 10) : 0,
     amount: Math.round(parseFloat(amountVal) * 100),
     email: payer.email_address || null,
     customerName: [nm.given_name, nm.surname].filter(Boolean).join(" ") || null
   };
+}
+
+function dayCount(s, e) {
+  if (!s || !e) return null;
+  return Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
 }
 
 function json(statusCode, obj) {

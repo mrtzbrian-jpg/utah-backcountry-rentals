@@ -5,7 +5,7 @@
 
   /* ---------------- formatters ---------------- */
   window.fmt = {
-    money: (n) => "$" + Math.round(n),
+    money: (n) => "$" + Math.round(n).toLocaleString("en-US"),
     midnight: (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()),
     iso: (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
     parse: (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); },
@@ -54,6 +54,7 @@
     calMonth: new Date(now.getFullYear(), now.getMonth(), 1),
     dates: { start: null, end: null },
     draft: null,
+    qty: 1,
     customPack: null,
     favs: new Set(store.load("favs", ["garmin-inreach"])),
     pack: new Map(),
@@ -233,12 +234,16 @@
     book: (el) => {
       const item = window.CATALOG.get(el.dataset.id);
       STATE.draft = item;
+      STATE.qty = 1;
       STATE.dates = { start: null, end: null };
       STATE.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       go("#/gear/" + item.id);
     },
 
     "rent-again": (el) => handlers.book(el),
+
+    "qty-inc": () => { STATE.qty = (STATE.qty || 1) + 1; render(); },
+    "qty-dec": () => { STATE.qty = Math.max(1, (STATE.qty || 1) - 1); render(); },
 
     /* calendar */
     "cal-prev": () => { const m = STATE.calMonth; STATE.calMonth = new Date(m.getFullYear(), m.getMonth() - 1, 1); render(); },
@@ -259,16 +264,16 @@
     "proceed-checkout": async () => {
       if (!STATE.safetyAccepted) return;
       const item = STATE.draft;
-      const days = fmt.days(STATE.dates);
+      const qty = STATE.qty || 1;
       const cfg = window.UBR_CONFIG || {};
 
-      // --- LIVE: hand off to Stripe Checkout via our serverless function ---
+      // --- LIVE: hand off to PayPal via our serverless function ---
       if (cfg.BACKEND_ENABLED) {
         closeModal();
         toast("Opening secure checkout…", "lock");
         try {
           const payload = {
-            itemId: item.id, name: item.name, days,
+            itemId: item.id, name: item.name, qty,
             startDate: STATE.dates.start, endDate: STATE.dates.end,
             components: item.components, addons: item.addons
           };
@@ -287,11 +292,11 @@
       }
 
       // --- DEMO: no backend configured yet, show a sample confirmation ---
-      const total = days * item.perDay;
+      const total = (item.price || 0) * qty;
       const orderId = "UBR-" + Math.floor(1000 + Math.random() * 9000);
       const booking = {
-        orderId, itemId: item.id, name: item.name,
-        icon: item.icon, tint: item.tint, total, deposit: item.deposit || 0, past: false,
+        orderId, itemId: item.id, name: qty > 1 ? `${item.name} ×${qty}` : item.name,
+        icon: item.icon, tint: item.tint, total, deposit: (item.deposit || 0) * qty, past: false,
         rangeLabel: fmt.range(STATE.dates) || "Flexible"
       };
       STATE.bookings.unshift(booking);
@@ -335,25 +340,26 @@
     "continue-pack": () => {
       const items = [];
       const components = [];           // flat id list (repeated per qty) for server-side pricing
-      let perDay = 0, weight = 0, deposit = 0;
+      let price = 0, weight = 0, deposit = 0;
       STATE.pack.forEach((count, id) => {
         const g = D.packLibrary.find(x => x.id === id);
         if (!g) return;
-        perDay += g.perDay * count; weight += g.weight * count; deposit += (g.deposit || 0) * count;
+        price += g.price * count; weight += g.weight * count; deposit += (g.deposit || 0) * count;
         items.push(count > 1 ? `${g.name} ×${count}` : g.name);
         for (let i = 0; i < count; i++) components.push(id);
       });
       const addons = [...STATE.packAddons];
       addons.forEach(id => {
         const a = D.addons.find(x => x.id === id);
-        if (a) { perDay += a.price; items.push(a.name); }
+        if (a) { price += a.price; items.push(a.name); }
       });
       if (!items.length) return;
       STATE.draft = {
         id: "custom", name: "Your Custom Pack", icon: "backpack", tint: "#1b3022",
-        perDay, unit: "day", deposit, tagline: `${weight.toFixed(1)} lbs · ${items.length} items`,
+        price, unit: "rental", deposit, tagline: `${weight.toFixed(1)} lbs · ${items.length} items`,
         includes: items, components, addons
       };
+      STATE.qty = 1;
       STATE.dates = { start: null, end: null };
       STATE.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       go("#/gear/custom");
@@ -416,8 +422,8 @@
         name,
         category: val("admin-cat") || "Bundles",
         tagline: (val("admin-tagline") || "").trim(),
-        perDay: parseFloat(val("admin-perday")) || 0,
-        unit: "day",
+        price: parseFloat(val("admin-price")) || 0,
+        unit: "rental",
         deposit: parseFloat(val("admin-deposit")) || 0,
         icon: e.icon || current.icon || "backpack"
       };

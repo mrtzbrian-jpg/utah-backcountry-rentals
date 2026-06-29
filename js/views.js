@@ -97,8 +97,8 @@ window.VIEWS = (function () {
         </div>
         <div class="mt-auto flex items-end justify-between pt-1">
           <div class="flex flex-col">
-            <span class="text-label-sm text-outline uppercase tracking-wider">Starting at</span>
-            <span class="text-lg font-bold text-on-primary-fixed-variant">${fmt.money(item.perDay)} <span class="text-outline font-normal text-sm">/ day</span></span>
+            <span class="text-label-sm text-outline uppercase tracking-wider">Rental</span>
+            <span class="text-lg font-bold text-on-primary-fixed-variant">${fmt.money(item.price)}</span>
           </div>
           <button data-action="book" data-id="${item.id}"
             class="bg-secondary text-on-secondary rounded-lg px-md py-sm text-label-md shadow-sm press hover:bg-secondary-container">
@@ -112,7 +112,7 @@ window.VIEWS = (function () {
   function kitCard(kit) {
     const items = kit.items.map(id => D.packLibrary.find(x => x.id === id)).filter(Boolean);
     const weight = items.reduce((s, x) => s + x.weight, 0);
-    const perDay = items.reduce((s, x) => s + x.perDay, 0);
+    const price = items.reduce((s, x) => s + x.price, 0);
     return `
     <div class="bg-surface-container-lowest rounded-xl shadow-card p-md flex flex-col">
       <div class="flex items-center gap-sm">
@@ -126,7 +126,7 @@ window.VIEWS = (function () {
       </div>
       <p class="text-body-md text-on-surface-variant mt-sm flex-1">${kit.blurb}</p>
       <div class="mt-sm flex items-center justify-between">
-        <span class="font-heading text-headline-sm text-secondary">${fmt.money(perDay)}<span class="text-outline text-sm font-normal">/day</span></span>
+        <span class="font-heading text-headline-sm text-secondary">${fmt.money(price)}</span>
         <button data-action="load-kit" data-kit="${kit.id}" class="bg-primary text-on-primary rounded-full px-md py-2 text-label-md press flex items-center gap-1">
           <span class="material-symbols-outlined text-[18px]">add_circle</span>Load kit
         </button>
@@ -240,9 +240,10 @@ window.VIEWS = (function () {
   function gear() {
     const item = window.STATE.draft;
     if (!item) return notFound();
-    const days = fmt.days(window.STATE.dates);
-    const total = days ? days * item.perDay : 0;
-    const ready = days > 0;
+    const qty = window.STATE.qty || 1;
+    const total = (item.price || 0) * qty;       // flat price × quantity
+    const hold = (item.deposit || 0) * qty;
+    const ready = !!window.STATE.dates.start;     // pickup date chosen
 
     const includes = (item.includes || []).map(x =>
       `<li class="flex items-center gap-2 text-body-md text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-primary">check_circle</span>${x}</li>`).join("");
@@ -256,7 +257,7 @@ window.VIEWS = (function () {
           <div class="min-w-0">
             <h2 class="font-heading text-headline-sm text-on-surface">${item.name}</h2>
             <p class="text-body-md text-on-surface-variant line-clamp-2">${item.tagline || item.desc}</p>
-            <p class="mt-1 text-label-md text-secondary">${fmt.money(item.perDay)} / day</p>
+            <p class="mt-1 text-label-md text-secondary">${fmt.money(item.price)} rental</p>
           </div>
         </section>
 
@@ -266,7 +267,7 @@ window.VIEWS = (function () {
 
         <p class="text-center text-label-sm text-outline mt-sm flex items-center justify-center gap-1">
           <span class="material-symbols-outlined text-[16px]">touch_app</span>
-          Tap a start day, then an end day
+          Tap your pickup day, then your return day
         </p>
       </main>
 
@@ -274,15 +275,23 @@ window.VIEWS = (function () {
       <div class="fixed bottom-0 inset-x-0 z-40 bg-surface-container-lowest shadow-float rounded-t-xl safe-bottom">
         <div class="max-w-container-max mx-auto px-md pt-md">
           <div class="flex items-center justify-between mb-sm">
+            <span class="text-body-md text-on-surface-variant">Quantity</span>
+            <div class="flex items-center gap-3">
+              <button data-action="qty-dec" class="w-9 h-9 rounded-full bg-surface-container press flex items-center justify-center ${qty > 1 ? "" : "opacity-30 pointer-events-none"}"><span class="material-symbols-outlined text-[20px]">remove</span></button>
+              <span class="text-label-md w-6 text-center">${qty}</span>
+              <button data-action="qty-inc" class="w-9 h-9 rounded-full bg-primary text-on-primary press flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">add</span></button>
+            </div>
+          </div>
+          <div class="flex items-center justify-between mb-sm">
             <div class="text-on-surface-variant text-body-md">
-              ${ready ? `Total for ${days} day${days > 1 ? "s" : ""}` : "Select your dates"}
+              ${ready ? "Rental total" : "Select your dates"}
               ${ready ? `<div class="text-label-sm text-outline">${fmt.range(window.STATE.dates)}</div>` : ""}
             </div>
             <div class="font-heading text-headline-md text-primary">${fmt.money(total)}</div>
           </div>
-          ${item.deposit ? `<p class="text-label-sm text-outline -mt-1 mb-sm flex items-center gap-1.5">
+          ${hold ? `<p class="text-label-sm text-outline -mt-1 mb-sm flex items-center gap-1.5">
             <span class="material-symbols-outlined text-[15px] text-on-surface-variant">lock</span>
-            + ${fmt.money(item.deposit)} refundable deposit, collected at pickup</p>` : ""}
+            + ${fmt.money(hold)} refundable deposit, collected at pickup</p>` : ""}
           <button data-action="confirm-dates" ${ready ? "" : "disabled"}
             class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${ready ? "bg-secondary hover:bg-secondary-container" : "bg-secondary/40 cursor-not-allowed"}">
             Confirm Dates
@@ -333,10 +342,10 @@ window.VIEWS = (function () {
     const cat = window.STATE.packCat;
     const lib = cat === "All Items" ? D.packLibrary : D.packLibrary.filter(x => x.cat === cat);
     const chosen = window.STATE.pack;        // Map id->count
-    const totalWeight = D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.weight, 0)
-      + [...window.STATE.packAddons].reduce((s) => s, 0);
-    const basePrice = D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.perDay, 0)
+    const totalWeight = D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.weight, 0);
+    const basePrice = D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.price, 0)
       + [...window.STATE.packAddons].reduce((s, id) => s + (D.addons.find(a => a.id === id)?.price || 0), 0);
+    const depositTotal = D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * (x.deposit || 0), 0);
 
     const pills = D.packCats.map(c => {
       const on = c === cat;
@@ -362,7 +371,7 @@ window.VIEWS = (function () {
         ${tips}
         <div class="mt-2 flex items-center justify-between text-label-sm">
           <span class="text-outline">${x.weight} lbs</span>
-          <span class="text-secondary font-bold">${fmt.money(x.perDay)}/day</span>
+          <span class="text-secondary font-bold">${fmt.money(x.price)}</span>
         </div>
         <div class="mt-2 flex items-center justify-between">
           <button data-action="pack-remove" data-id="${x.id}" class="w-9 h-9 rounded-full bg-surface-container press flex items-center justify-center ${count ? "" : "opacity-30 pointer-events-none"}"><span class="material-symbols-outlined text-[20px]">remove</span></button>
@@ -417,12 +426,12 @@ window.VIEWS = (function () {
         <div class="max-w-container-max mx-auto px-md pt-md">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-label-sm text-outline uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-secondary">scale</span>Total weight</p>
-              <p class="font-heading text-headline-sm">${totalWeight.toFixed(1)} lbs</p>
+              <p class="text-label-sm text-outline uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-secondary">scale</span>${totalWeight.toFixed(1)} lbs</p>
+              <p class="text-label-sm text-outline flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">lock</span>${fmt.money(depositTotal)} deposit at pickup</p>
             </div>
             <div class="text-right">
-              <p class="text-label-sm text-outline uppercase tracking-wider">Base price</p>
-              <p class="font-heading text-headline-sm text-secondary">${fmt.money(basePrice)}<span class="text-outline text-sm font-normal">/day</span></p>
+              <p class="text-label-sm text-outline uppercase tracking-wider">Rental total</p>
+              <p class="font-heading text-headline-md text-secondary">${fmt.money(basePrice)}</p>
             </div>
           </div>
           <div class="mt-2 border-t border-surface-container pt-2">
@@ -671,7 +680,7 @@ window.VIEWS = (function () {
       <div class="w-14 h-14 shrink-0 rounded-md gear-tile relative overflow-hidden flex items-center justify-center">${mediaLayer(item, 28)}</div>
       <div class="min-w-0 flex-1">
         <p class="text-label-md text-on-surface truncate">${item.name}</p>
-        <p class="text-label-sm text-outline truncate">${item.category} · ${fmt.money(item.perDay)}/day · ${item.deposit ? fmt.money(item.deposit) + " hold" : "no hold"}</p>
+        <p class="text-label-sm text-outline truncate">${item.category} · ${fmt.money(item.price)} · ${item.deposit ? fmt.money(item.deposit) + " deposit" : "no deposit"}</p>
       </div>
       <button data-action="admin-edit" data-id="${item.id}" class="p-2 rounded-full hover:bg-surface-container press shrink-0"><span class="material-symbols-outlined text-on-surface-variant">edit</span></button>
       <button data-action="admin-delete" data-id="${item.id}" class="p-2 rounded-full hover:bg-error-container press shrink-0"><span class="material-symbols-outlined text-error">delete</span></button>
@@ -722,10 +731,10 @@ window.VIEWS = (function () {
               class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
 
           <div class="grid grid-cols-2 gap-sm">
-            <label class="block"><span class="text-label-md text-on-surface-variant">Price / day ($)</span>
-              <input id="admin-perday" type="number" min="0" value="${item.perDay != null ? item.perDay : ""}" placeholder="12"
+            <label class="block"><span class="text-label-md text-on-surface-variant">Rental price ($)</span>
+              <input id="admin-price" type="number" min="0" value="${item.price != null ? item.price : ""}" placeholder="65"
                 class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
-            <label class="block"><span class="text-label-md text-on-surface-variant">Deposit hold ($)</span>
+            <label class="block"><span class="text-label-md text-on-surface-variant">Deposit — your cost ($)</span>
               <input id="admin-deposit" type="number" min="0" value="${item.deposit != null ? item.deposit : ""}" placeholder="400"
                 class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
           </div>

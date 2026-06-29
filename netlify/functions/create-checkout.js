@@ -12,20 +12,20 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body || "{}"); }
   catch { return json(400, { error: "Invalid request." }); }
 
-  const { itemId, name, days, startDate, endDate, components, addons } = body;
-  const amount = quoteCents({ itemId, days, components, addons }); // rental fee, charged now
-  const deposit = depositCents({ itemId, components });            // recorded; collected at pickup
+  const { itemId, name, qty, startDate, endDate, components, addons } = body;
+  const q = Math.max(1, parseInt(qty, 10) || 1);
+  const amount = quoteCents({ itemId, qty: q, components, addons }); // rental fee, charged now
+  const deposit = depositCents({ itemId, qty: q, components });      // recorded; collected at pickup
   if (amount < 50) return json(400, { error: "Invalid order amount." });
 
   const origin = event.headers.origin || `https://${event.headers.host}`;
-  const dayLabel = `${days} day${Number(days) > 1 ? "s" : ""}`;
   // Compact metadata we read back at capture time (custom_id max 127 chars).
-  const customId = [itemId || "", days || "", startDate || "", endDate || "", deposit].join("|");
+  const customId = [itemId || "", q, startDate || "", endDate || "", deposit].join("|");
 
   try {
     const order = await createOrder({
       amountCents: amount,
-      description: `${name || "Gear rental"} — ${dayLabel}`,
+      description: `${name || "Gear rental"}${q > 1 ? ` ×${q}` : ""}`,
       customId,
       returnUrl: `${origin}/#/paypal-return`,
       cancelUrl: `${origin}/#/gear/${itemId || ""}`

@@ -167,19 +167,30 @@ window.DATA = (function () {
     { icon: "forest", title: "Hit the backcountry", text: "Go explore. When you're back, just drop the gear off. We handle the cleaning." }
   ];
 
-  // Refundable security-deposit amounts (USD) by item id — the hold placed on the
-  // customer's card ~48h before pickup. ⚠️ PLACEHOLDERS: set these to YOUR real
-  // replacement values, and mirror any change in netlify/functions/_pricing.js.
-  const DEPOSITS = {
-    "master-safety-kit": 850, "garmin-inreach": 400, "osprey-aether-65": 300,
-    "bearvault-bv500": 90, "nemo-disco-15": 200, "msr-hubba-tent": 450,
-    "winter-traction-kit": 350, "water-filter": 50,
-    "osprey-rook-65": 250, "naturehike-cloudup-1": 200, "kelty-cosmic-20": 180,
-    "klymit-static-v": 90, "brs-3000t": 50, "bearvault-bv450": 80,
-    "anker-10k": 40, "bear-spray": 50
+  // Flat rental price (USD) per item — what the customer pays. A pack's total is
+  // the sum of its items × quantity. ⚠️ PLACEHOLDERS: edit in the Manage Gear admin
+  // (per item) and keep netlify/functions/_pricing.js PRICES in sync.
+  const PRICES = {
+    "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40,
+    "bearvault-bv500": 12, "nemo-disco-15": 25, "msr-hubba-tent": 30,
+    "winter-traction-kit": 35, "water-filter": 10,
+    "osprey-rook-65": 40, "naturehike-cloudup-1": 30, "kelty-cosmic-20": 25,
+    "klymit-static-v": 15, "brs-3000t": 10, "bearvault-bv450": 15,
+    "anker-10k": 12, "bear-spray": 12
   };
-  gear.forEach(g => { g.deposit = DEPOSITS[g.id] || 0; });
-  packLibrary.forEach(x => { x.deposit = DEPOSITS[x.id] || 0; });
 
-  return { categories, gear, packLibrary, packCats, kits, addons, DEPOSITS, steps, depot: "Saratoga Springs, UT" };
+  // Refundable security deposit (USD) per item = YOUR replacement cost, held at
+  // pickup. ⚠️ PLACEHOLDERS: edit in the admin; mirror in _pricing.js DEPOSITS.
+  const DEPOSITS = {
+    "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80,
+    "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,
+    "winter-traction-kit": 100, "water-filter": 20,
+    "osprey-rook-65": 80, "naturehike-cloudup-1": 60, "kelty-cosmic-20": 50,
+    "klymit-static-v": 30, "brs-3000t": 20, "bearvault-bv450": 25,
+    "anker-10k": 15, "bear-spray": 15
+  };
+  gear.forEach(g => { g.price = PRICES[g.id] != null ? PRICES[g.id] : g.price; g.deposit = DEPOSITS[g.id] || 0; });
+  packLibrary.forEach(x => { x.price = PRICES[x.id] || 0; x.deposit = DEPOSITS[x.id] || 0; });
+
+  return { categories, gear, packLibrary, packCats, kits, addons, PRICES, DEPOSITS, steps, depot: "Saratoga Springs, UT" };
 })();
