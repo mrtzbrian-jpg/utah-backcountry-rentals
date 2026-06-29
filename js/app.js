@@ -30,25 +30,9 @@
     save(key, val) { localStorage.setItem("ubr:" + key, JSON.stringify(val)); }
   };
 
-  function seedBookings() {
-    const today = new Date();
-    const fut = (n) => { const d = new Date(today); d.setDate(d.getDate() + n); return fmt.iso(d); };
-    const pst = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return fmt.iso(d); };
-    return [
-      {
-        orderId: "UBR-8842", itemId: "master-safety-kit", name: "The Master Safety Kit",
-        icon: "backpack", tint: "#1b3022", total: 65, past: false,
-        rangeLabel: `${fmt.label(fut(12))} – ${fmt.label(fut(14))}`
-      },
-      {
-        orderId: "UBR-7310", itemId: "garmin-inreach", name: "Garmin inReach Mini 2",
-        icon: "satellite_alt", tint: "#ab3500", total: 24, past: true,
-        rangeLabel: `${fmt.label(pst(20))} – ${fmt.label(pst(18))}`
-      }
-    ];
-  }
-
   const now = fmt.midnight(new Date());
+  // Strip any seeded/fake bookings left over from demo mode (real PayPal IDs are long)
+  const storedBookings = (store.load("bookings", null) || []).filter(b => !/^UBR-\d{4}$/.test(b.orderId));
   window.STATE = {
     category: "Bundles",
     calMonth: new Date(now.getFullYear(), now.getMonth(), 1),
@@ -56,7 +40,7 @@
     draft: null,
     qty: 1,
     customPack: null,
-    favs: new Set(store.load("favs", ["garmin-inreach"])),
+    favs: new Set(store.load("favs", [])),
     pack: new Map(),
     packAddons: new Set(),
     packCat: "All Items",
@@ -64,9 +48,8 @@
     safetyAccepted: false,
     adminAuthed: sessionStorage.getItem("ubr:admin") === "1",
     adminEdit: null,
-    bookings: store.load("bookings", null) || seedBookings()
+    bookings: storedBookings
   };
-  if (!store.load("bookings", null)) store.save("bookings", window.STATE.bookings);
 
   const persist = () => {
     store.save("bookings", window.STATE.bookings);
@@ -291,20 +274,8 @@
         return;
       }
 
-      // --- DEMO: no backend configured yet, show a sample confirmation ---
-      const total = (item.price || 0) * qty;
-      const orderId = "UBR-" + Math.floor(1000 + Math.random() * 9000);
-      const booking = {
-        orderId, itemId: item.id, name: qty > 1 ? `${item.name} ×${qty}` : item.name,
-        icon: item.icon, tint: item.tint, total, deposit: (item.deposit || 0) * qty, past: false,
-        rangeLabel: fmt.range(STATE.dates) || "Flexible"
-      };
-      STATE.bookings.unshift(booking);
-      persist();
       closeModal();
-      STATE.bookingTab = "Upcoming";
-      go("#/confirmation/" + orderId);
-      toast("Reservation confirmed!");
+      toast("Checkout requires backend — set BACKEND_ENABLED: true", "error");
     },
 
     directions: () => toast("Opening directions to " + D.depot, "near_me"),

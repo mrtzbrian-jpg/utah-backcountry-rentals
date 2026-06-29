@@ -625,14 +625,16 @@ window.VIEWS = (function () {
       ${topBar({ title: "Profile", location: true })}
       <main class="flex-grow px-md max-w-container-max mx-auto w-full">
         <section class="mt-md flex items-center gap-md">
-          <div class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center font-heading text-headline-md">BM</div>
+          <div class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center">
+            <span class="material-symbols-outlined text-[32px]" style="font-variation-settings:'FILL' 1;">person</span>
+          </div>
           <div>
-            <h2 class="font-heading text-headline-sm">Brian M.</h2>
-            <p class="text-body-md text-on-surface-variant">${D.depot} explorer</p>
+            <h2 class="font-heading text-headline-sm">My Account</h2>
+            <p class="text-body-md text-on-surface-variant">${D.depot}</p>
           </div>
         </section>
-        <section class="mt-md grid grid-cols-3 gap-sm text-center">
-          ${[["Trips", trips], ["Saved", favCount], ["Rank", "Trailblazer"]].map(([k, v]) =>
+        <section class="mt-md grid grid-cols-2 gap-sm text-center">
+          ${[["Rentals", trips], ["Saved", favCount]].map(([k, v]) =>
             `<div class="bg-surface-container rounded-xl py-md"><p class="font-heading text-headline-sm text-primary">${v}</p><p class="text-label-sm text-outline uppercase tracking-wider">${k}</p></div>`).join("")}
         </section>
         <section class="mt-md rounded-xl overflow-hidden divide-y divide-surface-container shadow-card">
