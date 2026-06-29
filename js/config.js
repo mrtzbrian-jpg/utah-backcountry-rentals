@@ -7,7 +7,7 @@
  * confirmation instead of taking a real payment. Flip it to true to go live.
  */
 window.UBR_CONFIG = {
-  BACKEND_ENABLED: false,
+  BACKEND_ENABLED: true,
   FUNCTIONS_BASE: "/.netlify/functions",
 
   // Passcode for the owner's "Manage Gear" admin (open it at /#/admin).
