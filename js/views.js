@@ -7,22 +7,30 @@ window.VIEWS = (function () {
   /* ---------- shared chrome ---------- */
 
   function topBar({ title, leading = "menu", back = false, location = false, trailing = "" }) {
-    const lead = back
-      ? `<button data-action="back" class="p-2 -ml-2 rounded-full hover:bg-surface-container press text-on-surface">
-           <span class="material-symbols-outlined">arrow_back</span></button>`
-      : `<button data-action="nav" data-route="#/profile" class="p-2 -ml-2 rounded-full hover:bg-surface-container press text-on-surface-variant">
-           <span class="material-symbols-outlined">menu</span></button>`;
-    const trail = location
-      ? `<div class="flex items-center gap-xs text-on-surface-variant text-label-md">
-           <span class="material-symbols-outlined text-[18px] text-secondary">location_on</span>
-           <span class="text-[13px] leading-tight max-w-[92px]">${D.depot}</span></div>`
-      : (trailing || `<span class="w-8"></span>`);
+    if (back) {
+      const trail = trailing || `<span class="w-8"></span>`;
+      return `
+      <header class="bg-surface w-full top-0 sticky border-b-2 border-granite-wash z-50">
+        <div class="flex items-center gap-2 px-4 py-4 max-w-container-max mx-auto">
+          <button data-action="back" class="p-2 -ml-2 rounded-full hover:bg-granite-wash press text-on-surface shrink-0">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h1 class="flex-1 font-heading text-headline-sm text-forest-deep text-center leading-tight">${title}</h1>
+          ${trail}
+        </div>
+      </header>`;
+    }
     return `
-    <header class="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-surface-container">
-      <div class="flex items-center gap-2 px-md py-sm max-w-container-max mx-auto">
-        ${lead}
-        <h1 class="flex-1 font-heading ${title.length > 18 ? "text-headline-sm" : "text-headline-md"} text-primary text-center leading-tight">${title}</h1>
-        ${trail}
+    <header class="bg-surface w-full top-0 sticky border-b-2 border-granite-wash z-50">
+      <div class="flex items-center justify-between px-4 py-4 max-w-container-max mx-auto">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-forest-deep text-[24px]">landscape</span>
+          <h1 class="font-heading text-headline-md font-bold text-forest-deep">Utah Backcountry</h1>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1.5 bg-granite-wash rounded-full border border-outline-variant">
+          <span class="material-symbols-outlined text-[14px] text-on-surface-variant">location_on</span>
+          <span class="text-[12px] font-semibold leading-tight text-forest-deep">SLC, UT</span>
+        </div>
       </div>
     </header>`;
   }
@@ -30,20 +38,21 @@ window.VIEWS = (function () {
   function bottomNav(active) {
     const items = [
       { route: "#/", icon: "home", label: "Home" },
-      { route: "#/bookings", icon: "calendar_month", label: "Bookings" },
-      { route: "#/how", icon: "info", label: "How it Works" },
+      { route: "#/bookings", icon: "calendar_today", label: "Bookings" },
+      { route: "#/how", icon: "info", label: "Guide" },
       { route: "#/profile", icon: "person", label: "Profile" }
     ];
     return `
-    <nav class="fixed bottom-0 inset-x-0 z-50 bg-surface-container-lowest shadow-float rounded-t-xl safe-bottom">
-      <div class="flex justify-around items-center px-2 pt-2 max-w-container-max mx-auto">
+    <nav class="fixed bottom-0 inset-x-0 z-50 bg-paper-white border-t-2 border-granite-wash shadow-[0_-2px_10px_rgba(6,27,14,0.08)] safe-bottom">
+      <div class="flex justify-around items-center px-2 pt-2 pb-1 max-w-container-max mx-auto">
         ${items.map(i => {
           const on = i.route === active;
           return `
           <button data-action="nav" data-route="${i.route}"
-            class="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full press group ${on ? "text-on-secondary-container" : "text-on-surface-variant"}">
-            <span class="material-symbols-outlined ${on ? "ms-fill bg-secondary-container/70 px-4 py-0.5 rounded-full" : "group-hover:text-secondary"}">${i.icon}</span>
-            <span class="text-label-sm ${on ? "font-semibold" : ""}">${i.label}</span>
+            class="flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-xl press transition-all
+            ${on ? "bg-secondary-container text-on-secondary-container" : "text-earth-brown hover:bg-granite-wash"}">
+            <span class="material-symbols-outlined ${on ? "ms-fill" : ""}">${i.icon}</span>
+            <span class="text-[11px] font-semibold leading-tight tracking-wide">${i.label}</span>
           </button>`;
         }).join("")}
       </div>
@@ -80,28 +89,35 @@ window.VIEWS = (function () {
 
   function gearCard(item, i = 0) {
     const fav = window.STATE.favs.has(item.id);
+    const imgMarkup = item.img
+      ? `<img src="${item.img}" alt="${item.name}" loading="lazy"
+           class="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+           onerror="this.style.display='none'" />`
+      : "";
     return `
-    <article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-card reveal" style="animation-delay:${i * 70}ms">
-      <div class="relative p-md pb-0">
-        ${gearTile(item)}
-        ${item.badge ? `<span class="absolute top-md left-md bg-primary text-on-primary text-label-sm font-semibold px-3 py-1 rounded-full shadow-sm">${item.badge}</span>` : ""}
+    <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden reveal" style="animation-delay:${i * 70}ms">
+      <div class="relative h-48 overflow-hidden bg-surface-container flex items-center justify-center">
+        ${imgMarkup}
+        <span class="material-symbols-outlined ${item.img ? "opacity-20" : ""}"
+          style="font-size:80px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+        ${item.badge ? `<span class="absolute top-3 left-3 bg-forest-deep text-paper-white text-[11px] font-bold tracking-wide px-2.5 py-1 rounded-full">${item.badge}</span>` : ""}
         <button data-action="fav" data-id="${item.id}"
-          class="absolute top-md right-md bg-surface-container-lowest rounded-full p-2 shadow-sm press">
-          <span class="material-symbols-outlined text-[20px] ${fav ? "ms-fill text-secondary" : "text-outline"}">favorite</span>
+          class="absolute top-3 right-3 bg-paper-white/90 rounded-full p-1.5 press">
+          <span class="material-symbols-outlined text-[20px] ${fav ? "ms-fill text-canyon-clay" : "text-outline"}">favorite</span>
         </button>
       </div>
-      <div class="p-md flex flex-col gap-sm">
+      <div class="p-4 flex flex-col gap-3">
         <div>
-          <h3 class="font-heading text-headline-sm text-on-surface">${item.name}</h3>
-          <p class="text-body-md text-on-surface-variant mt-1 line-clamp-2">${item.tagline}</p>
+          <h3 class="font-heading text-headline-sm text-forest-deep leading-tight">${item.name}</h3>
+          <p class="text-body-md text-earth-brown mt-1 line-clamp-2">${item.tagline}</p>
         </div>
-        <div class="mt-auto flex items-end justify-between pt-1">
-          <div class="flex flex-col">
-            <span class="text-label-sm text-outline uppercase tracking-wider">Rental</span>
-            <span class="text-lg font-bold text-on-primary-fixed-variant">${fmt.money(item.price)}</span>
+        <div class="flex items-end justify-between pt-1">
+          <div>
+            <span class="text-[11px] text-outline uppercase tracking-wider font-semibold">Rental</span>
+            <p class="text-lg font-bold text-forest-deep leading-tight">${fmt.money(item.price)}</p>
           </div>
           <button data-action="book" data-id="${item.id}"
-            class="bg-secondary text-on-secondary rounded-lg px-md py-sm text-label-md shadow-sm press hover:bg-secondary-container">
+            class="bg-canyon-clay text-on-secondary rounded-lg px-4 py-2.5 text-[13px] font-bold tracking-wide inner-shadow-stamped press hover:brightness-105">
             Book Dates
           </button>
         </div>
@@ -145,50 +161,55 @@ window.VIEWS = (function () {
     const pills = D.categories.map(c => {
       const on = c === cat;
       return `<button data-action="category" data-cat="${c}"
-        class="shrink-0 px-md py-2 rounded-full text-label-md whitespace-nowrap press transition-colors
-        ${on ? "bg-primary text-on-primary shadow-sm" : "bg-surface-container text-on-surface hover:bg-surface-container-highest"}">${c}</button>`;
+        class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press transition-colors
+        ${on ? "bg-forest-deep text-paper-white inner-shadow-stamped" : "bg-paper-white border border-outline-variant text-forest-deep hover:bg-granite-wash"}">${c}</button>`;
     }).join("");
 
     const inner = `
       ${topBar({ title: "Utah Backcountry Rentals", location: true })}
-      <main class="flex-grow px-md max-w-container-max mx-auto w-full">
-        <!-- Hero -->
-        <section class="relative mt-md rounded-xl overflow-hidden shadow-card min-h-[320px] sm:min-h-[300px]">
+      <main class="flex-grow max-w-container-max mx-auto w-full">
+        <!-- Hero — full-bleed, edge to edge -->
+        <section class="relative min-h-[340px] sm:min-h-[420px] overflow-hidden flex flex-col justify-end">
           ${ART.heroScene()}
-          <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent"></div>
-          <div class="absolute inset-0 flex flex-col justify-end p-md">
-            <h2 class="font-heading text-[26px] leading-[1.12] font-extrabold sm:text-headline-xl text-white drop-shadow mb-sm">Rent Premium Gear.<br/>Skip the Retail Price.</h2>
-            <div class="glass-card p-base rounded-md flex items-center gap-sm">
-              <div class="flex-1 flex items-center bg-surface-container-lowest rounded px-sm py-2.5 border border-transparent focus-within:border-primary">
+          <div class="hero-gradient absolute inset-0 pointer-events-none"></div>
+          <div class="relative z-10 p-6 sm:p-10">
+            <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(26px,5.5vw,44px);line-height:1.15;letter-spacing:-0.02em;font-weight:800;"
+              class="text-white drop-shadow-lg mb-5">Rent Premium Gear.<br/>Skip the Retail Price.</h2>
+            <div class="glass-card p-3 rounded-lg flex items-center gap-3 max-w-md">
+              <div class="flex-1 flex items-center bg-surface-container-lowest rounded px-3 py-2.5 border border-transparent focus-within:border-canyon-clay transition-colors">
                 <span class="material-symbols-outlined text-outline mr-2 text-[20px]">calendar_today</span>
                 <input id="hero-dates" class="w-full bg-transparent border-none focus:ring-0 p-0 text-body-md placeholder-outline" placeholder="Select rental dates…" />
               </div>
-              <button data-action="nav" data-route="#/bookings" class="shrink-0 bg-secondary text-on-secondary px-md py-2.5 rounded text-label-md press hover:bg-secondary-container">Check</button>
+              <button data-action="nav" data-route="#/bookings"
+                class="shrink-0 bg-canyon-clay text-on-secondary px-4 py-2.5 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
+                Check Availability
+              </button>
             </div>
           </div>
         </section>
 
-        <!-- Build your own pack banner -->
-        <button data-action="nav" data-route="#/builder"
-          class="w-full mt-md text-left bg-primary text-on-primary rounded-xl p-md flex items-center gap-md shadow-card press overflow-hidden relative">
-          <div class="absolute right-0 bottom-0 opacity-20 w-40">${ART.heroScene()}</div>
-          <span class="material-symbols-outlined text-[40px] text-inverse-primary relative">backpack</span>
-          <div class="relative">
-            <p class="font-heading text-headline-sm">Build Your Own Pack</p>
-            <p class="text-body-md text-primary-fixed-dim">Hand-pick gear, see total weight & price</p>
-          </div>
-          <span class="material-symbols-outlined ml-auto relative">chevron_right</span>
-        </button>
+        <div class="px-4 sm:px-6">
+          <!-- Build your own pack banner -->
+          <button data-action="nav" data-route="#/builder"
+            class="w-full mt-5 text-left bg-forest-deep text-paper-white rounded-xl p-5 flex items-center gap-4 press overflow-hidden relative inner-shadow-stamped">
+            <span class="material-symbols-outlined text-[44px] text-primary-fixed-dim shrink-0" style="font-variation-settings:'FILL' 1;">backpack</span>
+            <div class="flex-1 min-w-0">
+              <p class="font-heading text-headline-sm">Build Your Own Pack</p>
+              <p class="text-body-md text-primary-fixed-dim mt-0.5">Hand-pick gear, see total weight &amp; price</p>
+            </div>
+            <span class="text-[12px] font-bold tracking-widest text-primary-fixed-dim shrink-0">START →</span>
+          </button>
 
-        <!-- Category pills -->
-        <section class="mt-md -mx-md px-md">
-          <div class="flex gap-sm overflow-x-auto no-scrollbar py-1">${pills}</div>
-        </section>
+          <!-- Category pills -->
+          <section class="mt-5 -mx-4 sm:-mx-6 px-4 sm:px-6">
+            <div class="flex gap-3 overflow-x-auto no-scrollbar py-1">${pills}</div>
+          </section>
 
-        <!-- Feed -->
-        <section class="mt-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
-          ${feed.map((g, i) => gearCard(g, i)).join("")}
-        </section>
+          <!-- Feed -->
+          <section class="mt-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            ${feed.map((g, i) => gearCard(g, i)).join("")}
+          </section>
+        </div>
       </main>`;
     return page(inner, { active: "#/" });
   }
@@ -507,45 +528,68 @@ window.VIEWS = (function () {
     const tabBtn = (name, n) => {
       const on = tab === name;
       return `<button data-action="booking-tab" data-tab="${name}"
-        class="flex-1 py-2 rounded-full text-label-md press transition-colors ${on ? "bg-surface-container-lowest shadow-sm text-on-surface" : "text-on-surface-variant"}">${name}${n ? ` (${n})` : ""}</button>`;
+        class="flex-1 py-3 text-[13px] font-bold tracking-wide press transition-colors border-b-4
+        ${on ? "text-canyon-clay border-canyon-clay" : "text-earth-brown border-transparent hover:text-forest-deep"}">
+        ${name}${n ? ` (${n})` : ""}
+      </button>`;
     };
 
     const empty = `
-      <div class="mt-lg text-center text-on-surface-variant flex flex-col items-center">
-        <div class="w-40 opacity-70">${ART.trailLine()}</div>
-        <p class="font-heading text-headline-sm text-on-surface mt-sm">No ${tab.toLowerCase()} rentals yet</p>
-        <p class="text-body-md mt-1">Your next adventure is one tap away.</p>
-        <button data-action="nav" data-route="#/" class="mt-md bg-secondary text-on-secondary px-md py-2.5 rounded-full text-label-md press">Browse Gear</button>
+      <div class="col-span-2 mt-16 text-center flex flex-col items-center">
+        <div class="w-40 opacity-60">${ART.trailLine()}</div>
+        <p class="font-heading text-headline-sm text-forest-deep mt-4">No ${tab.toLowerCase()} rentals yet</p>
+        <p class="text-body-md text-earth-brown mt-1">Your next adventure is one tap away.</p>
+        <button data-action="nav" data-route="#/"
+          class="mt-6 bg-canyon-clay text-on-secondary px-6 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
+          Browse Gear
+        </button>
       </div>`;
 
     const cards = list.map(b => {
+      const tileContent = `<span class="material-symbols-outlined text-[52px]" style="color:${b.tint};font-variation-settings:'FILL' 1,'wght' 300;">${b.icon}</span>`;
       if (b.past) {
         return `
-        <article class="bg-surface-container-lowest rounded-xl shadow-card overflow-hidden">
-          <div class="h-28 gear-tile flex items-center justify-center"><span class="material-symbols-outlined text-[56px]" style="color:${b.tint};font-variation-settings:'FILL' 1,'wght' 300;">${b.icon}</span></div>
-          <div class="p-md">
-            <p class="text-label-sm text-outline uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">check_circle</span>Completed</p>
-            <h3 class="font-heading text-headline-sm mt-1">${b.name}</h3>
-            <p class="text-body-md text-on-surface-variant">${b.rangeLabel}</p>
-            <button data-action="rent-again" data-id="${b.itemId}" class="mt-sm inline-flex items-center gap-1 border border-outline-variant rounded-full px-md py-2 text-label-md press"><span class="material-symbols-outlined text-[18px]">restart_alt</span>Rent Again</button>
+        <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden">
+          <div class="flex">
+            <div class="w-28 shrink-0 bg-granite-wash flex items-center justify-center">${tileContent}</div>
+            <div class="flex-1 p-4">
+              <span class="inline-block text-[11px] font-bold tracking-wider bg-granite-wash text-earth-brown px-2 py-0.5 rounded uppercase">Completed</span>
+              <h3 class="font-heading text-headline-sm text-forest-deep mt-1.5 leading-tight">${b.name}</h3>
+              <p class="text-[13px] text-earth-brown mt-0.5">${b.rangeLabel}</p>
+              <button data-action="rent-again" data-id="${b.itemId}"
+                class="mt-3 inline-flex items-center gap-1 border-2 border-forest-deep text-forest-deep rounded-lg px-3 py-1.5 text-[12px] font-bold tracking-wide press hover:bg-granite-wash">
+                <span class="material-symbols-outlined text-[16px]">restart_alt</span>Rent Again
+              </button>
+            </div>
           </div>
         </article>`;
       }
       return `
-      <article class="bg-surface-container-lowest rounded-xl shadow-card overflow-hidden">
-        <div class="h-32 gear-tile flex items-center justify-center relative">
-          <span class="material-symbols-outlined text-[64px]" style="color:${b.tint};font-variation-settings:'FILL' 1,'wght' 300;">${b.icon}</span>
-          <span class="absolute top-2 left-2 bg-primary-fixed text-on-primary-fixed text-label-sm px-2.5 py-1 rounded-full flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">verified</span>Confirmed</span>
-        </div>
-        <div class="p-md">
-          <h3 class="font-heading text-headline-sm">${b.name}</h3>
-          <div class="mt-2 space-y-1.5 text-body-md text-on-surface-variant">
-            <p class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">calendar_month</span>${b.rangeLabel}</p>
-            <p class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">location_on</span>${D.depot} Depot</p>
+      <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden">
+        <div class="flex">
+          <div class="w-28 shrink-0 bg-granite-wash flex items-center justify-center relative">
+            ${tileContent}
+            <span class="absolute top-2 left-1 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold px-1.5 py-0.5 rounded">✓ OK</span>
           </div>
-          <div class="mt-md flex flex-col gap-2">
-            <button data-action="nav" data-route="#/confirmation/${b.orderId}" class="w-full rounded-full py-3 bg-secondary text-on-secondary text-label-md press hover:bg-secondary-container">View Details</button>
-            <button data-action="directions" class="w-full rounded-full py-3 border-2 border-primary text-primary text-label-md press">Get Directions</button>
+          <div class="flex-1 p-4">
+            <span class="inline-block text-[11px] font-bold tracking-wider bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded uppercase">Confirmed</span>
+            <h3 class="font-heading text-headline-sm text-forest-deep mt-1.5 leading-tight">${b.name}</h3>
+            <p class="text-[13px] text-earth-brown mt-0.5 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-forest-deep">calendar_month</span>${b.rangeLabel}
+            </p>
+            <p class="text-[13px] text-earth-brown flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-forest-deep">location_on</span>${D.depot}
+            </p>
+            <div class="flex gap-2 mt-3">
+              <button data-action="nav" data-route="#/confirmation/${b.orderId}"
+                class="bg-forest-deep text-paper-white px-3 py-2 rounded-lg text-[11px] font-bold tracking-widest pressed-state press">
+                VIEW DETAILS
+              </button>
+              <button data-action="directions"
+                class="border-2 border-forest-deep text-forest-deep px-3 py-2 rounded-lg text-[11px] font-bold tracking-widest press hover:bg-granite-wash">
+                DIRECTIONS
+              </button>
+            </div>
           </div>
         </div>
       </article>`;
@@ -553,13 +597,15 @@ window.VIEWS = (function () {
 
     const inner = `
       ${topBar({ title: "Utah Backcountry Rentals", location: true })}
-      <main class="flex-grow px-md max-w-container-max mx-auto w-full">
-        <div class="mt-md">
-          <h2 class="font-heading text-headline-lg text-on-surface">My Bookings</h2>
-          <p class="text-body-md text-on-surface-variant mt-1">Manage your upcoming adventures and review past gear rentals.</p>
+      <main class="flex-grow px-4 sm:px-6 max-w-container-max mx-auto w-full">
+        <div class="mt-6">
+          <h2 class="font-heading text-headline-lg text-forest-deep">My Bookings</h2>
+          <p class="text-body-md text-earth-brown mt-1">Manage your upcoming adventures and past gear rentals.</p>
         </div>
-        <div class="mt-md bg-surface-container rounded-full p-1 flex gap-1">${tabBtn("Upcoming", upcoming.length)}${tabBtn("Past", past.length)}</div>
-        <section class="mt-md grid grid-cols-1 sm:grid-cols-2 gap-md">
+        <div class="flex mt-6 border-b-2 border-granite-wash">
+          ${tabBtn("Upcoming", upcoming.length)}${tabBtn("Past", past.length)}
+        </div>
+        <section class="mt-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           ${list.length ? cards : empty}
         </section>
       </main>`;
@@ -615,41 +661,76 @@ window.VIEWS = (function () {
   function profile() {
     const favCount = window.STATE.favs.size;
     const trips = window.STATE.bookings.length;
+
     const row = (icon, label, sub = "") => `
-      <button class="w-full flex items-center gap-md p-md bg-surface-container-lowest press text-left">
-        <span class="material-symbols-outlined text-primary">${icon}</span>
-        <span class="flex-1"><span class="block text-label-md">${label}</span>${sub ? `<span class="block text-label-sm text-outline">${sub}</span>` : ""}</span>
-        <span class="material-symbols-outlined text-outline">chevron_right</span>
+      <button class="w-full flex items-center gap-4 px-4 py-4 bg-paper-white hover:bg-granite-wash press text-left border-b border-granite-wash last:border-b-0 transition-colors">
+        <span class="material-symbols-outlined text-canyon-clay">${icon}</span>
+        <span class="flex-1">
+          <span class="block text-[14px] font-semibold tracking-wide text-forest-deep">${label}</span>
+          ${sub ? `<span class="block text-[12px] text-earth-brown mt-0.5">${sub}</span>` : ""}
+        </span>
+        <span class="material-symbols-outlined text-earth-brown">chevron_right</span>
       </button>`;
+
     const inner = `
       ${topBar({ title: "Profile", location: true })}
-      <main class="flex-grow px-md max-w-container-max mx-auto w-full">
-        <section class="mt-md flex items-center gap-md">
-          <div class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center">
-            <span class="material-symbols-outlined text-[32px]" style="font-variation-settings:'FILL' 1;">person</span>
-          </div>
-          <div>
-            <h2 class="font-heading text-headline-sm">My Account</h2>
-            <p class="text-body-md text-on-surface-variant">${D.depot}</p>
+      <main class="flex-grow px-4 sm:px-6 max-w-container-max mx-auto w-full">
+
+        <!-- Profile Header Card -->
+        <section class="mt-6 bg-paper-white rounded-xl border border-outline-variant card-elevation p-6">
+          <div class="flex items-center gap-5">
+            <div class="w-20 h-20 rounded-full bg-forest-deep text-on-primary flex items-center justify-center shrink-0 border-4 border-granite-wash">
+              <span class="material-symbols-outlined text-[36px]" style="font-variation-settings:'FILL' 1;">person</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h2 class="font-heading text-headline-sm text-forest-deep">My Account</h2>
+              <p class="text-body-md text-earth-brown mt-0.5 truncate">${D.depot}</p>
+              <div class="flex items-center gap-3 mt-2 flex-wrap">
+                <span class="flex items-center gap-1 text-[13px] text-forest-deep font-semibold">
+                  <span class="material-symbols-outlined text-[15px]">explore</span>${trips} Trip${trips !== 1 ? "s" : ""}
+                </span>
+                <span class="text-outline text-[12px]">·</span>
+                <span class="flex items-center gap-1 text-[13px] text-earth-brown font-semibold">
+                  <span class="material-symbols-outlined text-[15px] text-canyon-clay">favorite</span>${favCount} Saved
+                </span>
+              </div>
+            </div>
           </div>
         </section>
-        <section class="mt-md grid grid-cols-2 gap-sm text-center">
-          ${[["Rentals", trips], ["Saved", favCount]].map(([k, v]) =>
-            `<div class="bg-surface-container rounded-xl py-md"><p class="font-heading text-headline-sm text-primary">${v}</p><p class="text-label-sm text-outline uppercase tracking-wider">${k}</p></div>`).join("")}
+
+        <!-- Stats -->
+        <section class="mt-4 grid grid-cols-2 gap-3">
+          <div class="bg-paper-white rounded-xl border border-outline-variant card-elevation py-5 text-center">
+            <p class="font-heading text-headline-lg text-forest-deep">${trips}</p>
+            <p class="text-[11px] font-bold tracking-widest text-earth-brown uppercase mt-1">Rentals</p>
+          </div>
+          <div class="bg-paper-white rounded-xl border border-outline-variant card-elevation py-5 text-center">
+            <p class="font-heading text-headline-lg text-forest-deep">${favCount}</p>
+            <p class="text-[11px] font-bold tracking-widest text-earth-brown uppercase mt-1">Saved Gear</p>
+          </div>
         </section>
-        <section class="mt-md rounded-xl overflow-hidden divide-y divide-surface-container shadow-card">
+
+        <!-- Menu rows -->
+        <section class="mt-4 rounded-xl overflow-hidden border border-outline-variant card-elevation divide-y divide-granite-wash">
           ${row("favorite", "Saved Gear", `${favCount} item${favCount === 1 ? "" : "s"}`)}
           ${row("receipt_long", "Rental History", `${trips} booking${trips === 1 ? "" : "s"}`)}
-          ${row("local_shipping", "Pick-up & Returns", D.depot + " Depot")}
-          ${row("verified_user", "Safety & Waivers")}
-          ${row("help", "Help & Support")}
+          ${row("local_shipping", "Pick-up &amp; Returns", D.depot + " Depot")}
+          ${row("verified_user", "Safety &amp; Waivers")}
+          ${row("help", "Help &amp; Support")}
         </section>
-        <button data-action="nav" data-route="#/admin" class="w-full mt-md flex items-center gap-md p-md bg-primary text-on-primary rounded-xl press text-left">
-          <span class="material-symbols-outlined">inventory_2</span>
-          <span class="flex-1"><span class="block text-label-md">Manage Gear</span><span class="block text-label-sm text-primary-fixed-dim">Owner: add, edit & reorder products</span></span>
-          <span class="material-symbols-outlined">chevron_right</span>
+
+        <!-- Manage Gear -->
+        <button data-action="nav" data-route="#/admin"
+          class="w-full mt-4 flex items-center gap-4 p-5 bg-forest-deep text-paper-white rounded-xl press inner-shadow-stamped">
+          <span class="material-symbols-outlined text-primary-fixed-dim">inventory_2</span>
+          <span class="flex-1 min-w-0">
+            <span class="block text-[14px] font-bold tracking-wide">Manage Gear</span>
+            <span class="block text-[12px] text-primary-fixed-dim mt-0.5">Owner: add, edit &amp; reorder products</span>
+          </span>
+          <span class="material-symbols-outlined text-primary-fixed-dim">chevron_right</span>
         </button>
-        <div class="mt-md text-center text-label-sm text-outline">Utah Backcountry Rentals · v1.0</div>
+
+        <div class="mt-6 mb-4 text-center text-[12px] text-outline">Utah Backcountry Rentals · v1.0</div>
       </main>`;
     return page(inner, { active: "#/profile" });
   }
