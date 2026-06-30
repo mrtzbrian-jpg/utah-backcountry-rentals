@@ -64,7 +64,10 @@ exports.handler = async (event) => {
     hold: holdC,
     deposit: row ? (row.deposit_cents || 0) : holdC,
     email: payer.email_address || null,
-    customerName: [nm.given_name, nm.surname].filter(Boolean).join(" ") || null
+    customerName: [nm.given_name, nm.surname].filter(Boolean).join(" ") || null,
+    renterName: row ? (row.renter_name || null) : null,
+    agreedTerms: row ? !!row.agreed_terms : false,
+    agreedAt: row ? (row.agreed_at || null) : null
   };
 
   // 3) Persist + notify (once).
@@ -83,6 +86,9 @@ exports.handler = async (event) => {
       authorization_id: authId,
       customer_email: booking.email,
       customer_name: booking.customerName,
+      renter_name: booking.renterName,
+      agreed_terms: booking.agreedTerms,
+      agreed_at: booking.agreedAt,
       status: "confirmed"
     }, { onConflict: "paypal_order" });
   }
@@ -120,7 +126,7 @@ function fromRow(r) {
     orderId: r.paypal_order, itemId: r.item_id, name: r.item_name, qty: r.qty,
     startDate: r.start_date, endDate: r.end_date, days: r.days,
     amount: r.amount_cents, hold: r.hold_cents, deposit: r.deposit_cents,
-    email: r.customer_email, customerName: r.customer_name
+    email: r.customer_email, customerName: r.customer_name, renterName: r.renter_name
   };
 }
 

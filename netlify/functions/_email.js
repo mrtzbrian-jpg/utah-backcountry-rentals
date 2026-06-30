@@ -84,6 +84,10 @@ function customerHtml(b, ref) {
     ${b.hold ? `<p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
       Only the rental fee was charged. A refundable <strong>${money(b.hold)}</strong> hold (max $250) is placed on your
       card for damage or theft, and released when you return the gear in good condition.</p>` : ""}
+    <div style="margin:14px 0 0;padding:12px 14px;background:#f6f3f2;border-left:3px solid #AB3500;border-radius:4px;">
+      <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">Bring to pickup:</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">A valid government photo ID${b.renterName ? ` matching <strong>${b.renterName}</strong>` : ""}. Your payment card must be in the same name.</p>
+    </div>
     <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
       Pick up at <strong>${DEPOT}</strong>. We'll have everything cleaned and trail-ready. See you out there!</p>`;
   return shell("Reservation confirmed", body, "#AB3500");
@@ -96,9 +100,15 @@ function ownerHtml(b, ref) {
     </p>
     ${detailsTable(b, ref)}
     <table style="width:100%;border-collapse:collapse;margin:4px 0;">
-      ${row("Customer", b.customerName || "—")}
+      ${row("Renter (verify ID)", b.renterName || "—")}
+      ${row("Card / PayPal name", b.customerName || "—")}
       ${row("Email", b.email || "—")}
+      ${row("Agreed to terms", b.agreedTerms ? "Yes" + (b.agreedAt ? " · " + new Date(b.agreedAt).toLocaleString("en-US") : "") : "—")}
     </table>
+    <div style="margin:12px 0 0;padding:12px 14px;background:#f6f3f2;border-left:3px solid #061B0E;border-radius:4px;">
+      <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">At pickup, verify:</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">Government photo ID matches <strong>${b.renterName || "the renter"}</strong>, and the ID name matches the card/PayPal name above.</p>
+    </div>
     <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
       A <strong>${money(b.hold)}</strong> refundable hold is on the customer's card. Release it (void the authorization)
       when the gear is returned undamaged, or capture it from the PayPal dashboard if there's damage/theft.</p>`;

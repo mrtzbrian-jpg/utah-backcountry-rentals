@@ -16,7 +16,10 @@ create table if not exists bookings (
   hold_cents      int default 0,        -- amount actually held on the card (≤ $250)
   authorization_id text,                -- PayPal authorization id (void to release / capture if damaged)
   customer_email  text,
-  customer_name   text,
+  customer_name   text,                 -- name on the card / PayPal account (verify against ID)
+  renter_name     text,                 -- legal name the renter entered (must match their photo ID)
+  agreed_terms    boolean not null default false, -- accepted the rental agreement
+  agreed_at       timestamptz,          -- when they accepted (waiver record)
   emailed         boolean not null default false, -- confirmation/owner emails sent
   status          text not null default 'confirmed' -- 'pending' until payment captured, then 'confirmed'
 );
@@ -26,6 +29,9 @@ alter table bookings add column if not exists qty int not null default 1;
 alter table bookings add column if not exists emailed boolean not null default false;
 alter table bookings add column if not exists hold_cents int default 0;
 alter table bookings add column if not exists authorization_id text;
+alter table bookings add column if not exists renter_name text;
+alter table bookings add column if not exists agreed_terms boolean not null default false;
+alter table bookings add column if not exists agreed_at timestamptz;
 
 create index if not exists bookings_dates_idx on bookings (start_date, end_date);
 create index if not exists bookings_item_idx on bookings (item_id, status);

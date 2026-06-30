@@ -47,6 +47,7 @@
     packCat: "All",
     bookingTab: "Upcoming",
     safetyAccepted: false,
+    renterName: "",
     adminAuthed: sessionStorage.getItem("ubr:admin") === "1",
     adminEdit: null,
     bookings: storedBookings,
@@ -104,6 +105,7 @@
       total: Math.round((d.amount || 0) / 100),
       hold: Math.round((d.hold || 0) / 100),
       deposit: Math.round((d.deposit || 0) / 100), past: false,
+      renterName: d.renterName || null,
       rangeLabel: start ? fmt.range({ start, end }) : "Flexible"
     };
     const existing = STATE.bookings.find(b => b.orderId === d.orderId);
@@ -320,10 +322,31 @@
 
     "confirm-dates": () => { STATE.safetyAccepted = false; openModal(window.VIEWS.safetyModal()); },
     "cancel-modal": () => closeModal(),
-    "accept-safety": (el) => { STATE.safetyAccepted = el.checked; openModal(window.VIEWS.safetyModal()); },
+    // Toggle the agreement without re-rendering (so the typed name field persists).
+    "accept-safety": (el) => {
+      STATE.safetyAccepted = el.checked;
+      const nameEl = document.getElementById("renter-name");
+      if (nameEl) STATE.renterName = nameEl.value;
+      const btn = document.getElementById("proceed-btn");
+      if (btn) {
+        btn.disabled = !el.checked;
+        btn.classList.toggle("bg-secondary", el.checked);
+        btn.classList.toggle("hover:bg-secondary-container", el.checked);
+        btn.classList.toggle("bg-secondary/40", !el.checked);
+        btn.classList.toggle("cursor-not-allowed", !el.checked);
+      }
+    },
 
     "proceed-checkout": async () => {
       if (!STATE.safetyAccepted) return;
+      const nameEl = document.getElementById("renter-name");
+      const renterName = ((nameEl && nameEl.value) || STATE.renterName || "").trim();
+      if (!renterName) {
+        toast("Enter the name on your ID & payment card", "error");
+        if (nameEl) nameEl.focus();
+        return;
+      }
+      STATE.renterName = renterName;
       const item = STATE.draft;
       const qty = STATE.qty || 1;
       const cfg = window.UBR_CONFIG || {};
@@ -336,7 +359,8 @@
           const payload = {
             itemId: item.id, name: item.name, qty,
             startDate: STATE.dates.start, endDate: STATE.dates.end,
-            components: item.components, addons: item.addons
+            components: item.components, addons: item.addons,
+            renterName, agreedTerms: true
           };
           const res = await fetch(cfg.FUNCTIONS_BASE + "/create-checkout", {
             method: "POST",
@@ -597,6 +621,10 @@
   // Submit the admin passcode with Enter.
   document.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target && e.target.id === "admin-pass") handlers["admin-login"]();
+  });
+  // Keep the renter's legal name in state as they type (survives re-renders).
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.id === "renter-name") STATE.renterName = e.target.value;
   });
 
   /* ---------------- drag-to-reorder (admin) ---------------- */

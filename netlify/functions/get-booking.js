@@ -28,6 +28,7 @@ exports.handler = async (event) => {
     hold: data.hold_cents,
     deposit: data.deposit_cents,
     email: data.customer_email,
+    renterName: data.renter_name,
     status: data.status
   });
 };

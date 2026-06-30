@@ -413,33 +413,49 @@ window.VIEWS = (function () {
 
   function safetyModal() {
     const accepted = window.STATE.safetyAccepted;
+    const name = window.STATE.renterName || "";
     const qty = window.STATE.qty || 1;
     const dep = window.STATE.draft ? Math.min((window.STATE.draft.deposit || 0) * qty, 250) : 0;
-    const depositNote = dep ? `
-      <div class="mt-md rounded-md bg-surface-container p-sm flex gap-2 items-start">
-        <span class="material-symbols-outlined text-[18px] text-primary mt-0.5">lock</span>
-        <p class="text-label-sm text-on-surface-variant">We charge the rental fee now and place a <strong>refundable hold of ${fmt.money(dep)}</strong> (max $250) on your card for damage or theft. The hold is released when you return the gear in good condition.</p>
-      </div>` : "";
+    const okBtn = accepted
+      ? "bg-secondary hover:bg-secondary-container"
+      : "bg-secondary/40 cursor-not-allowed";
     return `
     <div class="fixed inset-0 z-[55] flex items-end sm:items-center justify-center">
       <div data-action="cancel-modal" class="modal-backdrop absolute inset-0 bg-primary/40"></div>
-      <div class="modal-sheet relative w-full sm:max-w-md bg-surface-container-lowest rounded-t-2xl sm:rounded-2xl shadow-lift overflow-hidden">
-        <div class="p-md border-b border-surface-container">
-          <h3 class="font-heading text-headline-md text-on-surface">Safety Disclaimer & Liability</h3>
+      <div class="modal-sheet relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto bg-surface-container-lowest rounded-t-2xl sm:rounded-2xl shadow-lift">
+        <div class="sticky top-0 bg-surface-container-lowest p-md border-b border-surface-container">
+          <h3 class="font-heading text-headline-sm text-on-surface">Rental Agreement</h3>
         </div>
-        <div class="p-md">
-          <p class="text-body-md text-on-surface-variant">Please review and accept the following terms before proceeding with your rental.</p>
-          <label class="mt-md flex gap-sm items-start cursor-pointer">
-            <input type="checkbox" data-action="accept-safety" ${accepted ? "checked" : ""}
-              class="tick mt-1 w-5 h-5 rounded border-outline-variant text-secondary focus:ring-secondary shrink-0" />
-            <span class="text-body-md text-on-surface">I acknowledge that this equipment is for wilderness use and carries inherent risks. I am responsible for the replacement cost of any lost or damaged items.</span>
+        <div class="p-md space-y-md">
+          <!-- legal name -->
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant">Full legal name (must match your photo ID &amp; payment card)</span>
+            <input id="renter-name" type="text" value="${String(name).replace(/"/g, "&quot;")}" placeholder="e.g. Brian Martinez"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
           </label>
-          ${depositNote}
+
+          <!-- terms -->
+          <div class="rounded-md bg-surface-container p-sm text-label-sm text-on-surface-variant space-y-2">
+            <p class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-primary shrink-0">badge</span>
+              <span>I will present a <strong>valid government photo ID</strong> at pickup matching the name above, and the payment card must be in the <strong>same name</strong>.</span></p>
+            <p class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-primary shrink-0">payments</span>
+              <span>I am responsible for the <strong>full replacement cost</strong> of any lost, stolen, or damaged gear. Gear not returned may be reported stolen and the card charged up to its replacement value.</span></p>
+            ${dep ? `<p class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-primary shrink-0">lock</span>
+              <span>The rental fee is charged now and a <strong>refundable hold of ${fmt.money(dep)}</strong> (max $250) is placed on my card, released when the gear is returned in good condition.</span></p>` : ""}
+            <p class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-primary shrink-0">hiking</span>
+              <span>This equipment is for backcountry use and carries inherent risks, which I accept.</span></p>
+          </div>
+
+          <label class="flex gap-sm items-start cursor-pointer">
+            <input type="checkbox" data-action="accept-safety" ${accepted ? "checked" : ""}
+              class="tick mt-0.5 w-5 h-5 rounded border-outline-variant text-secondary focus:ring-secondary shrink-0" />
+            <span class="text-body-md text-on-surface">I have read and agree to the rental terms above.</span>
+          </label>
         </div>
-        <div class="p-md bg-surface-container-low flex flex-col gap-2">
-          <button data-action="proceed-checkout" ${accepted ? "" : "disabled"}
-            class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${accepted ? "bg-secondary hover:bg-secondary-container" : "bg-secondary/40 cursor-not-allowed"}">
-            Proceed to Checkout
+        <div class="sticky bottom-0 bg-surface-container-low p-md flex flex-col gap-2">
+          <button id="proceed-btn" data-action="proceed-checkout" ${accepted ? "" : "disabled"}
+            class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${okBtn}">
+            Agree &amp; Continue to Payment
           </button>
           <button data-action="cancel-modal" class="w-full py-2 text-label-md text-on-surface-variant press">Cancel</button>
         </div>
@@ -574,6 +590,11 @@ window.VIEWS = (function () {
           <div class="flex justify-between py-2.5"><span class="text-on-surface-variant">Pick-up location</span><span class="font-semibold">${D.depot}</span></div>
           <div class="flex justify-between py-2.5"><span class="text-on-surface-variant">Total paid</span><span class="font-semibold text-secondary">${fmt.money(b.total)}</span></div>
           ${b.hold ? `<div class="flex justify-between py-2.5"><span class="text-on-surface-variant">Refundable card hold</span><span class="font-semibold">${fmt.money(b.hold)} <span class="text-outline font-normal text-sm">· released on return</span></span></div>` : ""}
+        </div>
+
+        <div class="mt-md rounded-xl bg-secondary-fixed border border-secondary/30 p-md flex gap-2 items-start text-left">
+          <span class="material-symbols-outlined text-[20px] text-secondary mt-0.5">badge</span>
+          <p class="text-label-sm text-on-secondary-fixed">Bring a <strong>government photo ID</strong>${b.renterName ? ` matching <strong>${b.renterName}</strong>` : ""} to pickup. Your payment card must be in the same name.</p>
         </div>
 
         <div class="mt-md rounded-xl overflow-hidden h-44 shadow-card relative">${ART.topoMap()}
