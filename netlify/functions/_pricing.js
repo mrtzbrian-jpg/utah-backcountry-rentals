@@ -54,12 +54,26 @@ async function productRow(itemId) {
   return data;
 }
 
+// Sum a field ("price" or "deposit") over custom-bundle component ids, reading
+// each component's value from the products table (catalog is the source of truth).
+async function sumComponents(field, components, packFallback) {
+  const counts = {};
+  (components || []).forEach((id) => { counts[id] = (counts[id] || 0) + 1; });
+  let dollars = 0;
+  for (const id of Object.keys(counts)) {
+    const row = await productRow(id);
+    const val = row ? Number(row[field]) || 0 : (packFallback[id] || 0);
+    dollars += val * counts[id];
+  }
+  return dollars;
+}
+
 /** Authoritative rental charge in cents (price × quantity). */
 async function quoteCents({ itemId, qty = 1, components = [], addons = [] }) {
   const q = Math.max(1, parseInt(qty, 10) || 1);
   let dollars = 0;
   if (itemId === "custom") {
-    (components || []).forEach((id) => { dollars += PACK_PRICES[id] || 0; });
+    dollars = await sumComponents("price", components, PACK_PRICES);
     (addons || []).forEach((id) => { dollars += ADDONS[id] || 0; });
   } else {
     const row = await productRow(itemId);
@@ -68,12 +82,12 @@ async function quoteCents({ itemId, qty = 1, components = [], addons = [] }) {
   return Math.round(dollars * q * 100);
 }
 
-/** Refundable deposit in cents to collect at pickup (deposit × quantity). */
+/** Refundable deposit in cents (deposit × quantity). */
 async function depositCents({ itemId, qty = 1, components = [] }) {
   const q = Math.max(1, parseInt(qty, 10) || 1);
   let dollars = 0;
   if (itemId === "custom") {
-    (components || []).forEach((id) => { dollars += PACK_DEPOSITS[id] || 0; });
+    dollars = await sumComponents("deposit", components, PACK_DEPOSITS);
   } else {
     const row = await productRow(itemId);
     dollars = row ? Number(row.deposit) || 0 : (FALLBACK_DEPOSITS[itemId] || 0);

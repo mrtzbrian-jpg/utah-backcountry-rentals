@@ -43,7 +43,8 @@
     favs: new Set(store.load("favs", [])),
     pack: new Map(),
     packAddons: new Set(),
-    packCat: "All Items",
+    packBase: null,        // selected backpack id for a custom bundle
+    packCat: "All",
     bookingTab: "Upcoming",
     safetyAccepted: false,
     adminAuthed: sessionStorage.getItem("ubr:admin") === "1",
@@ -227,6 +228,9 @@
         else if (STATE.availItem !== id) loadAvailability(id);
       }
       html = html || window.VIEWS.gear();
+    } else if (parts[0] === "product") {
+      const item = window.CATALOG.get(parts[1]);
+      html = item ? window.VIEWS.productDetail(parts[1]) : window.VIEWS.notFound();
     } else if (parts[0] === "builder") {
       html = window.VIEWS.builder();
     } else if (parts[0] === "bookings") {
@@ -271,6 +275,8 @@
     category: (el) => { STATE.category = el.dataset.cat; render(); },
 
     "scroll-feed": () => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); },
+
+    view: (el) => go("#/product/" + el.dataset.id),
 
     fav: (el) => {
       const id = el.dataset.id;
@@ -357,6 +363,7 @@
 
     /* pack builder */
     "pack-cat": (el) => { STATE.packCat = el.dataset.cat; render(); },
+    "pack-base": (el) => { STATE.packBase = el.dataset.id; render(); },
     "pack-add": (el) => { const id = el.dataset.id; STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1); render(); },
     "pack-remove": (el) => {
       const id = el.dataset.id; const n = (STATE.pack.get(id) || 0) - 1;
@@ -382,35 +389,35 @@
     },
 
     "continue-pack": () => {
-      const items = [];
-      const components = [];           // flat id list (repeated per qty) for server-side pricing
+      // Build a custom bundle from the SAME catalog the storefront uses, so
+      // every component matches its storefront price/image/description.
+      const all = window.CATALOG.gear();
+      const base = all.find(g => g.id === STATE.packBase && g.category === "Backpacks")
+        || all.find(g => g.category === "Backpacks");
+      if (!base) { toast("Add a backpack to the catalog first", "error"); return; }
+
+      const items = [], components = [];   // components = flat id list for server-side pricing
       let price = 0, weight = 0, deposit = 0;
-      // Every bundle is built on the base backpack — always included first.
-      const baseId = window.BASE_PACK_ID;
-      const base = D.packLibrary.find(x => x.id === baseId);
-      if (base) {
-        price += base.price; weight += base.weight; deposit += (base.deposit || 0);
-        items.push(base.name);
-        components.push(baseId);
-      }
+      const wt = (g) => Number(g && g.weight) || 0;
+
+      // Base backpack is always included first.
+      price += base.price || 0; weight += wt(base); deposit += base.deposit || 0;
+      items.push(base.name); components.push(base.id);
+
       STATE.pack.forEach((count, id) => {
-        if (id === baseId) return;     // base already counted
-        const g = D.packLibrary.find(x => x.id === id);
+        if (id === base.id) return;        // base already counted
+        const g = window.CATALOG.get(id);
         if (!g) return;
-        price += g.price * count; weight += g.weight * count; deposit += (g.deposit || 0) * count;
+        price += (g.price || 0) * count; weight += wt(g) * count; deposit += (g.deposit || 0) * count;
         items.push(count > 1 ? `${g.name} ×${count}` : g.name);
         for (let i = 0; i < count; i++) components.push(id);
       });
-      const addons = [...STATE.packAddons];
-      addons.forEach(id => {
-        const a = D.addons.find(x => x.id === id);
-        if (a) { price += a.price; items.push(a.name); }
-      });
-      if (!items.length) return;
+
       STATE.draft = {
-        id: "custom", name: "Your Custom Pack", icon: "backpack", tint: "#1b3022",
-        price, unit: "rental", deposit, tagline: `${weight.toFixed(1)} lbs · ${items.length} items`,
-        includes: items, components, addons
+        id: "custom", name: "Your Custom Bundle", icon: base.icon || "backpack", tint: base.tint || "#1b3022",
+        price, unit: "rental", deposit,
+        tagline: `${items.length} item${items.length !== 1 ? "s" : ""}${weight ? ` · ${weight.toFixed(1)} lbs` : ""}`,
+        includes: items, components
       };
       STATE.qty = 1;
       STATE.dates = { start: null, end: null };

@@ -115,7 +115,7 @@ window.VIEWS = (function () {
     const fav = window.STATE.favs.has(item.id);
     return `
     <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden reveal" style="animation-delay:${i * 70}ms">
-      <div class="relative h-48 overflow-hidden bg-surface-container flex items-center justify-center">
+      <div data-action="view" data-id="${item.id}" class="relative h-48 overflow-hidden bg-surface-container flex items-center justify-center cursor-pointer">
         <img src="${imageFor(item, 800)}" alt="${item.name}" loading="lazy"
           class="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500"
           onerror="imgFallback(this)" />
@@ -128,9 +128,9 @@ window.VIEWS = (function () {
         </button>
       </div>
       <div class="p-4 flex flex-col gap-3">
-        <div>
+        <div data-action="view" data-id="${item.id}" class="cursor-pointer">
           <h3 class="font-heading text-headline-sm text-forest-deep leading-tight">${item.name}</h3>
-          <p class="text-body-md text-earth-brown mt-1 line-clamp-2">${item.tagline}</p>
+          <p class="text-body-md text-earth-brown mt-1 line-clamp-2">${item.tagline || item.desc || ""}</p>
         </div>
         <div class="flex items-end justify-between pt-1">
           <div>
@@ -234,6 +234,66 @@ window.VIEWS = (function () {
         </div>
       </main>`;
     return page(inner, { active: "#/" });
+  }
+
+  /* ---------- PRODUCT DETAIL ---------- */
+
+  function productDetail(id) {
+    const item = window.CATALOG.get(id);
+    if (!item) return notFound();
+    const fav = window.STATE.favs.has(item.id);
+    const hold = Math.min(item.deposit || 0, 250);
+    const includes = (item.includes || []).map(x =>
+      `<li class="flex items-start gap-2 text-body-md text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-canyon-clay mt-0.5">check_circle</span>${x}</li>`).join("");
+
+    const inner = `
+      ${topBar({ title: item.name, back: true })}
+      <main class="flex-grow max-w-container-max mx-auto w-full pb-[120px]">
+        <!-- big image -->
+        <section class="relative h-72 sm:h-96 overflow-hidden bg-surface-container flex items-center justify-center">
+          <img src="${imageFor(item, 1000)}" alt="${item.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover" />
+          <span class="gear-fallback-icon material-symbols-outlined opacity-0" style="font-size:120px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+          ${item.badge ? `<span class="absolute top-4 left-4 bg-forest-deep text-paper-white text-[11px] font-bold tracking-wide px-3 py-1 rounded-full">${item.badge}</span>` : ""}
+          <button data-action="fav" data-id="${item.id}" class="absolute top-4 right-4 bg-paper-white/90 rounded-full p-2 press">
+            <span class="material-symbols-outlined text-[22px] ${fav ? "ms-fill text-canyon-clay" : "text-outline"}">favorite</span>
+          </button>
+        </section>
+
+        <div class="px-4 sm:px-6 mt-5">
+          <span class="inline-block text-[11px] font-bold tracking-widest uppercase text-canyon-clay">${item.category || "Gear"}</span>
+          <h1 class="font-heading text-headline-lg text-forest-deep mt-1 leading-tight">${item.name}</h1>
+          ${item.tagline ? `<p class="text-body-lg text-earth-brown mt-1">${item.tagline}</p>` : ""}
+
+          <div class="mt-4 flex items-baseline gap-2">
+            <span class="font-heading text-headline-md text-forest-deep">${fmt.money(item.price)}</span>
+            <span class="text-[12px] font-semibold tracking-wide text-outline uppercase">rental</span>
+          </div>
+
+          ${item.desc ? `<p class="text-body-md text-on-surface-variant mt-4 leading-relaxed">${item.desc}</p>` : ""}
+
+          ${includes ? `<div class="mt-6"><h2 class="text-[12px] font-bold tracking-widest uppercase text-earth-brown mb-2">What's included</h2><ul class="grid gap-2">${includes}</ul></div>` : ""}
+
+          ${hold ? `<div class="mt-6 rounded-xl bg-granite-wash border border-outline-variant p-4 flex gap-3 items-start">
+            <span class="material-symbols-outlined text-[20px] text-forest-deep mt-0.5">lock</span>
+            <p class="text-[13px] text-earth-brown leading-relaxed">A refundable <strong class="text-forest-deep">${fmt.money(hold)}</strong> hold (max $250) is placed on your card for damage or theft and released when you return the gear. Only the rental fee is charged.</p>
+          </div>` : ""}
+        </div>
+      </main>
+
+      <!-- sticky reserve bar -->
+      <div class="fixed bottom-0 inset-x-0 z-40 bg-paper-white border-t-2 border-granite-wash safe-bottom">
+        <div class="max-w-container-max mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
+          <div class="min-w-0">
+            <p class="text-[11px] text-outline uppercase tracking-wider font-semibold">From</p>
+            <p class="font-heading text-headline-sm text-forest-deep leading-none">${fmt.money(item.price)}</p>
+          </div>
+          <button data-action="book" data-id="${item.id}"
+            class="flex-1 bg-canyon-clay text-on-secondary rounded-lg py-3.5 text-[14px] font-bold tracking-wide inner-shadow-stamped press hover:brightness-105">
+            Book Dates
+          </button>
+        </div>
+      </div>`;
+    return `<div class="view-enter min-h-screen flex flex-col">${inner}</div>`;
   }
 
   /* ---------- GEAR DETAIL + CALENDAR (book dates) ---------- */
@@ -390,113 +450,102 @@ window.VIEWS = (function () {
   /* ---------- PACK BUILDER ---------- */
 
   function builder() {
-    const cat = window.STATE.packCat;
-    // Every bundle is built on a base backpack that's always included.
-    const BASE_ID = window.BASE_PACK_ID;
-    const base = D.packLibrary.find(x => x.id === BASE_ID) || { name: "Backpack", price: 0, weight: 0, deposit: 0 };
-    const lib = (cat === "All Items" ? D.packLibrary : D.packLibrary.filter(x => x.cat === cat)).filter(x => x.id !== BASE_ID);
-    const chosen = window.STATE.pack;        // Map id->count (never contains the base pack)
-    const totalWeight = base.weight + D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.weight, 0);
-    const basePrice = base.price + D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.price, 0)
-      + [...window.STATE.packAddons].reduce((s, id) => s + (D.addons.find(a => a.id === id)?.price || 0), 0);
-    const depositTotal = base.deposit + D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * (x.deposit || 0), 0);
+    const all = window.CATALOG.gear();
+    const backpacks = all.filter(g => g.category === "Backpacks");
+    const base = backpacks.find(b => b.id === window.STATE.packBase) || backpacks[0] || null;
+    const addable = all.filter(g => g.category !== "Backpacks" && g.category !== "Bundles");
 
-    const pills = D.packCats.map(c => {
+    const cats = ["All", ...Array.from(new Set(addable.map(g => g.category).filter(Boolean)))];
+    const cat = (window.STATE.packCat && cats.includes(window.STATE.packCat)) ? window.STATE.packCat : "All";
+    const lib = cat === "All" ? addable : addable.filter(g => g.category === cat);
+
+    const chosen = window.STATE.pack; // Map id->count (non-backpack catalog items)
+    const w = (x) => Number(x && x.weight) || 0;
+    let price = base ? (base.price || 0) : 0;
+    let deposit = base ? (base.deposit || 0) : 0;
+    let weight = base ? w(base) : 0;
+    chosen.forEach((count, id) => {
+      const g = window.CATALOG.get(id);
+      if (!g) return;
+      price += (g.price || 0) * count; deposit += (g.deposit || 0) * count; weight += w(g) * count;
+    });
+    const hold = Math.min(deposit, 250);
+    const totalItems = (base ? 1 : 0) + [...chosen.values()].reduce((s, n) => s + n, 0);
+
+    const pills = cats.map(c => {
       const on = c === cat;
-      return `<button data-action="pack-cat" data-cat="${c}"
-        class="shrink-0 px-md py-2 rounded-full text-label-md whitespace-nowrap press ${on ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface"}">${c}</button>`;
+      return `<button data-action="pack-cat" data-cat="${c}" class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press ${on ? "bg-forest-deep text-paper-white inner-shadow-stamped" : "bg-paper-white border border-outline-variant text-forest-deep hover:bg-granite-wash"}">${c}</button>`;
+    }).join("");
+
+    const backpackCards = backpacks.map(b => {
+      const on = base && base.id === b.id;
+      return `<button data-action="pack-base" data-id="${b.id}" class="shrink-0 w-40 text-left bg-paper-white rounded-xl overflow-hidden border-2 ${on ? "border-canyon-clay" : "border-outline-variant"} press">
+        <div class="relative h-24 bg-surface-container flex items-center justify-center">
+          <img src="${imageFor(b, 400)}" alt="${b.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover"/>
+          <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[40px]" style="color:${b.tint};font-variation-settings:'FILL' 1;">${b.icon}</span>
+          ${on ? `<span class="absolute top-1.5 right-1.5 bg-canyon-clay text-paper-white rounded-full w-6 h-6 flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">check</span></span>` : ""}
+        </div>
+        <div class="p-2">
+          <p class="text-[13px] font-bold text-forest-deep leading-tight line-clamp-1">${b.name}</p>
+          <p class="text-[12px] text-canyon-clay font-bold mt-0.5">${fmt.money(b.price)}</p>
+        </div>
+      </button>`;
     }).join("");
 
     const cards = lib.map(x => {
       const count = chosen.get(x.id) || 0;
-      const tips = x.tips ? `
-        <div class="mt-2 border-l-2 border-secondary pl-2 text-label-sm text-on-surface-variant">
-          <p class="font-semibold text-secondary">Pro-tips</p>
-          <ul class="list-disc list-inside">${x.tips.map(t => `<li>${t}</li>`).join("")}</ul>
-        </div>` : "";
-      return `
-      <div class="bg-surface-container-lowest rounded-xl shadow-card p-base flex flex-col ${count ? "ring-2 ring-secondary" : ""}">
-        <div class="relative h-24 gear-tile rounded-md flex items-center justify-center mb-2 overflow-hidden">
-          ${mediaLayer(x, 44)}
-          ${count ? `<span class="absolute top-1 right-1 bg-secondary text-on-secondary text-label-sm font-bold w-6 h-6 rounded-full flex items-center justify-center z-10">${count}</span>` : ""}
+      return `<div class="bg-paper-white rounded-xl border border-outline-variant card-elevation overflow-hidden flex flex-col ${count ? "ring-2 ring-canyon-clay" : ""}">
+        <div class="relative h-24 bg-surface-container flex items-center justify-center">
+          <img src="${imageFor(x, 400)}" alt="${x.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover"/>
+          <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[40px]" style="color:${x.tint};font-variation-settings:'FILL' 1;">${x.icon}</span>
+          ${count ? `<span class="absolute top-1.5 right-1.5 bg-canyon-clay text-paper-white text-[12px] font-bold w-6 h-6 rounded-full flex items-center justify-center">${count}</span>` : ""}
         </div>
-        <p class="text-label-md text-on-surface leading-tight">${x.name}</p>
-        ${x.spec ? `<p class="text-label-sm text-outline mt-0.5 leading-tight">${x.spec}</p>` : ""}
-        ${tips}
-        <div class="mt-2 flex items-center justify-between text-label-sm">
-          <span class="text-outline">${x.weight} lbs</span>
-          <span class="text-secondary font-bold">${fmt.money(x.price)}</span>
-        </div>
-        <div class="mt-2 flex items-center justify-between">
-          <button data-action="pack-remove" data-id="${x.id}" class="w-9 h-9 rounded-full bg-surface-container press flex items-center justify-center ${count ? "" : "opacity-30 pointer-events-none"}"><span class="material-symbols-outlined text-[20px]">remove</span></button>
-          <span class="text-label-md w-6 text-center">${count}</span>
-          <button data-action="pack-add" data-id="${x.id}" class="w-9 h-9 rounded-full bg-primary text-on-primary press flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">add</span></button>
+        <div class="p-3 flex flex-col flex-1">
+          <p class="text-[13px] font-bold text-forest-deep leading-tight">${x.name}</p>
+          <p class="text-[12px] text-canyon-clay font-bold mt-0.5">${fmt.money(x.price)}</p>
+          <div class="mt-auto pt-2 flex items-center justify-between">
+            <button data-action="pack-remove" data-id="${x.id}" class="w-8 h-8 rounded-full bg-surface-container press flex items-center justify-center ${count ? "" : "opacity-30 pointer-events-none"}"><span class="material-symbols-outlined text-[18px]">remove</span></button>
+            <span class="text-[13px] font-bold w-6 text-center">${count}</span>
+            <button data-action="pack-add" data-id="${x.id}" class="w-8 h-8 rounded-full bg-forest-deep text-on-primary press flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">add</span></button>
+          </div>
         </div>
       </div>`;
     }).join("");
 
-    const addonRows = D.addons.map(a => {
-      const on = window.STATE.packAddons.has(a.id);
-      return `<label class="flex items-center gap-sm py-2 cursor-pointer">
-        <input type="checkbox" data-action="pack-addon" data-id="${a.id}" ${on ? "checked" : ""} class="tick w-5 h-5 rounded border-outline-variant text-secondary focus:ring-secondary"/>
-        <span class="flex-1 text-body-md">${a.name}</span>
-        <span class="text-label-md text-secondary">+${fmt.money(a.price)}</span>
-      </label>`;
-    }).join("");
-
-    const totalItems = 1 /* base pack */ + [...chosen.values()].reduce((s, n) => s + n, 0) + window.STATE.packAddons.size;
+    const noBackpack = backpacks.length === 0;
 
     const inner = `
-      ${topBar({ title: "Build Your Pack", back: true, trailing: `<button data-action="pack-reset" class="text-label-md text-on-surface-variant press px-2">Reset</button>` })}
-      <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[180px]">
-        <!-- pack silhouette -->
-        <section class="mt-md flex flex-col items-center text-center">
-          <div class="w-40 h-40 rounded-xl bg-surface-container-low flex items-center justify-center relative overflow-hidden">
-            <span class="material-symbols-outlined text-[110px] text-outline-variant" style="font-variation-settings:'FILL' 1;">backpack</span>
-            ${totalItems ? `<span class="absolute bottom-2 bg-primary text-on-primary text-label-sm px-3 py-1 rounded-full">${totalItems} item${totalItems > 1 ? "s" : ""} packed</span>` : ""}
-          </div>
-          <p class="font-heading text-headline-sm mt-sm">${base.name}</p>
-          <p class="text-label-sm text-outline">Recommended for 3–5 day treks</p>
-          <span class="mt-2 inline-flex items-center gap-1 bg-primary-fixed text-on-primary-fixed text-[11px] font-bold tracking-wide px-2.5 py-1 rounded-full">
-            <span class="material-symbols-outlined text-[14px]">check_circle</span>Included in every bundle
-          </span>
+      ${topBar({ title: "Build a Bundle", back: true, trailing: `<button data-action="pack-reset" class="text-[13px] text-earth-brown press px-2">Reset</button>` })}
+      <main class="flex-grow px-4 sm:px-6 max-w-container-max mx-auto w-full pb-[190px]">
+        <section class="mt-5">
+          <h2 class="font-heading text-headline-sm text-forest-deep">1 · Choose your backpack</h2>
+          <p class="text-[13px] text-earth-brown mt-0.5">Every bundle includes a pack.</p>
+          ${noBackpack
+            ? `<p class="mt-3 text-body-md text-earth-brown">No backpacks in the catalog yet — add one in Manage Gear.</p>`
+            : `<div class="flex gap-3 overflow-x-auto no-scrollbar mt-3 -mx-4 sm:-mx-6 px-4 sm:px-6">${backpackCards}</div>`}
         </section>
 
-        <!-- start from a kit -->
-        <section class="mt-md">
-          <h2 class="font-heading text-headline-md mb-sm">Start with a kit</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md">${D.kits.map(kitCard).join("")}</div>
-        </section>
-
-        <!-- library -->
-        <section class="mt-md">
-          <div class="flex items-center justify-between">
-            <h2 class="font-heading text-headline-md">Gear Library</h2>
-          </div>
-          <div class="flex gap-sm overflow-x-auto no-scrollbar py-sm -mx-md px-md">${pills}</div>
-          <div class="grid grid-cols-2 gap-md mt-1">${cards}</div>
+        <section class="mt-6">
+          <h2 class="font-heading text-headline-sm text-forest-deep">2 · Add gear</h2>
+          <div class="flex gap-2 overflow-x-auto no-scrollbar mt-3 -mx-4 sm:-mx-6 px-4 sm:px-6">${pills}</div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">${cards}</div>
         </section>
       </main>
 
-      <!-- sticky summary -->
-      <div class="fixed bottom-0 inset-x-0 z-40 bg-surface-container-lowest shadow-float rounded-t-xl safe-bottom">
-        <div class="max-w-container-max mx-auto px-md pt-md">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-label-sm text-outline uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-secondary">scale</span>${totalWeight.toFixed(1)} lbs</p>
-              <p class="text-label-sm text-outline flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">lock</span>${fmt.money(depositTotal)} deposit at pickup</p>
+      <div class="fixed bottom-0 inset-x-0 z-40 bg-paper-white border-t-2 border-granite-wash safe-bottom">
+        <div class="max-w-container-max mx-auto px-4 sm:px-6 pt-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-[12px] text-earth-brown">
+              <p class="font-bold text-forest-deep">${totalItems} item${totalItems !== 1 ? "s" : ""} in your bundle</p>
+              ${weight ? `<p>${weight.toFixed(1)} lbs${hold ? ` · ${fmt.money(hold)} hold` : ""}</p>` : (hold ? `<p>${fmt.money(hold)} refundable hold</p>` : "")}
             </div>
             <div class="text-right">
-              <p class="text-label-sm text-outline uppercase tracking-wider">Rental total</p>
-              <p class="font-heading text-headline-md text-secondary">${fmt.money(basePrice)}</p>
+              <p class="text-[11px] text-outline uppercase tracking-wider font-semibold">Rental total</p>
+              <p class="font-heading text-headline-md text-forest-deep leading-none">${fmt.money(price)}</p>
             </div>
           </div>
-          <div class="mt-2 border-t border-surface-container pt-2">
-            <p class="text-label-sm text-outline uppercase tracking-wider mb-1">Essential add-ons</p>
-            ${addonRows}
-          </div>
-          <button data-action="continue-pack" ${totalItems ? "" : "disabled"}
-            class="w-full mt-2 rounded-full py-3.5 text-label-md text-on-secondary press flex items-center justify-center gap-2 transition-colors ${totalItems ? "bg-secondary hover:bg-secondary-container" : "bg-secondary/40 cursor-not-allowed"}">
+          <button data-action="continue-pack" ${base ? "" : "disabled"}
+            class="w-full rounded-lg py-3.5 text-[14px] font-bold tracking-wide text-on-secondary press inner-shadow-stamped flex items-center justify-center gap-2 ${base ? "bg-canyon-clay hover:brightness-105" : "bg-canyon-clay/40 cursor-not-allowed"}">
             Continue to Dates <span class="material-symbols-outlined text-[20px]">calendar_month</span>
           </button>
         </div>
@@ -953,5 +1002,5 @@ window.VIEWS = (function () {
       </main>`, { active: "#/" });
   }
 
-  return { home, gear, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, admin, adminGate, safetyModal, notFound };
+  return { home, productDetail, gear, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, admin, adminGate, safetyModal, notFound };
 })();
