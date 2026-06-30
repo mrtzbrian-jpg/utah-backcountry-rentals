@@ -1,8 +1,14 @@
-/* Captures an approved PayPal order (the rental fee), records the booking in
- * Supabase, and returns the order details for the confirmation screen. Safe to
- * call more than once: if the order was already captured we just read it back. */
-const { captureOrder, getOrder } = require("./_paypal");
+/* Finalizes an approved AUTHORIZE-intent order:
+ *   1. authorize the order  → places the hold on the card (rental + deposit),
+ *   2. capture the rental    → charges the customer, leaving the deposit held,
+ *   3. record the booking in Supabase + email the customer and the owner.
+ *
+ * The remaining held amount (the deposit, ≤ $250) stays authorized so the owner
+ * can release it on safe return (void) or capture it if gear is damaged/stolen.
+ * Idempotent: a page refresh re-reads the confirmed row instead of charging again. */
+const { authorizeOrder, captureAuthorization, getOrder } = require("./_paypal");
 const { getSupabase } = require("./_supabase");
+const { quoteCents, holdCents } = require("./_pricing");
 const { notifyBooking } = require("./_email");
 
 exports.handler = async (event) => {
@@ -10,29 +16,61 @@ exports.handler = async (event) => {
     (() => { try { return JSON.parse(event.body || "{}").orderId; } catch { return null; } })();
   if (!orderId) return json(400, { error: "Missing order id." });
 
-  let order;
-  let freshCapture = true;
-  try {
-    order = await captureOrder(orderId);
-  } catch (e) {
-    // Already captured (e.g. a page refresh) — fall back to reading the order.
-    freshCapture = false;
-    try { order = await getOrder(orderId); } catch (_) { return json(502, { error: e.message }); }
+  const supabase = getSupabase();
+
+  // Existing booking row (written as 'pending' by create-checkout).
+  let row = null;
+  if (supabase) {
+    const { data } = await supabase.from("bookings").select("*").eq("paypal_order", orderId).maybeSingle();
+    row = data || null;
+    if (row && row.status === "confirmed") return json(200, fromRow(row)); // already done
   }
 
-  const booking = normalize(order);
-  if (!booking) return json(502, { error: "Could not read order details." });
+  // Read the order to learn its current state + the payer's details.
+  let order;
+  try { order = await getOrder(orderId); } catch (e) { return json(502, { error: e.message }); }
+  const meta = parseCustom(order);
+  const rentalCents = row ? row.amount_cents : await quoteCents({ itemId: meta.itemId, qty: meta.qty });
+  const holdC = row ? (row.hold_cents || 0) : await holdCents({ itemId: meta.itemId, qty: meta.qty });
 
-  const supabase = getSupabase();
-  let alreadyRecorded = false;
+  // 1) Authorize (place the hold) — unless the order is already authorized.
+  let authId = findAuthId(order);
+  if (!authId) {
+    try {
+      const authed = await authorizeOrder(orderId);
+      authId = findAuthId(authed);
+      order = authed;
+    } catch (e) { return json(502, { error: e.message || "Could not authorize payment." }); }
+  }
+  if (!authId) return json(502, { error: "No authorization returned by PayPal." });
+
+  // 2) Capture the rental fee, leaving the deposit held (final_capture only if no hold).
+  if (rentalCents >= 50) {
+    try { await captureAuthorization(authId, rentalCents, holdC <= 0); }
+    catch (e) { return json(502, { error: e.message || "Could not capture the rental fee." }); }
+  }
+
+  const payer = order.payer || {};
+  const nm = payer.name || {};
+  const booking = {
+    orderId,
+    itemId: meta.itemId,
+    name: row ? row.item_name : meta.name,
+    qty: row ? row.qty : meta.qty,
+    startDate: row ? row.start_date : meta.startDate,
+    endDate: row ? row.end_date : meta.endDate,
+    days: row ? row.days : dayCount(meta.startDate, meta.endDate),
+    amount: rentalCents,
+    hold: holdC,
+    deposit: row ? (row.deposit_cents || 0) : holdC,
+    email: payer.email_address || null,
+    customerName: [nm.given_name, nm.surname].filter(Boolean).join(" ") || null
+  };
+
+  // 3) Persist + notify (once).
   if (supabase) {
-    // Was this order already in the table? (Determines whether to send emails.)
-    const { data: existing } = await supabase
-      .from("bookings").select("paypal_order,emailed").eq("paypal_order", booking.orderId).maybeSingle();
-    alreadyRecorded = !!(existing && existing.emailed);
-
-    const { error } = await supabase.from("bookings").upsert({
-      paypal_order: booking.orderId,
+    await supabase.from("bookings").upsert({
+      paypal_order: orderId,
       item_id: booking.itemId,
       item_name: booking.name,
       qty: booking.qty || 1,
@@ -40,46 +78,49 @@ exports.handler = async (event) => {
       end_date: booking.endDate || null,
       days: booking.days || null,
       amount_cents: booking.amount,
+      hold_cents: booking.hold,
       deposit_cents: booking.deposit,
+      authorization_id: authId,
       customer_email: booking.email,
       customer_name: booking.customerName,
       status: "confirmed"
     }, { onConflict: "paypal_order" });
-    if (error) return json(500, { error: "DB write failed: " + error.message });
   }
 
-  // Send confirmation + owner emails once, on the first successful capture.
-  if (freshCapture && !alreadyRecorded) {
+  if (!(row && row.emailed)) {
     try {
       await notifyBooking(booking);
-      if (supabase) await supabase.from("bookings").update({ emailed: true }).eq("paypal_order", booking.orderId);
-    } catch (_) { /* email failures must never block the confirmation */ }
+      if (supabase) await supabase.from("bookings").update({ emailed: true }).eq("paypal_order", orderId);
+    } catch (_) { /* email failure must never block confirmation */ }
   }
 
   return json(200, booking);
 };
 
-function normalize(order) {
-  if (!order) return null;
-  const pu = (order.purchase_units || [])[0] || {};
-  const cap = ((pu.payments || {}).captures || [])[0] || {};
-  const parts = String(pu.custom_id || "").split("|"); // itemId|qty|start|end|depositCents
-  const amountVal = (cap.amount && cap.amount.value) || (pu.amount && pu.amount.value) || "0";
-  const payer = order.payer || {};
-  const nm = payer.name || {};
-  const start = parts[2] || "", end = parts[3] || "";
+function findAuthId(order) {
+  const pu = ((order || {}).purchase_units || [])[0] || {};
+  const auth = (((pu.payments || {}).authorizations) || [])[0] || {};
+  return auth.id || null;
+}
+
+function parseCustom(order) {
+  const pu = ((order || {}).purchase_units || [])[0] || {};
+  const parts = String(pu.custom_id || "").split("|"); // itemId|qty|start|end
   return {
-    orderId: order.id,
     itemId: parts[0] || "",
     name: String(pu.description || "Gear rental"),
     qty: parts[1] ? parseInt(parts[1], 10) : 1,
-    days: dayCount(start, end),
-    startDate: start,
-    endDate: end,
-    deposit: parts[4] ? parseInt(parts[4], 10) : 0,
-    amount: Math.round(parseFloat(amountVal) * 100),
-    email: payer.email_address || null,
-    customerName: [nm.given_name, nm.surname].filter(Boolean).join(" ") || null
+    startDate: parts[2] || "",
+    endDate: parts[3] || ""
+  };
+}
+
+function fromRow(r) {
+  return {
+    orderId: r.paypal_order, itemId: r.item_id, name: r.item_name, qty: r.qty,
+    startDate: r.start_date, endDate: r.end_date, days: r.days,
+    amount: r.amount_cents, hold: r.hold_cents, deposit: r.deposit_cents,
+    email: r.customer_email, customerName: r.customer_name
   };
 }
 

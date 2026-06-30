@@ -70,8 +70,8 @@ function detailsTable(b, ref) {
     ${b.qty && b.qty > 1 ? row("Quantity", "×" + b.qty) : ""}
     ${row("Dates", rangeLabel(b))}
     ${row("Pickup", DEPOT)}
-    ${row("Paid online", money(b.amount))}
-    ${b.deposit ? row("Refundable deposit (at pickup)", money(b.deposit)) : ""}
+    ${row("Charged now (rental)", money(b.amount))}
+    ${b.hold ? row("Refundable hold on card", money(b.hold)) : ""}
   </table>`;
 }
 
@@ -81,9 +81,9 @@ function customerHtml(b, ref) {
       You're all set${b.customerName ? ", " + b.customerName : ""}! Your gear is reserved. Here are the details:
     </p>
     ${detailsTable(b, ref)}
-    ${b.deposit ? `<p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
-      A refundable <strong>${money(b.deposit)}</strong> security deposit is collected in person at pickup and
-      returned when you bring the gear back in good condition. Only the rental fee was charged online.</p>` : ""}
+    ${b.hold ? `<p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
+      Only the rental fee was charged. A refundable <strong>${money(b.hold)}</strong> hold (max $250) is placed on your
+      card for damage or theft, and released when you return the gear in good condition.</p>` : ""}
     <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
       Pick up at <strong>${DEPOT}</strong>. We'll have everything cleaned and trail-ready. See you out there!</p>`;
   return shell("Reservation confirmed", body, "#AB3500");
@@ -100,7 +100,8 @@ function ownerHtml(b, ref) {
       ${row("Email", b.email || "—")}
     </table>
     <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
-      Remember to collect the <strong>${money(b.deposit)}</strong> refundable deposit at pickup.</p>`;
+      A <strong>${money(b.hold)}</strong> refundable hold is on the customer's card. Release it (void the authorization)
+      when the gear is returned undamaged, or capture it from the PayPal dashboard if there's damage/theft.</p>`;
   return shell("New rental to prepare", body, "#061B0E");
 }
 

@@ -20,12 +20,15 @@ exports.handler = async (event) => {
     orderId: data.paypal_order,
     itemId: data.item_id,
     name: data.item_name,
+    qty: data.qty,
     days: data.days,
     startDate: data.start_date,
     endDate: data.end_date,
     amount: data.amount_cents,
+    hold: data.hold_cents,
     deposit: data.deposit_cents,
-    email: data.customer_email
+    email: data.customer_email,
+    status: data.status
   });
 };
 

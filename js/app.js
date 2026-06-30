@@ -62,6 +62,13 @@
   /* ---------------- image fallback ---------------- */
   // Tries the next candidate extension (png → webp → jpeg); if none load, the
   // icon underneath shows through. Lets the owner drop in any common image type.
+  // Photo failed to load → hide it and reveal the icon tile sitting underneath.
+  window.imgFallback = function (el) {
+    el.style.display = "none";
+    const icon = el.parentElement && el.parentElement.querySelector(".gear-fallback-icon");
+    if (icon) icon.style.opacity = "1";
+  };
+
   window.tryImg = function (el) {
     const exts = (el.dataset.exts || "").split(",").filter(Boolean);
     if (exts.length) {
@@ -94,14 +101,35 @@
       itemId: d.itemId, name: d.name || "Gear rental",
       icon: ref.icon || "backpack", tint: ref.tint || "#1b3022",
       total: Math.round((d.amount || 0) / 100),
+      hold: Math.round((d.hold || 0) / 100),
       deposit: Math.round((d.deposit || 0) / 100), past: false,
       rangeLabel: start ? fmt.range({ start, end }) : "Flexible"
     };
-    if (!STATE.bookings.find(b => b.orderId === d.orderId)) {
-      STATE.bookings.unshift(booking);
-      persist();
-    }
+    const existing = STATE.bookings.find(b => b.orderId === d.orderId);
+    if (existing) Object.assign(existing, booking);   // refresh authoritative fields
+    else STATE.bookings.unshift(booking);
+    persist();
     return booking;
+  }
+
+  // Refresh this device's bookings from Supabase (source of truth) so they
+  // survive returns to the site and stay accurate. Runs once on load.
+  async function hydrateBookings() {
+    const cfg = window.UBR_CONFIG || {};
+    if (!cfg.BACKEND_ENABLED) return;
+    const ids = STATE.bookings.map(b => b.orderId).filter(id => id && !String(id).startsWith("UBR-"));
+    let changed = false;
+    for (const id of ids) {
+      try {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/get-booking?order=" + encodeURIComponent(id));
+        if (!r.ok) continue;
+        const d = await r.json();
+        const before = JSON.stringify(STATE.bookings.find(b => b.orderId === id));
+        storeServerBooking(d);
+        if (JSON.stringify(STATE.bookings.find(b => b.orderId === id)) !== before) changed = true;
+      } catch (_) { /* offline → keep cached copy */ }
+    }
+    if (changed) render();
   }
 
   // Customer returns from PayPal approval → capture the payment, then confirm.
@@ -221,7 +249,8 @@
     } else if (parts[0] === "how") {
       html = window.VIEWS.howItWorks();
     } else if (parts[0] === "profile") {
-      html = window.VIEWS.profile();
+      // Profile removed — bookings + confirmation email are the customer's record.
+      go("#/"); return;
     } else if (parts[0] === "admin") {
       html = STATE.adminAuthed ? window.VIEWS.admin() : window.VIEWS.adminGate();
     } else {
@@ -240,6 +269,8 @@
     back: () => history.length > 1 ? history.back() : go("#/"),
 
     category: (el) => { STATE.category = el.dataset.cat; render(); },
+
+    "scroll-feed": () => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); },
 
     fav: (el) => {
       const id = el.dataset.id;
@@ -344,6 +375,7 @@
       if (!kit) return;
       STATE.pack = new Map();
       kit.items.forEach(id => STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1));
+      STATE.pack.delete(window.BASE_PACK_ID); // base pack is implicit, not a selectable item
       STATE.packCat = "All Items";
       render();
       toast(kit.name + " loaded — customize away", "backpack");
@@ -353,7 +385,16 @@
       const items = [];
       const components = [];           // flat id list (repeated per qty) for server-side pricing
       let price = 0, weight = 0, deposit = 0;
+      // Every bundle is built on the base backpack — always included first.
+      const baseId = window.BASE_PACK_ID;
+      const base = D.packLibrary.find(x => x.id === baseId);
+      if (base) {
+        price += base.price; weight += base.weight; deposit += (base.deposit || 0);
+        items.push(base.name);
+        components.push(baseId);
+      }
       STATE.pack.forEach((count, id) => {
+        if (id === baseId) return;     // base already counted
         const g = D.packLibrary.find(x => x.id === id);
         if (!g) return;
         price += g.price * count; weight += g.weight * count; deposit += (g.deposit || 0) * count;
@@ -591,5 +632,6 @@
     window.CATALOG.loadFromBackend(_cfg.FUNCTIONS_BASE)
       .then(changed => { if (changed) render(); })
       .catch(() => {});
+    hydrateBookings();
   }
 })();

@@ -194,3 +194,6 @@ window.DATA = (function () {
 
   return { categories, gear, packLibrary, packCats, kits, addons, PRICES, DEPOSITS, steps, depot: "Saratoga Springs, UT" };
 })();
+
+// Every custom bundle is built on this base backpack (always included).
+window.BASE_PACK_ID = "osprey-rook-65";

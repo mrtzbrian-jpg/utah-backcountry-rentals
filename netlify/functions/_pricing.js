@@ -81,4 +81,13 @@ async function depositCents({ itemId, qty = 1, components = [] }) {
   return Math.round(dollars * q * 100);
 }
 
-module.exports = { quoteCents, depositCents, productRow, PACK_PRICES, ADDONS };
+// Maximum authorization hold we ever place on a card (business rule: $250).
+const MAX_HOLD_CENTS = 25000;
+
+/** The card-hold amount in cents = the deposit, capped at $250 total. */
+async function holdCents(args) {
+  const dep = await depositCents(args);
+  return Math.min(dep, MAX_HOLD_CENTS);
+}
+
+module.exports = { quoteCents, depositCents, holdCents, productRow, PACK_PRICES, ADDONS, MAX_HOLD_CENTS };

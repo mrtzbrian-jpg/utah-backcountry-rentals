@@ -11,17 +11,21 @@ create table if not exists bookings (
   start_date      date,                 -- pickup date
   end_date        date,
   days            int,
-  amount_cents    int,                  -- rental fee actually paid online
-  deposit_cents   int default 0,        -- refundable deposit to COLLECT AT PICKUP
+  amount_cents    int,                  -- rental fee actually charged online
+  deposit_cents   int default 0,        -- full replacement-value deposit (for the record)
+  hold_cents      int default 0,        -- amount actually held on the card (≤ $250)
+  authorization_id text,                -- PayPal authorization id (void to release / capture if damaged)
   customer_email  text,
   customer_name   text,
   emailed         boolean not null default false, -- confirmation/owner emails sent
-  status          text not null default 'confirmed'
+  status          text not null default 'confirmed' -- 'pending' until payment captured, then 'confirmed'
 );
 
 -- If the bookings table already exists, add the newer columns:
 alter table bookings add column if not exists qty int not null default 1;
 alter table bookings add column if not exists emailed boolean not null default false;
+alter table bookings add column if not exists hold_cents int default 0;
+alter table bookings add column if not exists authorization_id text;
 
 create index if not exists bookings_dates_idx on bookings (start_date, end_date);
 create index if not exists bookings_item_idx on bookings (item_id, status);

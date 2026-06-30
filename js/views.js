@@ -4,6 +4,30 @@ window.VIEWS = (function () {
   const D = window.DATA;
   const ART = window.ART;
 
+  /* ---------- product imagery ----------
+     Stable stock photos keyed by the item's Material icon, so every product
+     shows a real image even before the owner uploads their own. An item's own
+     `img` (uploaded in Manage Gear) always wins; if a photo fails to load we
+     fall back to the icon tile underneath. */
+  const PHOTO_BY_ICON = {
+    backpack:        "photo-1622260614153-03223fb72052",
+    hiking:          "photo-1501555088652-021faa106b9b",
+    satellite_alt:   "photo-1517824806704-9040b037703b",
+    cabin:           "photo-1504280390367-361c6d9f38f4",
+    bedtime:         "photo-1565992441121-4367c2967103",
+    king_bed:        "photo-1565992441121-4367c2967103",
+    lunch_dining:    "photo-1486870591958-9b9d0d1dda99",
+    ac_unit:         "photo-1418985991508-e47386d96a71",
+    water_drop:      "photo-1559825481-12a05cc00344",
+    health_and_safety:"photo-1559825481-12a05cc00344",
+    _default:        "photo-1533873984035-25970ab07461"
+  };
+  function photoUrl(item, w) {
+    const id = PHOTO_BY_ICON[item.icon] || PHOTO_BY_ICON._default;
+    return `https://images.unsplash.com/${id}?auto=format&fit=crop&q=70&w=${w || 800}`;
+  }
+  function imageFor(item, w) { return item.img || photoUrl(item, w); }
+
   /* ---------- shared chrome ---------- */
 
   function topBar({ title, leading = "menu", back = false, location = false, trailing = "" }) {
@@ -38,9 +62,9 @@ window.VIEWS = (function () {
   function bottomNav(active) {
     const items = [
       { route: "#/", icon: "home", label: "Home" },
+      { route: "#/builder", icon: "backpack", label: "Build" },
       { route: "#/bookings", icon: "calendar_today", label: "Bookings" },
-      { route: "#/how", icon: "info", label: "Guide" },
-      { route: "#/profile", icon: "person", label: "Profile" }
+      { route: "#/how", icon: "info", label: "Guide" }
     ];
     return `
     <nav class="fixed bottom-0 inset-x-0 z-50 bg-paper-white border-t-2 border-granite-wash shadow-[0_-2px_10px_rgba(6,27,14,0.08)] safe-bottom">
@@ -89,16 +113,13 @@ window.VIEWS = (function () {
 
   function gearCard(item, i = 0) {
     const fav = window.STATE.favs.has(item.id);
-    const imgMarkup = item.img
-      ? `<img src="${item.img}" alt="${item.name}" loading="lazy"
-           class="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-           onerror="this.style.display='none'" />`
-      : "";
     return `
     <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden reveal" style="animation-delay:${i * 70}ms">
       <div class="relative h-48 overflow-hidden bg-surface-container flex items-center justify-center">
-        ${imgMarkup}
-        <span class="material-symbols-outlined ${item.img ? "opacity-20" : ""}"
+        <img src="${imageFor(item, 800)}" alt="${item.name}" loading="lazy"
+          class="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+          onerror="imgFallback(this)" />
+        <span class="gear-fallback-icon material-symbols-outlined opacity-0"
           style="font-size:80px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
         ${item.badge ? `<span class="absolute top-3 left-3 bg-forest-deep text-paper-white text-[11px] font-bold tracking-wide px-2.5 py-1 rounded-full">${item.badge}</span>` : ""}
         <button data-action="fav" data-id="${item.id}"
@@ -174,15 +195,16 @@ window.VIEWS = (function () {
           <div class="hero-gradient absolute inset-0 pointer-events-none"></div>
           <div class="relative z-10 p-6 sm:p-10">
             <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(26px,5.5vw,44px);line-height:1.15;letter-spacing:-0.02em;font-weight:800;"
-              class="text-white drop-shadow-lg mb-5">Rent Premium Gear.<br/>Skip the Retail Price.</h2>
-            <div class="glass-card p-3 rounded-lg flex items-center gap-3 max-w-md">
-              <div class="flex-1 flex items-center bg-surface-container-lowest rounded px-3 py-2.5 border border-transparent focus-within:border-canyon-clay transition-colors">
-                <span class="material-symbols-outlined text-outline mr-2 text-[20px]">calendar_today</span>
-                <input id="hero-dates" class="w-full bg-transparent border-none focus:ring-0 p-0 text-body-md placeholder-outline" placeholder="Select rental dates…" />
-              </div>
-              <button data-action="nav" data-route="#/bookings"
-                class="shrink-0 bg-canyon-clay text-on-secondary px-4 py-2.5 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
-                Check Availability
+              class="text-white drop-shadow-lg mb-2">Rent Premium Gear.<br/>Skip the Retail Price.</h2>
+            <p class="text-white/85 text-body-md mb-5 max-w-md">Pick your gear or build a custom bundle, choose your trail dates, and reserve online.</p>
+            <div class="flex flex-wrap gap-3">
+              <button data-action="scroll-feed"
+                class="bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
+                Browse Gear
+              </button>
+              <button data-action="nav" data-route="#/builder"
+                class="bg-paper-white text-forest-deep px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide press inner-shadow-stamped">
+                Build a Bundle
               </button>
             </div>
           </div>
@@ -206,7 +228,7 @@ window.VIEWS = (function () {
           </section>
 
           <!-- Feed -->
-          <section class="mt-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <section id="gear-feed" class="mt-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 scroll-mt-20">
             ${feed.map((g, i) => gearCard(g, i)).join("")}
           </section>
         </div>
@@ -266,8 +288,8 @@ window.VIEWS = (function () {
     const item = window.STATE.draft;
     if (!item) return notFound();
     const qty = window.STATE.qty || 1;
-    const total = (item.price || 0) * qty;       // flat price × quantity
-    const hold = (item.deposit || 0) * qty;
+    const total = (item.price || 0) * qty;       // flat price × quantity, charged now
+    const hold = Math.min((item.deposit || 0) * qty, 250); // refundable card hold, capped at $250
     const ready = !!window.STATE.dates.start;     // pickup date chosen
 
     const includes = (item.includes || []).map(x =>
@@ -278,7 +300,10 @@ window.VIEWS = (function () {
       <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[120px]">
         <!-- item summary -->
         <section class="mt-md bg-surface-container-lowest rounded-xl shadow-card p-md flex gap-md items-center">
-          <div class="w-24 h-24 shrink-0">${gearTile(item, { h: "h-24" })}</div>
+          <div class="w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-surface-container relative flex items-center justify-center">
+            <img src="${imageFor(item, 400)}" alt="${item.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover" />
+            <span class="gear-fallback-icon material-symbols-outlined opacity-0" style="font-size:44px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+          </div>
           <div class="min-w-0">
             <h2 class="font-heading text-headline-sm text-on-surface">${item.name}</h2>
             <p class="text-body-md text-on-surface-variant line-clamp-2">${item.tagline || item.desc || ""}</p>
@@ -316,7 +341,7 @@ window.VIEWS = (function () {
           </div>
           ${hold ? `<p class="text-label-sm text-outline -mt-1 mb-sm flex items-center gap-1.5">
             <span class="material-symbols-outlined text-[15px] text-on-surface-variant">lock</span>
-            + ${fmt.money(hold)} refundable deposit, collected at pickup</p>` : ""}
+            + ${fmt.money(hold)} refundable hold on your card, released when you return the gear</p>` : ""}
           <button data-action="confirm-dates" ${ready ? "" : "disabled"}
             class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${ready ? "bg-secondary hover:bg-secondary-container" : "bg-secondary/40 cursor-not-allowed"}">
             Confirm Dates
@@ -328,11 +353,12 @@ window.VIEWS = (function () {
 
   function safetyModal() {
     const accepted = window.STATE.safetyAccepted;
-    const dep = window.STATE.draft && window.STATE.draft.deposit;
+    const qty = window.STATE.qty || 1;
+    const dep = window.STATE.draft ? Math.min((window.STATE.draft.deposit || 0) * qty, 250) : 0;
     const depositNote = dep ? `
       <div class="mt-md rounded-md bg-surface-container p-sm flex gap-2 items-start">
         <span class="material-symbols-outlined text-[18px] text-primary mt-0.5">lock</span>
-        <p class="text-label-sm text-on-surface-variant">A <strong>refundable ${fmt.money(dep)} security deposit</strong> is collected in person at pickup and returned when you bring the gear back in good condition. Today you only pay the rental fee online.</p>
+        <p class="text-label-sm text-on-surface-variant">We charge the rental fee now and place a <strong>refundable hold of ${fmt.money(dep)}</strong> (max $250) on your card for damage or theft. The hold is released when you return the gear in good condition.</p>
       </div>` : "";
     return `
     <div class="fixed inset-0 z-[55] flex items-end sm:items-center justify-center">
@@ -365,12 +391,15 @@ window.VIEWS = (function () {
 
   function builder() {
     const cat = window.STATE.packCat;
-    const lib = cat === "All Items" ? D.packLibrary : D.packLibrary.filter(x => x.cat === cat);
-    const chosen = window.STATE.pack;        // Map id->count
-    const totalWeight = D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.weight, 0);
-    const basePrice = D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.price, 0)
+    // Every bundle is built on a base backpack that's always included.
+    const BASE_ID = window.BASE_PACK_ID;
+    const base = D.packLibrary.find(x => x.id === BASE_ID) || { name: "Backpack", price: 0, weight: 0, deposit: 0 };
+    const lib = (cat === "All Items" ? D.packLibrary : D.packLibrary.filter(x => x.cat === cat)).filter(x => x.id !== BASE_ID);
+    const chosen = window.STATE.pack;        // Map id->count (never contains the base pack)
+    const totalWeight = base.weight + D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.weight, 0);
+    const basePrice = base.price + D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * x.price, 0)
       + [...window.STATE.packAddons].reduce((s, id) => s + (D.addons.find(a => a.id === id)?.price || 0), 0);
-    const depositTotal = D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * (x.deposit || 0), 0);
+    const depositTotal = base.deposit + D.packLibrary.reduce((s, x) => s + (chosen.get(x.id) || 0) * (x.deposit || 0), 0);
 
     const pills = D.packCats.map(c => {
       const on = c === cat;
@@ -415,7 +444,7 @@ window.VIEWS = (function () {
       </label>`;
     }).join("");
 
-    const totalItems = [...chosen.values()].reduce((s, n) => s + n, 0) + window.STATE.packAddons.size;
+    const totalItems = 1 /* base pack */ + [...chosen.values()].reduce((s, n) => s + n, 0) + window.STATE.packAddons.size;
 
     const inner = `
       ${topBar({ title: "Build Your Pack", back: true, trailing: `<button data-action="pack-reset" class="text-label-md text-on-surface-variant press px-2">Reset</button>` })}
@@ -426,8 +455,11 @@ window.VIEWS = (function () {
             <span class="material-symbols-outlined text-[110px] text-outline-variant" style="font-variation-settings:'FILL' 1;">backpack</span>
             ${totalItems ? `<span class="absolute bottom-2 bg-primary text-on-primary text-label-sm px-3 py-1 rounded-full">${totalItems} item${totalItems > 1 ? "s" : ""} packed</span>` : ""}
           </div>
-          <p class="font-heading text-headline-sm mt-sm">Osprey Rook 65</p>
+          <p class="font-heading text-headline-sm mt-sm">${base.name}</p>
           <p class="text-label-sm text-outline">Recommended for 3–5 day treks</p>
+          <span class="mt-2 inline-flex items-center gap-1 bg-primary-fixed text-on-primary-fixed text-[11px] font-bold tracking-wide px-2.5 py-1 rounded-full">
+            <span class="material-symbols-outlined text-[14px]">check_circle</span>Included in every bundle
+          </span>
         </section>
 
         <!-- start from a kit -->
@@ -492,7 +524,7 @@ window.VIEWS = (function () {
           <div class="flex justify-between py-2.5"><span class="text-on-surface-variant">Order ID</span><span class="font-semibold">#${b.ref || b.orderId}</span></div>
           <div class="flex justify-between py-2.5"><span class="text-on-surface-variant">Pick-up location</span><span class="font-semibold">${D.depot}</span></div>
           <div class="flex justify-between py-2.5"><span class="text-on-surface-variant">Total paid</span><span class="font-semibold text-secondary">${fmt.money(b.total)}</span></div>
-          ${b.deposit ? `<div class="flex justify-between py-2.5"><span class="text-on-surface-variant">Refundable deposit</span><span class="font-semibold">${fmt.money(b.deposit)} <span class="text-outline font-normal text-sm">· at pickup</span></span></div>` : ""}
+          ${b.hold ? `<div class="flex justify-between py-2.5"><span class="text-on-surface-variant">Refundable card hold</span><span class="font-semibold">${fmt.money(b.hold)} <span class="text-outline font-normal text-sm">· released on return</span></span></div>` : ""}
         </div>
 
         <div class="mt-md rounded-xl overflow-hidden h-44 shadow-card relative">${ART.topoMap()}
@@ -550,12 +582,14 @@ window.VIEWS = (function () {
       </div>`;
 
     const cards = list.map(b => {
-      const tileContent = `<span class="material-symbols-outlined text-[52px]" style="color:${b.tint};font-variation-settings:'FILL' 1,'wght' 300;">${b.icon}</span>`;
+      const tileContent = `
+        <img src="${imageFor(b, 300)}" alt="${b.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover" />
+        <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[52px]" style="color:${b.tint};font-variation-settings:'FILL' 1,'wght' 300;">${b.icon}</span>`;
       if (b.past) {
         return `
         <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden">
           <div class="flex">
-            <div class="w-28 shrink-0 bg-granite-wash flex items-center justify-center">${tileContent}</div>
+            <div class="w-28 shrink-0 bg-granite-wash flex items-center justify-center relative overflow-hidden">${tileContent}</div>
             <div class="flex-1 p-4">
               <span class="inline-block text-[11px] font-bold tracking-wider bg-granite-wash text-earth-brown px-2 py-0.5 rounded uppercase">Completed</span>
               <h3 class="font-heading text-headline-sm text-forest-deep mt-1.5 leading-tight">${b.name}</h3>
@@ -571,9 +605,9 @@ window.VIEWS = (function () {
       return `
       <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden">
         <div class="flex">
-          <div class="w-28 shrink-0 bg-granite-wash flex items-center justify-center relative">
+          <div class="w-28 shrink-0 bg-granite-wash flex items-center justify-center relative overflow-hidden">
             ${tileContent}
-            <span class="absolute top-2 left-1 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold px-1.5 py-0.5 rounded">✓ OK</span>
+            <span class="absolute top-2 left-1 z-10 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold px-1.5 py-0.5 rounded">✓ OK</span>
           </div>
           <div class="flex-1 p-4">
             <span class="inline-block text-[11px] font-bold tracking-wider bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded uppercase">Confirmed</span>
@@ -656,6 +690,11 @@ window.VIEWS = (function () {
           <div class="space-y-sm">${faqs}</div>
         </section>
         <button data-action="nav" data-route="#/" class="w-full mt-lg rounded-full py-3.5 bg-secondary text-on-secondary text-label-md press hover:bg-secondary-container">Start Browsing Gear</button>
+        <div class="mt-lg pt-md border-t border-granite-wash text-center">
+          <button data-action="nav" data-route="#/admin" class="text-label-sm text-outline press inline-flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">lock</span>Owner · Manage gear
+          </button>
+        </div>
       </main>`;
     return page(inner, { active: "#/how" });
   }
