@@ -2,13 +2,12 @@
  * Requires X-Admin-Passcode header matching the UBR_ADMIN_PASSCODE env var.
  * Called from the Manage Gear admin when the owner clicks "Publish to site". */
 const { getSupabase } = require("./_supabase");
+const { checkAdmin } = require("./_auth");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
 
-  const auth = (event.headers["x-admin-passcode"] || "").trim();
-  const expected = (process.env.UBR_ADMIN_PASSCODE || "").trim();
-  if (!expected || auth !== expected) return json(401, { error: "Unauthorized" });
+  if (!checkAdmin(event)) return json(401, { error: "Unauthorized" });
 
   let products;
   try { products = JSON.parse(event.body || "[]"); }

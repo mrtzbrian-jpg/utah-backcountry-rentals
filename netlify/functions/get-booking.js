@@ -27,11 +27,13 @@ exports.handler = async (event) => {
     amount: data.amount_cents,
     hold: data.hold_cents,
     deposit: data.deposit_cents,
-    email: data.customer_email,
     renterName: data.renter_name,
-    phone: data.phone,
     pickupTime: data.pickup_time,
     status: data.status
+    // NOTE: customer email & phone are intentionally NOT returned here — this
+    // endpoint is unauthenticated (keyed only by the PayPal order id), so it
+    // exposes no contact PII. The owner sees full contact info via the
+    // passcode-protected get-bookings endpoint.
   });
 };
 

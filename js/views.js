@@ -4,6 +4,16 @@ window.VIEWS = (function () {
   const D = window.DATA;
   const ART = window.ART;
 
+  /* HTML-escape any value that originates from a customer (renter name, phone,
+     email, etc.) before injecting it into innerHTML. Without this, a customer
+     could book under a name like "<img onerror=…>" and run script in the
+     OWNER's logged-in browser (stored XSS) — the one place a booking field is
+     rendered in a privileged context. */
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
   /* ---------- pickup time windows ---------- */
   const PICKUP_TIMES = [
     { label: "Morning",   sub: "9 AM – 11 AM" },
@@ -630,7 +640,7 @@ window.VIEWS = (function () {
 
         <div class="mt-md rounded-xl bg-secondary-fixed border border-secondary/30 p-md flex gap-2 items-start text-left">
           <span class="material-symbols-outlined text-[20px] text-secondary mt-0.5">badge</span>
-          <p class="text-label-sm text-on-secondary-fixed">Bring a <strong>government photo ID</strong>${b.renterName ? ` matching <strong>${b.renterName}</strong>` : ""} to pickup. Your payment card must be in the same name.</p>
+          <p class="text-label-sm text-on-secondary-fixed">Bring a <strong>government photo ID</strong>${b.renterName ? ` matching <strong>${esc(b.renterName)}</strong>` : ""} to pickup. Your payment card must be in the same name.</p>
         </div>
 
         <div class="mt-md rounded-xl overflow-hidden h-44 shadow-card relative">${ART.topoMap()}
@@ -796,11 +806,6 @@ window.VIEWS = (function () {
           <div class="space-y-sm">${faqs}</div>
         </section>
         <button data-action="nav" data-route="#/" class="w-full mt-lg rounded-full py-3.5 bg-secondary text-on-secondary text-label-md press hover:bg-secondary-container">Start Browsing Gear</button>
-        <div class="mt-lg pt-md border-t border-granite-wash text-center">
-          <button data-action="nav" data-route="#/admin" class="text-label-sm text-outline press inline-flex items-center gap-1">
-            <span class="material-symbols-outlined text-[16px]">lock</span>Owner · Manage gear
-          </button>
-        </div>
       </main>`;
     return page(inner, { active: "#/how" });
   }
@@ -1105,21 +1110,21 @@ window.VIEWS = (function () {
               <span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wider px-2 py-0.5 rounded uppercase" style="background:${sm.color}1a;color:${sm.color}">
                 <span class="material-symbols-outlined text-[14px]">${sm.icon}</span>${sm.label}
               </span>
-              <h3 class="font-heading text-headline-sm text-forest-deep mt-1.5 leading-tight">${o.name || "Gear rental"}${o.qty > 1 ? ` ×${o.qty}` : ""}</h3>
-              <p class="text-[12px] text-outline">#${ref}</p>
+              <h3 class="font-heading text-headline-sm text-forest-deep mt-1.5 leading-tight">${esc(o.name || "Gear rental")}${o.qty > 1 ? ` ×${o.qty}` : ""}</h3>
+              <p class="text-[12px] text-outline">#${esc(ref)}</p>
             </div>
             <div class="text-right shrink-0">
               <p class="text-[13px] font-bold text-forest-deep">${fmtFullDate(o.startDate)}</p>
-              ${o.pickupTime ? `<p class="text-[12px] text-canyon-clay font-semibold">${o.pickupTime}</p>` : ""}
+              ${o.pickupTime ? `<p class="text-[12px] text-canyon-clay font-semibold">${esc(o.pickupTime)}</p>` : ""}
             </div>
           </div>
 
           <div class="mt-3 grid gap-1 text-[13px]">
-            <p class="flex items-center gap-1.5 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">person</span>${o.renterName || o.customerName || "—"}</p>
-            ${o.phone ? `<p class="flex items-center gap-2 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">call</span>${o.phone}
-              <a href="sms:${o.phone.replace(/[^\d+]/g, "")}" class="inline-flex items-center gap-1 text-canyon-clay font-semibold underline"><span class="material-symbols-outlined text-[14px]">sms</span>Text</a>
-              <a href="tel:${o.phone.replace(/[^\d+]/g, "")}" class="inline-flex items-center gap-1 text-forest-deep font-semibold underline"><span class="material-symbols-outlined text-[14px]">call</span>Call</a></p>` : ""}
-            ${o.email ? `<p class="flex items-center gap-1.5 text-earth-brown min-w-0"><span class="material-symbols-outlined text-[15px] text-forest-deep">mail</span><span class="truncate">${o.email}</span></p>` : ""}
+            <p class="flex items-center gap-1.5 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">person</span>${esc(o.renterName || o.customerName || "—")}</p>
+            ${o.phone ? `<p class="flex items-center gap-2 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">call</span>${esc(o.phone)}
+              <a href="sms:${esc(String(o.phone).replace(/[^\d+]/g, ""))}" class="inline-flex items-center gap-1 text-canyon-clay font-semibold underline"><span class="material-symbols-outlined text-[14px]">sms</span>Text</a>
+              <a href="tel:${esc(String(o.phone).replace(/[^\d+]/g, ""))}" class="inline-flex items-center gap-1 text-forest-deep font-semibold underline"><span class="material-symbols-outlined text-[14px]">call</span>Call</a></p>` : ""}
+            ${o.email ? `<p class="flex items-center gap-1.5 text-earth-brown min-w-0"><span class="material-symbols-outlined text-[15px] text-forest-deep">mail</span><span class="truncate">${esc(o.email)}</span></p>` : ""}
           </div>
 
           <div class="mt-3 flex flex-wrap gap-2">
@@ -1167,7 +1172,7 @@ window.VIEWS = (function () {
     const ref = o.ref || ("UBR-" + String(o.orderId).slice(-6).toUpperCase());
     const includes = (o.includes || []).map(x =>
       `<li style="padding:6px 0;border-bottom:1px solid #e5e1df;display:flex;align-items:center;gap:10px;">
-        <span style="display:inline-block;width:18px;height:18px;border:2px solid #061B0E;border-radius:4px;"></span>${x}</li>`).join("");
+        <span style="display:inline-block;width:18px;height:18px;border:2px solid #061B0E;border-radius:4px;"></span>${esc(x)}</li>`).join("");
 
     const inner = `
       <div class="no-print sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-surface-container">
@@ -1185,15 +1190,15 @@ window.VIEWS = (function () {
           </div>
           <div style="text-align:right;">
             <div style="font-size:13px;color:#5C5346;">Order</div>
-            <div style="font-size:18px;font-weight:700;">#${ref}</div>
+            <div style="font-size:18px;font-weight:700;">#${esc(ref)}</div>
           </div>
         </div>
 
         <table style="width:100%;border-collapse:collapse;margin-top:20px;font-size:14px;">
-          <tr><td style="padding:6px 0;color:#5C5346;width:42%;">Renter (verify photo ID)</td><td style="padding:6px 0;font-weight:700;font-size:16px;">${o.renterName || o.customerName || "—"}</td></tr>
-          <tr><td style="padding:6px 0;color:#5C5346;">Card / PayPal name</td><td style="padding:6px 0;font-weight:600;">${o.customerName || "—"}</td></tr>
-          <tr><td style="padding:6px 0;color:#5C5346;">Phone</td><td style="padding:6px 0;font-weight:600;">${o.phone || "—"}</td></tr>
-          <tr><td style="padding:6px 0;color:#5C5346;">Email</td><td style="padding:6px 0;font-weight:600;">${o.email || "—"}</td></tr>
+          <tr><td style="padding:6px 0;color:#5C5346;width:42%;">Renter (verify photo ID)</td><td style="padding:6px 0;font-weight:700;font-size:16px;">${esc(o.renterName || o.customerName || "—")}</td></tr>
+          <tr><td style="padding:6px 0;color:#5C5346;">Card / PayPal name</td><td style="padding:6px 0;font-weight:600;">${esc(o.customerName || "—")}</td></tr>
+          <tr><td style="padding:6px 0;color:#5C5346;">Phone</td><td style="padding:6px 0;font-weight:600;">${esc(o.phone || "—")}</td></tr>
+          <tr><td style="padding:6px 0;color:#5C5346;">Email</td><td style="padding:6px 0;font-weight:600;">${esc(o.email || "—")}</td></tr>
         </table>
 
         <div style="display:flex;gap:16px;margin-top:16px;">
@@ -1215,7 +1220,7 @@ window.VIEWS = (function () {
             ? `<ul style="list-style:none;padding:0;margin:10px 0 0;font-size:14px;">${includes}</ul>`
             : `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;font-size:15px;">
                  <span style="display:inline-block;width:18px;height:18px;border:2px solid #061B0E;border-radius:4px;"></span>
-                 <strong>${o.name || "Gear rental"}</strong>${o.qty > 1 ? ` ×${o.qty}` : ""}</div>`}
+                 <strong>${esc(o.name || "Gear rental")}</strong>${o.qty > 1 ? ` ×${o.qty}` : ""}</div>`}
         </div>
 
         <table style="width:100%;border-collapse:collapse;margin-top:22px;font-size:14px;border-top:2px solid #061B0E;">

@@ -3,13 +3,12 @@
  *
  * GET /get-bookings?filter=upcoming   (today | upcoming | all)  */
 const { getSupabase } = require("./_supabase");
+const { checkAdmin } = require("./_auth");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "GET") return json(405, { error: "Method not allowed" });
 
-  const pass = (event.headers["x-admin-pass"] || "").trim();
-  const expected = process.env.UBR_ADMIN_PASSCODE;
-  if (!expected || pass !== expected) return json(401, { error: "Unauthorized" });
+  if (!checkAdmin(event)) return json(401, { error: "Unauthorized" });
 
   const supabase = getSupabase();
   if (!supabase) return json(200, { bookings: [] });

@@ -8,13 +8,12 @@
  * Status flow: confirmed → prepped → ready → picked_up → returned */
 const { getSupabase } = require("./_supabase");
 const { notifyReady }  = require("./_email");
+const { checkAdmin }   = require("./_auth");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
 
-  const pass = (event.headers["x-admin-pass"] || "").trim();
-  const expected = process.env.UBR_ADMIN_PASSCODE;
-  if (!expected || pass !== expected) return json(401, { error: "Unauthorized" });
+  if (!checkAdmin(event)) return json(401, { error: "Unauthorized" });
 
   let body;
   try { body = JSON.parse(event.body || "{}"); }
