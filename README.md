@@ -1,4 +1,4 @@
-# Utah Backcountry Rentals
+# Take a Hike Rentals
 
 A mobile-first web app for a small hiking & backcountry gear rental business in
 Saratoga Springs, UT. Built from the "High Desert Modern" Stitch design system —

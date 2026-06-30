@@ -49,7 +49,7 @@ window.VIEWS = (function () {
       <div class="flex items-center justify-between px-4 py-4 max-w-container-max mx-auto">
         <div class="flex items-center gap-3">
           <span class="material-symbols-outlined text-forest-deep text-[24px]">landscape</span>
-          <h1 class="font-heading text-headline-md font-bold text-forest-deep">Utah Backcountry</h1>
+          <h1 class="font-heading text-headline-md font-bold text-forest-deep">Take a Hike Rentals</h1>
         </div>
         <div class="flex items-center gap-1.5 px-3 py-1.5 bg-granite-wash rounded-full border border-outline-variant">
           <span class="material-symbols-outlined text-[14px] text-on-surface-variant">location_on</span>
@@ -187,7 +187,7 @@ window.VIEWS = (function () {
     }).join("");
 
     const inner = `
-      ${topBar({ title: "Utah Backcountry Rentals", location: true })}
+      ${topBar({ title: "Take a Hike Rentals", location: true })}
       <main class="flex-grow max-w-container-max mx-auto w-full">
         <!-- Hero — full-bleed, edge to edge -->
         <section class="relative min-h-[340px] sm:min-h-[420px] overflow-hidden flex flex-col justify-end">
@@ -634,7 +634,7 @@ window.VIEWS = (function () {
     }).join("");
 
     const inner = `
-      ${topBar({ title: "Utah Backcountry Rentals", location: true })}
+      ${topBar({ title: "Take a Hike Rentals", location: true })}
       <main class="flex-grow px-4 sm:px-6 max-w-container-max mx-auto w-full">
         <div class="mt-6">
           <h2 class="font-heading text-headline-lg text-forest-deep">My Bookings</h2>
@@ -773,7 +773,7 @@ window.VIEWS = (function () {
           <span class="material-symbols-outlined text-primary-fixed-dim">chevron_right</span>
         </button>
 
-        <div class="mt-6 mb-4 text-center text-[12px] text-outline">Utah Backcountry Rentals · v1.0</div>
+        <div class="mt-6 mb-4 text-center text-[12px] text-outline">Take a Hike Rentals · v1.0</div>
       </main>`;
     return page(inner, { active: "#/profile" });
   }

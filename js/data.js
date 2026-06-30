@@ -1,4 +1,4 @@
-/* Catalog + static data for Utah Backcountry Rentals */
+/* Catalog + static data for Take a Hike Rentals */
 window.DATA = (function () {
   // Categories shown as pills on the home feed
   const categories = ["Bundles", "Safety Tech", "Backpacks", "Camping", "Winter Gear"];

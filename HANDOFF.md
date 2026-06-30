@@ -1,4 +1,4 @@
-# Handoff — finish taking Utah Backcountry Rentals live (PayPal)
+# Handoff — finish taking Take a Hike Rentals live (PayPal)
 
 You (a browser-controlling assistant) are helping the owner finish launching their
 hiking-gear **rental** web app. It's built and already live in **demo mode**. What

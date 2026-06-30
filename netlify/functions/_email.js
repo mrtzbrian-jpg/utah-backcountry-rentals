@@ -3,7 +3,7 @@
  *
  * Configure with Netlify env vars:
  *   RESEND_API_KEY  — your Resend API key
- *   FROM_EMAIL      — verified sender, e.g. "Utah Backcountry <hello@yourdomain.com>"
+ *   FROM_EMAIL      — verified sender, e.g. "Take a Hike Rentals <hello@yourdomain.com>"
  *   OWNER_EMAIL     — where owner notifications go (your inbox)
  *
  * If these aren't set, sends are skipped silently so checkout never breaks. */
@@ -42,7 +42,7 @@ function shell(title, bodyRows, accent) {
   return `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#F0EDED;padding:24px;">
     <div style="max-width:520px;margin:0 auto;background:#FCF9F8;border:1px solid #c3c8c1;border-radius:12px;overflow:hidden;">
       <div style="background:#061B0E;padding:20px 24px;">
-        <div style="color:#FCF9F8;font-size:20px;font-weight:800;letter-spacing:-0.01em;">⛰ Utah Backcountry</div>
+        <div style="color:#FCF9F8;font-size:20px;font-weight:800;letter-spacing:-0.01em;">⛰ Take a Hike Rentals</div>
       </div>
       <div style="padding:24px;">
         <h1 style="margin:0 0 6px;font-size:22px;color:#061B0E;">${title}</h1>
@@ -50,7 +50,7 @@ function shell(title, bodyRows, accent) {
         ${bodyRows}
       </div>
       <div style="padding:16px 24px;background:#f6f3f2;color:#5C5346;font-size:12px;border-top:1px solid #c3c8c1;">
-        Utah Backcountry Rentals · ${DEPOT}
+        Take a Hike Rentals · ${DEPOT}
       </div>
     </div>
   </div>`;
@@ -109,7 +109,7 @@ function ownerHtml(b, ref) {
 async function notifyBooking(b) {
   const ref = "UBR-" + String(b.orderId || "").slice(-6).toUpperCase();
   const out = {};
-  try { out.customer = b.email ? await sendEmail({ to: b.email, subject: `Your Utah Backcountry reservation is confirmed (${ref})`, html: customerHtml(b, ref) }) : { skipped: true }; }
+  try { out.customer = b.email ? await sendEmail({ to: b.email, subject: `Your Take a Hike Rentals reservation is confirmed (${ref})`, html: customerHtml(b, ref) }) : { skipped: true }; }
   catch (e) { out.customer = { error: e.message }; }
   const owner = process.env.OWNER_EMAIL;
   try { out.owner = owner ? await sendEmail({ to: owner, subject: `🎒 New rental to prepare: ${b.name || "Gear"} (${ref})`, html: ownerHtml(b, ref) }) : { skipped: true }; }

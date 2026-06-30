@@ -31,7 +31,7 @@ async function createOrder({ amountCents, brand, description, customId, returnUr
         custom_id: (customId || "").slice(0, 127)
       }],
       application_context: {
-        brand_name: brand || "Utah Backcountry Rentals",
+        brand_name: brand || "Take a Hike Rentals",
         shipping_preference: "NO_SHIPPING",
         user_action: "PAY_NOW",
         return_url: returnUrl,
