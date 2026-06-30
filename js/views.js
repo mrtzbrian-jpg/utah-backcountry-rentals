@@ -465,7 +465,7 @@ window.VIEWS = (function () {
 
           <!-- phone -->
           <label class="block">
-            <span class="text-label-md text-on-surface-variant">Phone number <span class="text-outline">(for text updates when gear is ready)</span></span>
+            <span class="text-label-md text-on-surface-variant">Phone number <span class="text-outline">(so we can reach you about pickup)</span></span>
             <input id="renter-phone" type="tel" value="${String(window.STATE.phone || "").replace(/"/g, "&quot;")}" placeholder="e.g. (801) 555-0123"
               class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
           </label>
@@ -1116,7 +1116,9 @@ window.VIEWS = (function () {
 
           <div class="mt-3 grid gap-1 text-[13px]">
             <p class="flex items-center gap-1.5 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">person</span>${o.renterName || o.customerName || "—"}</p>
-            ${o.phone ? `<p class="flex items-center gap-1.5 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">call</span><a href="tel:${o.phone}" class="underline">${o.phone}</a></p>` : ""}
+            ${o.phone ? `<p class="flex items-center gap-2 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">call</span>${o.phone}
+              <a href="sms:${o.phone.replace(/[^\d+]/g, "")}" class="inline-flex items-center gap-1 text-canyon-clay font-semibold underline"><span class="material-symbols-outlined text-[14px]">sms</span>Text</a>
+              <a href="tel:${o.phone.replace(/[^\d+]/g, "")}" class="inline-flex items-center gap-1 text-forest-deep font-semibold underline"><span class="material-symbols-outlined text-[14px]">call</span>Call</a></p>` : ""}
             ${o.email ? `<p class="flex items-center gap-1.5 text-earth-brown min-w-0"><span class="material-symbols-outlined text-[15px] text-forest-deep">mail</span><span class="truncate">${o.email}</span></p>` : ""}
           </div>
 

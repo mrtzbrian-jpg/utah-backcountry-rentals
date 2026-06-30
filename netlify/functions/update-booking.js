@@ -8,9 +8,6 @@
  * Status flow: confirmed → prepped → ready → picked_up → returned */
 const { getSupabase } = require("./_supabase");
 const { notifyReady }  = require("./_email");
-const { sendSms }      = require("./_sms");
-
-const DEPOT = "Saratoga Springs, UT";
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
@@ -57,18 +54,7 @@ exports.handler = async (event) => {
       ? await notifyReady(b, ref).catch(e => ({ error: e.message }))
       : { skipped: true };
 
-    const smsBody = [
-      `Take a Hike Rentals: Your gear "${row.item_name}" is packed and ready!`,
-      row.pickup_time ? `Pickup window: ${row.pickup_time}.` : "",
-      `Pick up at ${DEPOT}.`,
-      `Reply STOP to opt out.`
-    ].filter(Boolean).join(" ");
-
-    const smsR = b.phone
-      ? await sendSms({ to: b.phone, body: smsBody }).catch(e => ({ error: e.message }))
-      : { skipped: true };
-
-    notifyResult = { email: emailR, sms: smsR };
+    notifyResult = { email: emailR };
   }
 
   const { error } = await supabase.from("bookings").update(patch).eq("paypal_order", orderId);

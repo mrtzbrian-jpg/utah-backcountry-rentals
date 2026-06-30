@@ -620,10 +620,8 @@
       const r = await updateBooking({ orderId: id, status: "ready", notifyCustomer: true });
       if (!r.ok) { toast(r.error || "Notify failed", "error"); return; }
       if (o) { o.status = "ready"; o.notifiedReadyAt = new Date().toISOString(); render(); }
-      const parts = [];
-      if (r.notify && r.notify.sms && r.notify.sms.sid) parts.push("text");
-      if (r.notify && r.notify.email && !r.notify.email.skipped && !r.notify.email.error) parts.push("email");
-      toast(parts.length ? "Sent " + parts.join(" + ") : "Marked ready", "mark_chat_read");
+      const sent = r.notify && r.notify.email && !r.notify.email.skipped && !r.notify.email.error;
+      toast(sent ? "Ready email sent" : "Marked ready", "mark_chat_read");
     },
 
     "work-order": (el) => go("#/work-order/" + el.dataset.id),
