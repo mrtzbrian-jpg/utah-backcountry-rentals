@@ -19,7 +19,7 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body || "{}"); }
   catch { return json(400, { error: "Invalid request." }); }
 
-  const { itemId, name, qty, startDate, endDate, components, addons, renterName, agreedTerms } = body;
+  const { itemId, name, qty, startDate, endDate, components, addons, renterName, agreedTerms, phone, pickupTime } = body;
   const q = Math.max(1, parseInt(qty, 10) || 1);
 
   // Inventory guard: don't let a date range be booked beyond available units.
@@ -64,6 +64,8 @@ exports.handler = async (event) => {
         renter_name: (renterName || "").trim() || null,
         agreed_terms: !!agreedTerms,
         agreed_at: agreedTerms ? new Date().toISOString() : null,
+        phone: (phone || "").trim() || null,
+        pickup_time: (pickupTime || "").trim() || null,
         status: "pending"
       }, { onConflict: "paypal_order" });
     }

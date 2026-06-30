@@ -48,6 +48,11 @@
     bookingTab: "Upcoming",
     safetyAccepted: false,
     renterName: "",
+    phone: "",
+    pickupTime: null,
+    orders: [],
+    ordersFilter: "upcoming",
+    ordersLoading: false,
     adminAuthed: sessionStorage.getItem("ubr:admin") === "1",
     adminEdit: null,
     bookings: storedBookings,
@@ -259,6 +264,14 @@
       go("#/"); return;
     } else if (parts[0] === "admin") {
       html = STATE.adminAuthed ? window.VIEWS.admin() : window.VIEWS.adminGate();
+    } else if (parts[0] === "orders") {
+      if (!STATE.adminAuthed) { html = window.VIEWS.adminGate(); }
+      else {
+        html = window.VIEWS.adminOrders();
+        if (!STATE.orders.length && !STATE.ordersLoading) loadOrders();
+      }
+    } else if (parts[0] === "work-order") {
+      html = STATE.adminAuthed ? window.VIEWS.workOrder(parts[1]) : window.VIEWS.adminGate();
     } else {
       html = window.VIEWS.notFound();
     }
@@ -292,10 +305,13 @@
       STATE.draft = item;
       STATE.qty = 1;
       STATE.dates = { start: null, end: null };
+      STATE.pickupTime = null;
       STATE.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       loadAvailability(item.id);
       go("#/gear/" + item.id);
     },
+
+    "pickup-time": (el) => { STATE.pickupTime = el.dataset.time; render(); },
 
     "rent-again": (el) => handlers.book(el),
 
@@ -347,6 +363,9 @@
         return;
       }
       STATE.renterName = renterName;
+      const phoneEl = document.getElementById("renter-phone");
+      const phone = ((phoneEl && phoneEl.value) || STATE.phone || "").trim();
+      STATE.phone = phone;
       const item = STATE.draft;
       const qty = STATE.qty || 1;
       const cfg = window.UBR_CONFIG || {};
@@ -360,7 +379,8 @@
             itemId: item.id, name: item.name, qty,
             startDate: STATE.dates.start, endDate: STATE.dates.end,
             components: item.components, addons: item.addons,
-            renterName, agreedTerms: true
+            renterName, agreedTerms: true,
+            phone, pickupTime: STATE.pickupTime || null
           };
           const res = await fetch(cfg.FUNCTIONS_BASE + "/create-checkout", {
             method: "POST",
@@ -576,8 +596,78 @@
       const changed = await CATALOG.loadFromBackend(cfg.FUNCTIONS_BASE);
       render();
       toast(changed ? "Catalog refreshed from database" : "Already up to date", "check_circle");
-    }
+    },
+
+    /* ---- admin: Orders dashboard ---- */
+    "orders-filter": (el) => { STATE.ordersFilter = el.dataset.filter; loadOrders(); },
+    "orders-refresh": () => { loadOrders(); },
+
+    "order-advance": async (el) => {
+      const id = el.dataset.id, status = el.dataset.status;
+      const o = STATE.orders.find(x => x.orderId === id);
+      if (o) { o.status = status; render(); }
+      const r = await updateBooking({ orderId: id, status });
+      if (!r.ok) { toast(r.error || "Update failed", "error"); loadOrders(); return; }
+      toast("Status updated", "check_circle");
+    },
+
+    "order-notify": async (el) => {
+      const id = el.dataset.id;
+      const o = STATE.orders.find(x => x.orderId === id);
+      if (!o) return;
+      if (!o.phone && !o.email) { toast("No phone or email on file", "error"); return; }
+      toast("Notifying customer…", "send");
+      const r = await updateBooking({ orderId: id, status: "ready", notifyCustomer: true });
+      if (!r.ok) { toast(r.error || "Notify failed", "error"); return; }
+      if (o) { o.status = "ready"; o.notifiedReadyAt = new Date().toISOString(); render(); }
+      const parts = [];
+      if (r.notify && r.notify.sms && r.notify.sms.sid) parts.push("text");
+      if (r.notify && r.notify.email && !r.notify.email.skipped && !r.notify.email.error) parts.push("email");
+      toast(parts.length ? "Sent " + parts.join(" + ") : "Marked ready", "mark_chat_read");
+    },
+
+    "work-order": (el) => go("#/work-order/" + el.dataset.id),
+    "do-print": () => window.print()
   };
+
+  /* ---------------- orders (owner ops) ---------------- */
+  function adminPass() { return sessionStorage.getItem("ubr:admin-pass") || ""; }
+
+  async function loadOrders() {
+    const cfg = window.UBR_CONFIG || {};
+    if (!cfg.BACKEND_ENABLED) return;
+    STATE.ordersLoading = true; render();
+    try {
+      const r = await fetch(cfg.FUNCTIONS_BASE + "/get-bookings?filter=" + encodeURIComponent(STATE.ordersFilter), {
+        headers: { "x-admin-pass": adminPass() }
+      });
+      const d = await r.json();
+      if (!r.ok) { toast(d.error || "Couldn't load orders", "error"); STATE.orders = []; }
+      else STATE.orders = (d.bookings || []).map(decorateOrder);
+    } catch (_) { toast("Network error loading orders", "error"); STATE.orders = []; }
+    STATE.ordersLoading = false; render();
+  }
+
+  // Attach display ref + catalog includes/images so work orders are complete.
+  function decorateOrder(o) {
+    o.ref = "UBR-" + String(o.orderId).slice(-6).toUpperCase();
+    const cat = window.CATALOG.get(o.itemId);
+    if (cat) { o.includes = cat.includes || []; o.icon = cat.icon; o.tint = cat.tint; }
+    return o;
+  }
+
+  async function updateBooking(payload) {
+    const cfg = window.UBR_CONFIG || {};
+    try {
+      const r = await fetch(cfg.FUNCTIONS_BASE + "/update-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-pass": adminPass() },
+        body: JSON.stringify(payload)
+      });
+      const d = await r.json();
+      return r.ok ? { ok: true, ...d } : { ok: false, error: d.error };
+    } catch (e) { return { ok: false, error: "Network error" }; }
+  }
 
   /* ---------------- image downscale (admin photo upload) ---------------- */
   function downscaleImage(file, maxDim, cb) {

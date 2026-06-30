@@ -32,6 +32,9 @@ alter table bookings add column if not exists authorization_id text;
 alter table bookings add column if not exists renter_name text;
 alter table bookings add column if not exists agreed_terms boolean not null default false;
 alter table bookings add column if not exists agreed_at timestamptz;
+alter table bookings add column if not exists phone text;
+alter table bookings add column if not exists pickup_time text;
+alter table bookings add column if not exists notified_ready_at timestamptz;
 
 create index if not exists bookings_dates_idx on bookings (start_date, end_date);
 create index if not exists bookings_item_idx on bookings (item_id, status);

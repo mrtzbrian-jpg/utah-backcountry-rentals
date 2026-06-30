@@ -67,7 +67,9 @@ exports.handler = async (event) => {
     customerName: [nm.given_name, nm.surname].filter(Boolean).join(" ") || null,
     renterName: row ? (row.renter_name || null) : null,
     agreedTerms: row ? !!row.agreed_terms : false,
-    agreedAt: row ? (row.agreed_at || null) : null
+    agreedAt: row ? (row.agreed_at || null) : null,
+    phone: row ? (row.phone || null) : null,
+    pickupTime: row ? (row.pickup_time || null) : null
   };
 
   // 3) Persist + notify (once).
@@ -89,6 +91,8 @@ exports.handler = async (event) => {
       renter_name: booking.renterName,
       agreed_terms: booking.agreedTerms,
       agreed_at: booking.agreedAt,
+      phone: booking.phone || null,
+      pickup_time: booking.pickupTime || null,
       status: "confirmed"
     }, { onConflict: "paypal_order" });
   }
@@ -126,7 +130,8 @@ function fromRow(r) {
     orderId: r.paypal_order, itemId: r.item_id, name: r.item_name, qty: r.qty,
     startDate: r.start_date, endDate: r.end_date, days: r.days,
     amount: r.amount_cents, hold: r.hold_cents, deposit: r.deposit_cents,
-    email: r.customer_email, customerName: r.customer_name, renterName: r.renter_name
+    email: r.customer_email, customerName: r.customer_name, renterName: r.renter_name,
+    phone: r.phone, pickupTime: r.pickup_time
   };
 }
 

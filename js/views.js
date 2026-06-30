@@ -4,6 +4,14 @@ window.VIEWS = (function () {
   const D = window.DATA;
   const ART = window.ART;
 
+  /* ---------- pickup time windows ---------- */
+  const PICKUP_TIMES = [
+    { label: "Morning",   sub: "9 AM – 11 AM" },
+    { label: "Midday",    sub: "11 AM – 1 PM" },
+    { label: "Afternoon", sub: "2 PM – 5 PM" },
+    { label: "By Appt",   sub: "Contact us" }
+  ];
+
   /* ---------- product imagery ----------
      Stable stock photos keyed by the item's Material icon, so every product
      shows a real image even before the owner uploads their own. An item's own
@@ -350,7 +358,8 @@ window.VIEWS = (function () {
     const qty = window.STATE.qty || 1;
     const total = (item.price || 0) * qty;       // flat price × quantity, charged now
     const hold = Math.min((item.deposit || 0) * qty, 250); // refundable card hold, capped at $250
-    const ready = !!window.STATE.dates.start;     // pickup date chosen
+    const pickupTime = window.STATE.pickupTime;
+    const ready = !!window.STATE.dates.start && !!pickupTime; // both date AND pickup window required
 
     const includes = (item.includes || []).map(x =>
       `<li class="flex items-center gap-2 text-body-md text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-primary">check_circle</span>${x}</li>`).join("");
@@ -379,6 +388,26 @@ window.VIEWS = (function () {
           <span class="material-symbols-outlined text-[16px]">touch_app</span>
           Tap your pickup day, then your return day
         </p>
+
+        <!-- Pickup time window -->
+        <section class="mt-5">
+          <p class="text-label-md font-semibold text-on-surface mb-2 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[18px] text-canyon-clay">schedule</span>
+            Pickup window
+          </p>
+          <div class="grid grid-cols-2 gap-2">
+            ${PICKUP_TIMES.map(t => {
+              const on = pickupTime === t.label;
+              return `<button data-action="pickup-time" data-time="${t.label}"
+                class="rounded-xl border-2 py-3 px-3 text-left press transition-colors
+                ${on ? "border-canyon-clay bg-canyon-clay/5" : "border-outline-variant bg-paper-white hover:border-forest-deep"}">
+                <p class="text-[13px] font-bold ${on ? "text-canyon-clay" : "text-forest-deep"}">${t.label}</p>
+                <p class="text-[11px] ${on ? "text-canyon-clay/70" : "text-earth-brown"}">${t.sub}</p>
+              </button>`;
+            }).join("")}
+          </div>
+          ${!pickupTime ? `<p class="text-label-sm text-outline mt-1.5 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">info</span>Choose a window to continue</p>` : ""}
+        </section>
       </main>
 
       <!-- sticky footer total -->
@@ -394,8 +423,8 @@ window.VIEWS = (function () {
           </div>
           <div class="flex items-center justify-between mb-sm">
             <div class="text-on-surface-variant text-body-md">
-              ${ready ? "Rental total" : "Select your dates"}
-              ${ready ? `<div class="text-label-sm text-outline">${fmt.range(window.STATE.dates)}</div>` : ""}
+              ${ready ? "Rental total" : (window.STATE.dates.start && !pickupTime ? "Choose pickup window" : "Select your dates")}
+              ${window.STATE.dates.start ? `<div class="text-label-sm text-outline">${fmt.range(window.STATE.dates)}${pickupTime ? " · " + pickupTime : ""}</div>` : ""}
             </div>
             <div class="font-heading text-headline-md text-primary">${fmt.money(total)}</div>
           </div>
@@ -431,6 +460,13 @@ window.VIEWS = (function () {
           <label class="block">
             <span class="text-label-md text-on-surface-variant">Full legal name (must match your photo ID &amp; payment card)</span>
             <input id="renter-name" type="text" value="${String(name).replace(/"/g, "&quot;")}" placeholder="e.g. Brian Martinez"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
+          </label>
+
+          <!-- phone -->
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant">Phone number <span class="text-outline">(for text updates when gear is ready)</span></span>
+            <input id="renter-phone" type="tel" value="${String(window.STATE.phone || "").replace(/"/g, "&quot;")}" placeholder="e.g. (801) 555-0123"
               class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
           </label>
 
@@ -990,6 +1026,16 @@ window.VIEWS = (function () {
         </div>
       </header>
       <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[100px]">
+        <!-- orders dashboard shortcut -->
+        <button data-action="nav" data-route="#/orders"
+          class="w-full mt-md mb-0 bg-forest-deep text-paper-white rounded-xl p-4 flex items-center gap-4 press inner-shadow-stamped">
+          <span class="material-symbols-outlined text-[36px] text-primary-fixed-dim shrink-0" style="font-variation-settings:'FILL' 1;">receipt_long</span>
+          <div class="flex-1 min-w-0 text-left">
+            <p class="font-heading text-headline-sm">Orders &amp; Work Orders</p>
+            <p class="text-[13px] text-primary-fixed-dim mt-0.5">See bookings, update status, notify customers, print work orders</p>
+          </div>
+          <span class="material-symbols-outlined text-primary-fixed-dim shrink-0">chevron_right</span>
+        </button>
         ${publishBlock}
         <div class="mt-md flex flex-wrap gap-2">
           <button data-action="admin-new" class="bg-secondary text-on-secondary rounded-full px-md py-2.5 text-label-md press flex items-center gap-1 hover:bg-secondary-container"><span class="material-symbols-outlined text-[18px]">add</span>Add product</button>
@@ -1013,6 +1059,187 @@ window.VIEWS = (function () {
     return `<div class="view-enter min-h-screen flex flex-col">${inner}</div>`;
   }
 
+  /* ---------- ADMIN: Orders / Work Orders ---------- */
+
+  const STATUS_FLOW = [
+    { key: "confirmed", label: "New",       icon: "fiber_new",        color: "#AB3500" },
+    { key: "prepped",   label: "Prepped",   icon: "inventory_2",      color: "#5C5346" },
+    { key: "ready",     label: "Ready",     icon: "check_circle",     color: "#1b3022" },
+    { key: "picked_up", label: "Picked up", icon: "directions_walk",  color: "#061B0E" },
+    { key: "returned",  label: "Returned",  icon: "assignment_turned_in", color: "#5C5346" }
+  ];
+  function statusMeta(k) { return STATUS_FLOW.find(s => s.key === k) || STATUS_FLOW[0]; }
+  function fmtFullDate(iso) {
+    if (!iso) return "Flexible";
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  }
+  function nextStatus(k) {
+    const i = STATUS_FLOW.findIndex(s => s.key === k);
+    return i >= 0 && i < STATUS_FLOW.length - 1 ? STATUS_FLOW[i + 1].key : null;
+  }
+
+  function adminOrders() {
+    const filter = window.STATE.ordersFilter || "upcoming";
+    const orders = window.STATE.orders || [];
+    const loading = window.STATE.ordersLoading;
+
+    const filterBtn = (key, label) => {
+      const on = filter === key;
+      return `<button data-action="orders-filter" data-filter="${key}"
+        class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press
+        ${on ? "bg-forest-deep text-paper-white inner-shadow-stamped" : "bg-paper-white border border-outline-variant text-forest-deep hover:bg-granite-wash"}">${label}</button>`;
+    };
+
+    const cards = orders.map(o => {
+      const sm = statusMeta(o.status);
+      const ref = o.ref || ("UBR-" + String(o.orderId).slice(-6).toUpperCase());
+      const next = nextStatus(o.status);
+      const nextMeta = next ? statusMeta(next) : null;
+      const notified = !!o.notifiedReadyAt;
+      return `
+      <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden">
+        <div class="p-4">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wider px-2 py-0.5 rounded uppercase" style="background:${sm.color}1a;color:${sm.color}">
+                <span class="material-symbols-outlined text-[14px]">${sm.icon}</span>${sm.label}
+              </span>
+              <h3 class="font-heading text-headline-sm text-forest-deep mt-1.5 leading-tight">${o.name || "Gear rental"}${o.qty > 1 ? ` ×${o.qty}` : ""}</h3>
+              <p class="text-[12px] text-outline">#${ref}</p>
+            </div>
+            <div class="text-right shrink-0">
+              <p class="text-[13px] font-bold text-forest-deep">${fmtFullDate(o.startDate)}</p>
+              ${o.pickupTime ? `<p class="text-[12px] text-canyon-clay font-semibold">${o.pickupTime}</p>` : ""}
+            </div>
+          </div>
+
+          <div class="mt-3 grid gap-1 text-[13px]">
+            <p class="flex items-center gap-1.5 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">person</span>${o.renterName || o.customerName || "—"}</p>
+            ${o.phone ? `<p class="flex items-center gap-1.5 text-earth-brown"><span class="material-symbols-outlined text-[15px] text-forest-deep">call</span><a href="tel:${o.phone}" class="underline">${o.phone}</a></p>` : ""}
+            ${o.email ? `<p class="flex items-center gap-1.5 text-earth-brown min-w-0"><span class="material-symbols-outlined text-[15px] text-forest-deep">mail</span><span class="truncate">${o.email}</span></p>` : ""}
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            ${next ? `<button data-action="order-advance" data-id="${o.orderId}" data-status="${next}"
+              class="bg-forest-deep text-paper-white px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px]">${nextMeta.icon}</span>Mark ${nextMeta.label}</button>` : ""}
+            <button data-action="order-notify" data-id="${o.orderId}"
+              class="border-2 px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 ${notified ? "border-outline-variant text-earth-brown" : "border-canyon-clay text-canyon-clay hover:bg-canyon-clay/5"}">
+              <span class="material-symbols-outlined text-[16px]">${notified ? "mark_chat_read" : "send"}</span>${notified ? "Notify again" : "Gear ready"}</button>
+            <button data-action="work-order" data-id="${o.orderId}"
+              class="border-2 border-forest-deep text-forest-deep px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-granite-wash">
+              <span class="material-symbols-outlined text-[16px]">print</span>Work order</button>
+          </div>
+          ${notified ? `<p class="text-[11px] text-outline mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">schedule</span>Customer notified ${new Date(o.notifiedReadyAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>` : ""}
+        </div>
+      </article>`;
+    }).join("");
+
+    const body = loading
+      ? `<div class="mt-16 flex flex-col items-center text-center"><div class="w-12 h-12 rounded-full border-4 border-granite-wash border-t-forest-deep animate-spin"></div><p class="text-body-md text-earth-brown mt-4">Loading orders…</p></div>`
+      : (orders.length
+        ? `<section class="mt-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">${cards}</section>`
+        : `<div class="mt-16 text-center flex flex-col items-center"><div class="w-40 opacity-60">${ART.trailLine()}</div><p class="font-heading text-headline-sm text-forest-deep mt-4">No ${filter === "today" ? "pickups today" : filter === "all" ? "orders" : "upcoming orders"}</p><p class="text-body-md text-earth-brown mt-1">Paid bookings show up here automatically.</p></div>`);
+
+    const inner = `
+      <header class="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-surface-container">
+        <div class="flex items-center gap-2 px-md py-sm max-w-container-max mx-auto">
+          <button data-action="nav" data-route="#/admin" class="p-2 -ml-2 rounded-full hover:bg-surface-container press text-on-surface"><span class="material-symbols-outlined">arrow_back</span></button>
+          <h1 class="flex-1 font-heading text-headline-md text-primary text-center">Orders</h1>
+          <button data-action="orders-refresh" class="p-2 -mr-2 rounded-full hover:bg-surface-container press text-on-surface-variant" title="Refresh"><span class="material-symbols-outlined">refresh</span></button>
+        </div>
+      </header>
+      <main class="flex-grow px-4 sm:px-6 max-w-container-max mx-auto w-full pb-[40px]">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar mt-4 -mx-4 sm:-mx-6 px-4 sm:px-6">
+          ${filterBtn("today", "Today's pickups")}${filterBtn("upcoming", "Upcoming")}${filterBtn("all", "All")}
+        </div>
+        ${body}
+      </main>`;
+    return `<div class="view-enter min-h-screen flex flex-col">${inner}</div>`;
+  }
+
+  function workOrder(orderId) {
+    const o = (window.STATE.orders || []).find(x => x.orderId === orderId);
+    if (!o) return notFound();
+    const ref = o.ref || ("UBR-" + String(o.orderId).slice(-6).toUpperCase());
+    const includes = (o.includes || []).map(x =>
+      `<li style="padding:6px 0;border-bottom:1px solid #e5e1df;display:flex;align-items:center;gap:10px;">
+        <span style="display:inline-block;width:18px;height:18px;border:2px solid #061B0E;border-radius:4px;"></span>${x}</li>`).join("");
+
+    const inner = `
+      <div class="no-print sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-surface-container">
+        <div class="flex items-center gap-2 px-md py-sm max-w-container-max mx-auto">
+          <button data-action="nav" data-route="#/orders" class="p-2 -ml-2 rounded-full hover:bg-surface-container press text-on-surface"><span class="material-symbols-outlined">arrow_back</span></button>
+          <h1 class="flex-1 font-heading text-headline-md text-primary text-center">Work Order</h1>
+          <button data-action="do-print" class="bg-forest-deep text-paper-white px-4 py-2 rounded-lg text-[13px] font-bold tracking-wide press flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">print</span>Print</button>
+        </div>
+      </div>
+      <div id="work-order-sheet" style="max-width:680px;margin:0 auto;padding:32px 28px;background:#fff;color:#061B0E;font-family:Inter,system-ui,sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #061B0E;padding-bottom:16px;">
+          <div>
+            <div style="font-size:24px;font-weight:800;letter-spacing:-0.01em;">⛰ Take a Hike Rentals</div>
+            <div style="font-size:13px;color:#5C5346;margin-top:2px;">Gear Pickup Work Order</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;color:#5C5346;">Order</div>
+            <div style="font-size:18px;font-weight:700;">#${ref}</div>
+          </div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;margin-top:20px;font-size:14px;">
+          <tr><td style="padding:6px 0;color:#5C5346;width:42%;">Renter (verify photo ID)</td><td style="padding:6px 0;font-weight:700;font-size:16px;">${o.renterName || o.customerName || "—"}</td></tr>
+          <tr><td style="padding:6px 0;color:#5C5346;">Card / PayPal name</td><td style="padding:6px 0;font-weight:600;">${o.customerName || "—"}</td></tr>
+          <tr><td style="padding:6px 0;color:#5C5346;">Phone</td><td style="padding:6px 0;font-weight:600;">${o.phone || "—"}</td></tr>
+          <tr><td style="padding:6px 0;color:#5C5346;">Email</td><td style="padding:6px 0;font-weight:600;">${o.email || "—"}</td></tr>
+        </table>
+
+        <div style="display:flex;gap:16px;margin-top:16px;">
+          <div style="flex:1;background:#f6f3f2;border-radius:8px;padding:14px;">
+            <div style="font-size:12px;color:#5C5346;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">Pickup date</div>
+            <div style="font-size:18px;font-weight:700;margin-top:2px;">${fmtFullDate(o.startDate)}</div>
+            ${o.pickupTime ? `<div style="font-size:14px;color:#AB3500;font-weight:700;margin-top:2px;">${o.pickupTime}</div>` : ""}
+          </div>
+          <div style="flex:1;background:#f6f3f2;border-radius:8px;padding:14px;">
+            <div style="font-size:12px;color:#5C5346;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">Return date</div>
+            <div style="font-size:18px;font-weight:700;margin-top:2px;">${fmtFullDate(o.endDate)}</div>
+            ${o.days ? `<div style="font-size:14px;color:#5C5346;margin-top:2px;">${o.days} day${o.days !== 1 ? "s" : ""}</div>` : ""}
+          </div>
+        </div>
+
+        <div style="margin-top:22px;">
+          <div style="font-size:15px;font-weight:800;border-bottom:2px solid #061B0E;padding-bottom:6px;">Gear to prepare${o.qty > 1 ? ` (×${o.qty})` : ""}</div>
+          ${includes
+            ? `<ul style="list-style:none;padding:0;margin:10px 0 0;font-size:14px;">${includes}</ul>`
+            : `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;font-size:15px;">
+                 <span style="display:inline-block;width:18px;height:18px;border:2px solid #061B0E;border-radius:4px;"></span>
+                 <strong>${o.name || "Gear rental"}</strong>${o.qty > 1 ? ` ×${o.qty}` : ""}</div>`}
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;margin-top:22px;font-size:14px;border-top:2px solid #061B0E;">
+          <tr><td style="padding:8px 0;color:#5C5346;">Rental charged</td><td style="padding:8px 0;font-weight:700;text-align:right;">${fmt.money((o.amount || 0) / 100)}</td></tr>
+          ${o.hold ? `<tr><td style="padding:8px 0;color:#5C5346;">Refundable hold on card</td><td style="padding:8px 0;font-weight:700;text-align:right;">${fmt.money((o.hold || 0) / 100)}</td></tr>` : ""}
+          ${o.deposit ? `<tr><td style="padding:8px 0;color:#5C5346;">Full replacement value</td><td style="padding:8px 0;font-weight:700;text-align:right;">${fmt.money((o.deposit || 0) / 100)}</td></tr>` : ""}
+        </table>
+
+        <div style="margin-top:18px;padding:14px;border:2px solid #061B0E;border-radius:8px;">
+          <div style="font-size:13px;font-weight:800;">At pickup checklist</div>
+          <div style="font-size:13px;color:#5C5346;margin-top:8px;display:grid;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>Photo ID matches renter name above</div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>ID name matches card / PayPal name</div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>All gear inspected &amp; handed over</div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>Return date confirmed with renter</div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px;font-size:12px;color:#5C5346;">
+          Agreed to rental terms: ${o.agreedTerms ? "Yes" + (o.agreedAt ? " · " + new Date(o.agreedAt).toLocaleString("en-US") : "") : "—"}<br/>
+          Take a Hike Rentals · Saratoga Springs, UT
+        </div>
+      </div>`;
+    return `<div class="view-enter min-h-screen flex flex-col bg-white">${inner}</div>`;
+  }
+
   function notFound() {
     return page(`${topBar({ title: "Not found", back: true })}
       <main class="flex-grow flex flex-col items-center justify-center text-center px-md">
@@ -1023,5 +1250,5 @@ window.VIEWS = (function () {
       </main>`, { active: "#/" });
   }
 
-  return { home, productDetail, gear, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, admin, adminGate, safetyModal, notFound };
+  return { home, productDetail, gear, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, admin, adminGate, safetyModal, adminOrders, workOrder, notFound };
 })();

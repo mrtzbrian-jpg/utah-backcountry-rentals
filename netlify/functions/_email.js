@@ -115,6 +115,32 @@ function ownerHtml(b, ref) {
   return shell("New rental to prepare", body, "#061B0E");
 }
 
+function readyHtml(b, ref) {
+  const body = `
+    <p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">
+      Great news${b.renterName ? ", " + b.renterName : ""}! Your gear is packed, inspected, and ready to go.
+    </p>
+    ${detailsTable(b, ref)}
+    ${b.pickupTime ? `<table style="width:100%;border-collapse:collapse;margin:4px 0;">${row("Pickup window", "<strong>" + b.pickupTime + "</strong>")}</table>` : ""}
+    <div style="margin:14px 0 0;padding:12px 14px;background:#f6f3f2;border-left:3px solid #AB3500;border-radius:4px;">
+      <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">See you soon — bring to pickup:</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">
+        A valid government photo ID${b.renterName ? " matching <strong>" + b.renterName + "</strong>" : ""} and the payment card used to book.
+        Pick up at <strong>${DEPOT}</strong>.
+      </p>
+    </div>`;
+  return shell("Your gear is ready for pickup!", body, "#1b3022");
+}
+
+async function notifyReady(b, ref) {
+  if (!b.email) return { skipped: true };
+  return sendEmail({
+    to: b.email,
+    subject: `Your gear is ready for pickup! (${ref})`,
+    html: readyHtml(b, ref)
+  });
+}
+
 // Sends both emails. Never throws — returns a per-recipient result summary.
 async function notifyBooking(b) {
   const ref = "UBR-" + String(b.orderId || "").slice(-6).toUpperCase();
@@ -127,4 +153,4 @@ async function notifyBooking(b) {
   return out;
 }
 
-module.exports = { sendEmail, notifyBooking };
+module.exports = { sendEmail, notifyBooking, notifyReady };

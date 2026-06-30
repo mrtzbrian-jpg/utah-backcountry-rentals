@@ -101,3 +101,11 @@ body { overscroll-behavior-y: none; }
 .card-elevation {
   box-shadow: 2px 2px 0px 0px rgba(6,27,14,0.08);
 }
+
+/* ---- Print: work order only ---- */
+@media print {
+  body { background: #fff !important; }
+  .no-print, #toast-root, #modal-root, nav, header { display: none !important; }
+  #work-order-sheet { box-shadow: none !important; margin: 0 !important; max-width: none !important; }
+  @page { margin: 0.5in; }
+}
