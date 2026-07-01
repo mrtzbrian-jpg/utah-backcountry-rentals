@@ -7,19 +7,30 @@
  * for all visitors. data.js stays as the built-in default / starting point. */
 window.CATALOG = (function () {
   const KEY = "ubr:catalog";
+  const CAT_KEY = "ubr:categories";
   let list = null; // null = "use the built-in defaults from data.js"
+  let cats = null; // null = "use the built-in defaults from data.js"
 
   try {
     const saved = JSON.parse(localStorage.getItem(KEY));
     if (Array.isArray(saved)) list = saved;
   } catch (e) { /* ignore */ }
 
+  try {
+    const savedCats = JSON.parse(localStorage.getItem(CAT_KEY));
+    if (Array.isArray(savedCats)) cats = savedCats;
+  } catch (e) { /* ignore */ }
+
   const defaults = () => JSON.parse(JSON.stringify(window.DATA.gear));
+  const defaultCats = () => JSON.parse(JSON.stringify(window.DATA.categories));
   const gear = () => list || window.DATA.gear;
+  const categories = () => cats || window.DATA.categories;
   const get = (id) => gear().find((g) => g.id === id);
 
   function save() { if (list) localStorage.setItem(KEY, JSON.stringify(list)); }
+  function saveCats() { localStorage.setItem(CAT_KEY, JSON.stringify(cats || defaultCats())); }
   function ensure() { if (!list) list = defaults(); }
+  function ensureCats() { if (!cats) cats = defaultCats(); }
 
   function slugify(name, existingId) {
     if (existingId) return existingId;
@@ -30,8 +41,30 @@ window.CATALOG = (function () {
   }
 
   return {
-    gear, get,
+    gear, get, categories,
     isCustomized: () => !!list,
+
+    addCategory(name) {
+      ensureCats();
+      const trimmed = name.trim();
+      if (!trimmed || cats.includes(trimmed)) return false;
+      cats.push(trimmed);
+      saveCats();
+      return true;
+    },
+    removeCategory(name) {
+      ensureCats();
+      const inUse = gear().some(g => g.category === name);
+      if (inUse) return false;
+      cats = cats.filter(c => c !== name);
+      saveCats();
+      return true;
+    },
+    reorderCategories(ordered) {
+      ensureCats();
+      cats = ordered;
+      saveCats();
+    },
 
     add(obj) {
       ensure();
@@ -56,7 +89,7 @@ window.CATALOG = (function () {
       list.sort((a, b) => orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
       save();
     },
-    reset() { list = null; localStorage.removeItem(KEY); },
+    reset() { list = null; cats = null; localStorage.removeItem(KEY); localStorage.removeItem(CAT_KEY); },
 
     exportJSON() { return JSON.stringify(gear(), null, 2); },
     importJSON(text) {
@@ -66,28 +99,33 @@ window.CATALOG = (function () {
       save();
     },
 
-    /* Fetch the published catalog from Supabase. Returns true if the list
-     * changed (so the caller knows to re-render). Silent on network errors. */
+    /* Fetch the published catalog (and categories) from Supabase. Returns true
+     * if anything changed. Silent on network errors. */
     loadFromBackend(baseUrl) {
       return fetch(baseUrl + "/get-catalog")
         .then(r => r.ok ? r.json() : Promise.reject("HTTP " + r.status))
         .then(data => {
-          if (!Array.isArray(data) || !data.length) return false;
-          const before = JSON.stringify(list);
-          list = data;
+          const payload = Array.isArray(data) ? { products: data } : data;
+          const products = payload.products || payload;
+          if (!Array.isArray(products) || !products.length) return false;
+          const before = JSON.stringify(list) + JSON.stringify(cats);
+          list = products;
           save();
-          return JSON.stringify(list) !== before;
+          if (Array.isArray(payload.categories) && payload.categories.length) {
+            cats = payload.categories;
+            saveCats();
+          }
+          return JSON.stringify(list) + JSON.stringify(cats) !== before;
         })
         .catch(() => false);
     },
 
-    /* Push the current catalog to Supabase (admin-only). Resolves with
-     * { ok, count } or rejects with an Error. */
+    /* Push the current catalog + categories to Supabase (admin-only). */
     publish(baseUrl, passcode) {
       return fetch(baseUrl + "/save-catalog", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-admin-passcode": passcode },
-        body: JSON.stringify(gear())
+        body: JSON.stringify({ products: gear(), categories: categories() })
       })
         .then(r => r.json().then(d => ({ d, ok: r.ok })))
         .then(({ d, ok }) => {

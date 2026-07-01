@@ -197,7 +197,7 @@ window.VIEWS = (function () {
     const list = cat === "Bundles" ? all : all.filter(g => g.category === cat);
     const feed = (list.length ? list : all);
 
-    const pills = D.categories.map(c => {
+    const pills = window.CATALOG.categories().map(c => {
       const on = c === cat;
       return `<button data-action="category" data-cat="${c}"
         class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press transition-colors
@@ -930,7 +930,7 @@ window.VIEWS = (function () {
     const item = isNew ? {} : (window.CATALOG.get(e.id) || {});
     const icon = e.icon || item.icon || "backpack";
     const img = e.img !== undefined ? e.img : item.img;
-    const cats = D.categories.map(c => `<option value="${c}" ${item.category === c ? "selected" : ""}>${c}</option>`).join("");
+    const cats = window.CATALOG.categories().map(c => `<option value="${c}" ${item.category === c ? "selected" : ""}>${c}</option>`).join("");
     const icons = ADMIN_ICONS.map(ic => `
       <button type="button" data-action="admin-icon" data-icon="${ic}"
         class="admin-icon w-11 h-11 rounded-lg flex items-center justify-center press ${ic === icon ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant"}">
@@ -1054,6 +1054,31 @@ window.VIEWS = (function () {
           <span class="material-symbols-outlined text-[16px]">drag_indicator</span>
           ${dragHint}
         </p>
+        <!-- Category management -->
+        <div class="mt-md">
+          <h2 class="text-[12px] font-bold tracking-widest uppercase text-earth-brown mb-2">Categories</h2>
+          <div id="cat-list" class="flex flex-wrap gap-2 mb-2">
+            ${window.CATALOG.categories().map(c => {
+              const inUse = window.CATALOG.gear().some(g => g.category === c);
+              return `<span class="flex items-center gap-1 bg-surface-container rounded-full pl-3 pr-1 py-1 text-label-sm text-on-surface">
+                ${c}
+                ${inUse
+                  ? `<span class="material-symbols-outlined text-[14px] text-outline ml-1" title="In use by products">lock</span>`
+                  : `<button data-action="admin-cat-delete" data-cat="${c}" class="p-0.5 rounded-full hover:bg-error-container press" title="Remove category"><span class="material-symbols-outlined text-[16px] text-error">close</span></button>`}
+              </span>`;
+            }).join("")}
+          </div>
+          <div class="flex gap-2">
+            <input id="new-cat-input" type="text" placeholder="New category name"
+              class="flex-1 rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2 text-label-md" />
+            <button data-action="admin-cat-add" class="bg-secondary text-on-secondary rounded-full px-md py-2 text-label-md press hover:bg-secondary-container flex items-center gap-1">
+              <span class="material-symbols-outlined text-[18px]">add</span>Add
+            </button>
+          </div>
+        </div>
+
+        <!-- Product list -->
+        <h2 class="text-[12px] font-bold tracking-widest uppercase text-earth-brown mt-md mb-2">Products</h2>
         <div id="admin-list" class="mt-sm space-y-2">${emptyMsg}</div>
         <div class="mt-md rounded-xl p-md text-label-sm flex gap-2 ${infoClass}">
           <span class="material-symbols-outlined text-[18px] text-primary">${infoIcon}</span>

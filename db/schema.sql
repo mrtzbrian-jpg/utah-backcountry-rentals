@@ -78,3 +78,16 @@ create index if not exists products_sort_idx on products (sort_order) where acti
 alter table products enable row level security;
 create policy "public read products" on products for select using (active = true);
 -- Writes go through the service key in the Netlify function (no insert/update policy needed).
+
+-- ---------------------------------------------------------------------------
+-- Site settings — key/value store for admin-managed config (e.g. categories).
+-- Run in Supabase SQL Editor to enable category management from the admin.
+-- ---------------------------------------------------------------------------
+create table if not exists site_settings (
+  key   text primary key,
+  value text not null
+);
+
+alter table site_settings enable row level security;
+create policy "public read site_settings" on site_settings for select using (true);
+-- Writes go through the service key in the Netlify function.

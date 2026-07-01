@@ -9,9 +9,13 @@ exports.handler = async (event) => {
 
   if (!checkAdmin(event)) return json(401, { error: "Unauthorized" });
 
-  let products;
-  try { products = JSON.parse(event.body || "[]"); }
+  let body;
+  try { body = JSON.parse(event.body || "{}"); }
   catch { return json(400, { error: "Invalid JSON" }); }
+
+  // Accept both the old plain-array format and the new { products, categories } format.
+  const products = Array.isArray(body) ? body : (body.products || []);
+  const categories = Array.isArray(body.categories) ? body.categories : null;
   if (!Array.isArray(products)) return json(400, { error: "Expected array of products" });
 
   const supabase = getSupabase();
@@ -52,6 +56,14 @@ exports.handler = async (event) => {
     if (toDelete.length > 0) {
       await supabase.from("products").delete().in("id", toDelete);
     }
+  }
+
+  // Save categories to site_settings if provided.
+  if (categories) {
+    await supabase.from("site_settings").upsert(
+      { key: "categories", value: JSON.stringify(categories) },
+      { onConflict: "key" }
+    );
   }
 
   return json(200, { ok: true, count: rows.length });

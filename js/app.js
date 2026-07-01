@@ -576,6 +576,24 @@
       reader.readAsText(f);
     },
 
+    "admin-cat-add": () => {
+      const input = document.getElementById("new-cat-input");
+      const name = (input ? input.value : "").trim();
+      if (!name) { toast("Enter a category name", "error"); return; }
+      if (!CATALOG.addCategory(name)) { toast("Category already exists", "error"); return; }
+      if (input) input.value = "";
+      render();
+      toast(`Category "${name}" added`);
+    },
+    "admin-cat-delete": (el) => {
+      const name = el.dataset.cat;
+      if (!CATALOG.removeCategory(name)) {
+        toast(`Can't remove "${name}" — products still use it`, "error"); return;
+      }
+      render();
+      toast(`Category "${name}" removed`, "delete");
+    },
+
     "admin-publish": async () => {
       const cfg = window.UBR_CONFIG || {};
       const passcode = sessionStorage.getItem("ubr:admin-pass") || cfg.ADMIN_PASSCODE || "";
