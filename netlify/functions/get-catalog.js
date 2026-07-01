@@ -6,9 +6,11 @@ exports.handler = async () => {
   const supabase = getSupabase();
   if (!supabase) return json(503, { error: "Database not configured" });
 
-  const [productsRes, settingsRes] = await Promise.all([
+  const [productsRes, catRes, bizRes, blockedRes] = await Promise.all([
     supabase.from("products").select("*").eq("active", true).order("sort_order"),
-    supabase.from("site_settings").select("value").eq("key", "categories").maybeSingle()
+    supabase.from("site_settings").select("value").eq("key", "categories").maybeSingle(),
+    supabase.from("site_settings").select("value").eq("key", "business_info").maybeSingle(),
+    supabase.from("site_settings").select("value").eq("key", "blocked_dates").maybeSingle()
   ]);
 
   if (productsRes.error) return json(500, { error: productsRes.error.message });
@@ -21,14 +23,17 @@ exports.handler = async () => {
     return obj;
   });
 
-  let categories = null;
-  try {
-    if (settingsRes.data && settingsRes.data.value) {
-      categories = JSON.parse(settingsRes.data.value);
-    }
-  } catch (_) { /* fall back to frontend defaults */ }
+  const parseSetting = (res) => {
+    try { return res && res.data && res.data.value ? JSON.parse(res.data.value) : null; }
+    catch (_) { return null; }
+  };
 
-  return json(200, { products, categories });
+  return json(200, {
+    products,
+    categories: parseSetting(catRes),
+    businessInfo: parseSetting(bizRes),
+    blockedDates: parseSetting(blockedRes)
+  });
 };
 
 function json(statusCode, obj) {

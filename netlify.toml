@@ -14,6 +14,9 @@
   to = "/index.html"
   status = 200
 
+[functions."send-reminders"]
+  schedule = "0 8 * * *"   # 8 AM UTC daily — sends return-day reminder emails
+
 [[headers]]
   for = "/*"
   [headers.values]

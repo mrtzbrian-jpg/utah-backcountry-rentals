@@ -193,9 +193,12 @@ window.VIEWS = (function () {
 
   function home() {
     const cat = window.STATE.category;
+    const search = (window.STATE.search || "").toLowerCase().trim();
     const all = window.CATALOG.gear();
-    const list = cat === "Bundles" ? all : all.filter(g => g.category === cat);
-    const feed = (list.length ? list : all);
+    const filtered = search
+      ? all.filter(g => (g.name + " " + (g.tagline || "") + " " + g.category).toLowerCase().includes(search))
+      : (cat === "Bundles" ? all : all.filter(g => g.category === cat));
+    const feed = (filtered.length ? filtered : (search ? [] : all));
 
     const pills = window.CATALOG.categories().map(c => {
       const on = c === cat;
@@ -240,14 +243,22 @@ window.VIEWS = (function () {
             <span class="text-[12px] font-bold tracking-widest text-primary-fixed-dim shrink-0">START →</span>
           </button>
 
-          <!-- Category pills -->
-          <section class="mt-5 -mx-4 sm:-mx-6 px-4 sm:px-6">
+          <!-- Search bar -->
+          <div class="mt-5 relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[20px] text-outline pointer-events-none">search</span>
+            <input id="gear-search" type="search" placeholder="Search gear…" value="${search}"
+              class="w-full rounded-xl border border-outline-variant bg-paper-white pl-10 pr-4 py-2.5 text-body-md focus:border-primary focus:ring-0" />
+            ${search ? `<button data-action="search-clear" class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-surface-container press"><span class="material-symbols-outlined text-[18px] text-outline">close</span></button>` : ""}
+          </div>
+
+          <!-- Category pills — hidden while searching -->
+          ${search ? "" : `<section class="mt-3 -mx-4 sm:-mx-6 px-4 sm:px-6">
             <div class="flex gap-3 overflow-x-auto no-scrollbar py-1">${pills}</div>
-          </section>
+          </section>`}
 
           <!-- Feed -->
           <section id="gear-feed" class="mt-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 scroll-mt-20">
-            ${feed.map((g, i) => gearCard(g, i)).join("")}
+            ${feed.length ? feed.map((g, i) => gearCard(g, i)).join("") : `<div class="col-span-full text-center py-lg text-on-surface-variant"><span class="material-symbols-outlined text-[40px] opacity-40">search_off</span><p class="mt-2 text-body-md">No gear matches "${search}"</p></div>`}
           </section>
         </div>
       </main>`;
@@ -359,6 +370,20 @@ window.VIEWS = (function () {
         ${["S","M","T","W","T","F","S"].map(d => `<div class="h-8 flex items-center justify-center">${d}</div>`).join("")}
       </div>
       <div class="grid grid-cols-7">${cells}</div>
+      ${(() => {
+        // Find next available date if today or near future is all booked
+        if (!booked.size) return "";
+        const check = new Date(today);
+        let nextAvail = null;
+        for (let i = 0; i < 90; i++) {
+          const iso = fmt.iso(check);
+          if (!booked.has(iso)) { nextAvail = iso; break; }
+          check.setDate(check.getDate() + 1);
+        }
+        if (!nextAvail || !booked.has(fmt.iso(today))) return ""; // don't show if today is open
+        const label = new Date(nextAvail + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        return `<p class="text-label-sm text-secondary mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">event_available</span>Next available: ${label}</p>`;
+      })()}
     </div>`;
   }
 
@@ -811,8 +836,8 @@ window.VIEWS = (function () {
     const favCount = window.STATE.favs.size;
     const trips = window.STATE.bookings.length;
 
-    const row = (icon, label, sub = "") => `
-      <button class="w-full flex items-center gap-4 px-4 py-4 bg-paper-white hover:bg-granite-wash press text-left border-b border-granite-wash last:border-b-0 transition-colors">
+    const row = (icon, label, sub = "", route = "") => `
+      <button data-action="nav" data-route="${route}" class="w-full flex items-center gap-4 px-4 py-4 bg-paper-white hover:bg-granite-wash press text-left border-b border-granite-wash last:border-b-0 transition-colors">
         <span class="material-symbols-outlined text-canyon-clay">${icon}</span>
         <span class="flex-1">
           <span class="block text-[14px] font-semibold tracking-wide text-forest-deep">${label}</span>
@@ -861,11 +886,11 @@ window.VIEWS = (function () {
 
         <!-- Menu rows -->
         <section class="mt-4 rounded-xl overflow-hidden border border-outline-variant card-elevation divide-y divide-granite-wash">
-          ${row("favorite", "Saved Gear", `${favCount} item${favCount === 1 ? "" : "s"}`)}
-          ${row("receipt_long", "Rental History", `${trips} booking${trips === 1 ? "" : "s"}`)}
-          ${row("local_shipping", "Pick-up &amp; Returns", D.depot + " Depot")}
-          ${row("verified_user", "Safety &amp; Waivers")}
-          ${row("help", "Help &amp; Support")}
+          ${row("favorite", "Saved Gear", `${favCount} item${favCount === 1 ? "" : "s"}`, "#/bookings")}
+          ${row("receipt_long", "Rental History", `${trips} booking${trips === 1 ? "" : "s"}`, "#/bookings")}
+          ${row("local_shipping", "Pick-up &amp; Returns", D.depot + " Depot", "#/pickup")}
+          ${row("verified_user", "Safety &amp; Waivers", "", "#/safety")}
+          ${row("help", "Help &amp; Support", "", "#/help")}
         </section>
 
         <!-- Manage Gear -->
@@ -971,10 +996,31 @@ window.VIEWS = (function () {
                 class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
           </div>
 
-          <label class="block"><span class="text-label-md text-on-surface-variant">Quantity in stock</span>
-            <input id="admin-quantity" type="number" min="0" step="1" value="${item.quantity != null ? item.quantity : 1}" placeholder="1"
-              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" />
-            <span class="block text-label-sm text-outline mt-1">How many you own. Once all units are booked for a date, that date greys out in the calendar.</span></label>
+          <div class="grid grid-cols-2 gap-sm">
+            <label class="block"><span class="text-label-md text-on-surface-variant">Quantity in stock</span>
+              <input id="admin-quantity" type="number" min="0" step="1" value="${item.quantity != null ? item.quantity : 1}" placeholder="1"
+                class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" />
+              <span class="block text-label-sm text-outline mt-1">Booked days grey out when all units are reserved.</span></label>
+            <label class="block"><span class="text-label-md text-on-surface-variant">Weight (lbs)</span>
+              <input id="admin-weight" type="number" min="0" step="0.1" value="${item.weight != null ? item.weight : ""}" placeholder="2.5"
+                class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" />
+              <span class="block text-label-sm text-outline mt-1">Shown in pack builder total.</span></label>
+          </div>
+
+          <!-- What's included bullets -->
+          <div>
+            <span class="text-label-md text-on-surface-variant">What's included <span class="text-outline font-normal">(shown on product page)</span></span>
+            <div id="admin-includes-list" class="mt-1 space-y-1.5">
+              ${(item.includes || []).map((x, i) => `
+                <div class="flex gap-1.5 items-center">
+                  <input type="text" class="admin-include-item flex-1 rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2" value="${x.replace(/"/g, "&quot;")}" placeholder="e.g. Garmin inReach Mini" />
+                  <button type="button" data-action="admin-include-remove" data-idx="${i}" class="p-1.5 rounded-full hover:bg-error-container press shrink-0"><span class="material-symbols-outlined text-[18px] text-error">close</span></button>
+                </div>`).join("")}
+            </div>
+            <button type="button" data-action="admin-include-add" class="mt-1.5 flex items-center gap-1 text-label-sm text-primary press hover:underline">
+              <span class="material-symbols-outlined text-[16px]">add</span>Add item
+            </button>
+          </div>
 
           <div><span class="text-label-md text-on-surface-variant">Icon (shown when there's no photo)</span>
             <div class="mt-1 grid grid-cols-7 gap-1">${icons}</div></div>
@@ -1079,6 +1125,45 @@ window.VIEWS = (function () {
           <span class="material-symbols-outlined text-[18px] text-primary">${infoIcon}</span>
           <p>${infoText}</p>
         </div>
+
+        <!-- Blocked / closed dates -->
+        <div class="mt-md">
+          <h2 class="text-[12px] font-bold tracking-widest uppercase text-earth-brown mb-2">Closed Dates</h2>
+          <p class="text-label-sm text-outline mb-2">Days you're unavailable — customers can't book these dates.</p>
+          <div class="flex gap-2 mb-2">
+            <input id="block-date-input" type="date" class="flex-1 rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2 text-label-md" />
+            <button data-action="admin-block-date" class="bg-secondary text-on-secondary rounded-full px-md py-2 text-label-md press hover:bg-secondary-container flex items-center gap-1">
+              <span class="material-symbols-outlined text-[18px]">block</span>Block
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            ${(window.STATE.blockedDates || []).sort().map(d => `
+              <span class="flex items-center gap-1 bg-error-container/40 text-error rounded-full pl-3 pr-1 py-1 text-label-sm">
+                ${d}
+                <button data-action="admin-unblock-date" data-date="${d}" class="p-0.5 rounded-full hover:bg-error-container press"><span class="material-symbols-outlined text-[16px]">close</span></button>
+              </span>`).join("") || '<p class="text-label-sm text-outline">No dates blocked.</p>'}
+          </div>
+          ${backendOn ? `<button data-action="admin-save-blocked" class="mt-2 text-label-sm text-primary press hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">cloud_upload</span>Save closed dates to site</button>` : ""}
+        </div>
+
+        <!-- Business info -->
+        <div class="mt-md">
+          <h2 class="text-[12px] font-bold tracking-widest uppercase text-earth-brown mb-2">Business Info</h2>
+          <p class="text-label-sm text-outline mb-2">Shown on Pick-up & Returns and Help pages.</p>
+          <div class="space-y-2">
+            <input id="biz-phone" type="tel" placeholder="Phone number" value="${esc((window.STATE.businessInfo || {}).phone || "")}"
+              class="w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5 text-label-md" />
+            <input id="biz-email" type="email" placeholder="Contact email" value="${esc((window.STATE.businessInfo || {}).email || "")}"
+              class="w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5 text-label-md" />
+            <input id="biz-address" type="text" placeholder="Full pickup address" value="${esc((window.STATE.businessInfo || {}).address || "")}"
+              class="w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5 text-label-md" />
+            <textarea id="biz-hours" placeholder="Hours (e.g. Mon–Sat 8 AM – 6 PM)" rows="2"
+              class="w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5 text-label-md resize-none">${esc((window.STATE.businessInfo || {}).hours || "")}</textarea>
+            <button data-action="admin-save-biz" class="w-full rounded-full py-2.5 bg-surface-container text-on-surface text-label-md press hover:bg-granite-wash flex items-center justify-center gap-1">
+              <span class="material-symbols-outlined text-[18px]">save</span>Save Business Info
+            </button>
+          </div>
+        </div>
       </main>
       ${window.STATE.adminEdit ? adminForm() : ""}`;
     return `<div class="view-enter min-h-screen flex flex-col">${inner}</div>`;
@@ -1157,6 +1242,9 @@ window.VIEWS = (function () {
             <button data-action="work-order" data-id="${o.orderId}"
               class="border-2 border-forest-deep text-forest-deep px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-granite-wash">
               <span class="material-symbols-outlined text-[16px]">print</span>Work order</button>
+            ${o.hold > 0 ? `<button data-action="order-void-hold" data-id="${o.orderId}"
+              class="border-2 border-secondary text-secondary px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-secondary/5">
+              <span class="material-symbols-outlined text-[16px]">lock_open</span>Release hold</button>` : ""}
           </div>
           ${notified ? `<p class="text-[11px] text-outline mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">schedule</span>Customer notified ${new Date(o.notifiedReadyAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>` : ""}
         </div>
@@ -1267,6 +1355,137 @@ window.VIEWS = (function () {
     return `<div class="view-enter min-h-screen flex flex-col bg-white">${inner}</div>`;
   }
 
+  /* ---------- PICKUP & RETURNS ---------- */
+  function pickupInfo() {
+    const info = window.STATE.businessInfo || {};
+    const address = info.address || "Saratoga Springs, UT";
+    const phone = info.phone || "";
+    const hours = info.hours || "Mon–Sat 8 AM – 6 PM, Sun 9 AM – 4 PM";
+    const inner = `
+      ${topBar({ title: "Pick-up & Returns", back: true })}
+      <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[40px]">
+        <div class="mt-md space-y-md">
+          <section class="bg-paper-white rounded-xl border border-outline-variant card-elevation p-md">
+            <h2 class="font-heading text-headline-sm text-forest-deep flex items-center gap-2 mb-sm">
+              <span class="material-symbols-outlined text-canyon-clay">location_on</span>Depot Location
+            </h2>
+            <p class="text-body-md text-on-surface-variant">${esc(address)}</p>
+            ${phone ? `<a href="tel:${esc(phone.replace(/[^\d+]/g,""))}" class="mt-2 flex items-center gap-2 text-label-md text-secondary press hover:underline"><span class="material-symbols-outlined text-[18px]">call</span>${esc(phone)}</a>` : ""}
+          </section>
+          <section class="bg-paper-white rounded-xl border border-outline-variant card-elevation p-md">
+            <h2 class="font-heading text-headline-sm text-forest-deep flex items-center gap-2 mb-sm">
+              <span class="material-symbols-outlined text-canyon-clay">schedule</span>Hours
+            </h2>
+            <p class="text-body-md text-on-surface-variant whitespace-pre-line">${esc(hours)}</p>
+          </section>
+          <section class="bg-paper-white rounded-xl border border-outline-variant card-elevation p-md">
+            <h2 class="font-heading text-headline-sm text-forest-deep flex items-center gap-2 mb-sm">
+              <span class="material-symbols-outlined text-canyon-clay">local_shipping</span>Pick-up Process
+            </h2>
+            <ol class="space-y-3 text-body-md text-on-surface-variant list-none">
+              <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-forest-deep text-paper-white text-[12px] font-bold flex items-center justify-center shrink-0">1</span>Bring your <strong>government photo ID</strong> — it must match the name on your booking.</li>
+              <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-forest-deep text-paper-white text-[12px] font-bold flex items-center justify-center shrink-0">2</span>We'll inspect and hand over the gear together. Check it over before you go.</li>
+              <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-forest-deep text-paper-white text-[12px] font-bold flex items-center justify-center shrink-0">3</span>Return gear clean and dry by your return date. Late returns may incur an extra day charge.</li>
+              <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-forest-deep text-paper-white text-[12px] font-bold flex items-center justify-center shrink-0">4</span>Once we confirm good condition, the auth hold on your card is released — usually within 1–3 business days.</li>
+            </ol>
+          </section>
+          <section class="bg-paper-white rounded-xl border border-outline-variant card-elevation p-md">
+            <h2 class="font-heading text-headline-sm text-forest-deep flex items-center gap-2 mb-sm">
+              <span class="material-symbols-outlined text-canyon-clay">warning</span>Late & Damaged Gear
+            </h2>
+            <p class="text-body-md text-on-surface-variant">Gear not returned by your return date may be charged an additional day's rental fee. Damaged, lost, or stolen gear may be charged up to the full replacement value held on your card.</p>
+          </section>
+        </div>
+      </main>`;
+    return page(inner, { active: "#/profile" });
+  }
+
+  /* ---------- SAFETY & WAIVERS ---------- */
+  function safetyWaivers() {
+    const inner = `
+      ${topBar({ title: "Safety & Waivers", back: true })}
+      <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[40px]">
+        <div class="mt-md space-y-md">
+          <section class="bg-paper-white rounded-xl border border-outline-variant card-elevation p-md">
+            <h2 class="font-heading text-headline-sm text-forest-deep flex items-center gap-2 mb-sm">
+              <span class="material-symbols-outlined text-canyon-clay">verified_user</span>Rental Agreement
+            </h2>
+            <div class="space-y-3 text-body-md text-on-surface-variant">
+              <p>By completing a booking you agree to the following terms:</p>
+              <ul class="space-y-2 list-none">
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>You are responsible for the full replacement cost of any lost, stolen, or damaged gear.</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>Gear must be returned clean, dry, and in the same condition it was received.</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>An authorization hold (up to $250) is placed on your card at checkout and released upon safe return.</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>Gear not returned may be reported stolen and the card charged up to the full replacement value.</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>This equipment is for backcountry use and carries inherent risks, which you accept by renting.</li>
+              </ul>
+            </div>
+          </section>
+          <section class="bg-paper-white rounded-xl border border-outline-variant card-elevation p-md">
+            <h2 class="font-heading text-headline-sm text-forest-deep flex items-center gap-2 mb-sm">
+              <span class="material-symbols-outlined text-canyon-clay">health_and_safety</span>Safety Guidelines
+            </h2>
+            <div class="space-y-2 text-body-md text-on-surface-variant">
+              <p>Backcountry travel involves serious risks. Before heading out:</p>
+              <ul class="space-y-2 list-none mt-2">
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-canyon-clay shrink-0 mt-0.5">warning</span>Always tell someone your route and expected return time.</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-canyon-clay shrink-0 mt-0.5">warning</span>Check weather conditions before and during your trip.</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-canyon-clay shrink-0 mt-0.5">warning</span>Know how to use all gear — especially the Garmin inReach — before you leave.</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-canyon-clay shrink-0 mt-0.5">warning</span>Carry the 10 Essentials on every overnight trip.</li>
+              </ul>
+            </div>
+          </section>
+        </div>
+      </main>`;
+    return page(inner, { active: "#/profile" });
+  }
+
+  /* ---------- HELP & SUPPORT ---------- */
+  function helpSupport() {
+    const info = window.STATE.businessInfo || {};
+    const phone = info.phone || "";
+    const email = info.email || "";
+    const faqs = [
+      ["Can I extend my rental?", "Contact us before your return date and we'll do our best to accommodate an extension, subject to availability."],
+      ["What if gear is damaged on the trail?", "Accidents happen. Contact us immediately. The auth hold covers damage up to $250 — anything beyond that may be billed separately."],
+      ["Can I cancel my booking?", "Cancellations must be requested at least 48 hours before pickup for a full refund. Contact us by phone or email."],
+      ["Do you deliver gear?", "Currently we are pickup-only from our Saratoga Springs depot. We're exploring delivery options for the future."],
+      ["Is there a minimum rental period?", "Our minimum rental is 1 day. Multi-day rentals are priced per day."],
+      ["What ID do I need at pickup?", "A valid government-issued photo ID (driver's license or passport). The name must match your booking and payment card."],
+    ];
+    const inner = `
+      ${topBar({ title: "Help & Support", back: true })}
+      <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[40px]">
+        <div class="mt-md space-y-md">
+          ${(phone || email) ? `
+          <section class="bg-paper-white rounded-xl border border-outline-variant card-elevation p-md">
+            <h2 class="font-heading text-headline-sm text-forest-deep flex items-center gap-2 mb-sm">
+              <span class="material-symbols-outlined text-canyon-clay">contact_support</span>Contact Us
+            </h2>
+            <div class="space-y-2">
+              ${phone ? `<a href="tel:${esc(phone.replace(/[^\d+]/g,""))}" class="flex items-center gap-3 text-body-md text-secondary press hover:underline"><span class="material-symbols-outlined text-[20px]">call</span>${esc(phone)}</a>` : ""}
+              ${email ? `<a href="mailto:${esc(email)}" class="flex items-center gap-3 text-body-md text-secondary press hover:underline"><span class="material-symbols-outlined text-[20px]">mail</span>${esc(email)}</a>` : ""}
+            </div>
+          </section>` : ""}
+          <section class="bg-paper-white rounded-xl border border-outline-variant card-elevation p-md">
+            <h2 class="font-heading text-headline-sm text-forest-deep flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-canyon-clay">help</span>Frequently Asked Questions
+            </h2>
+            <div class="divide-y divide-granite-wash">
+              ${faqs.map(([q, a]) => `
+                <details class="group py-3">
+                  <summary class="flex items-center justify-between cursor-pointer text-[14px] font-semibold text-forest-deep list-none">
+                    ${q}<span class="material-symbols-outlined text-[20px] text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                  </summary>
+                  <p class="mt-2 text-body-md text-on-surface-variant">${a}</p>
+                </details>`).join("")}
+            </div>
+          </section>
+        </div>
+      </main>`;
+    return page(inner, { active: "#/profile" });
+  }
+
   function notFound() {
     return page(`${topBar({ title: "Not found", back: true })}
       <main class="flex-grow flex flex-col items-center justify-center text-center px-md">
@@ -1277,5 +1496,5 @@ window.VIEWS = (function () {
       </main>`, { active: "#/" });
   }
 
-  return { home, productDetail, gear, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, admin, adminGate, safetyModal, adminOrders, workOrder, notFound };
+  return { home, productDetail, gear, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, pickupInfo, safetyWaivers, helpSupport, admin, adminGate, safetyModal, adminOrders, workOrder, notFound };
 })();

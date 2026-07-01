@@ -115,6 +115,13 @@ window.CATALOG = (function () {
             cats = payload.categories;
             saveCats();
           }
+          if (payload.businessInfo && window.STATE) {
+            window.STATE.businessInfo = payload.businessInfo;
+            localStorage.setItem("ubr:biz", JSON.stringify(payload.businessInfo));
+          }
+          if (Array.isArray(payload.blockedDates) && window.STATE) {
+            window.STATE.blockedDates = payload.blockedDates;
+          }
           return JSON.stringify(list) + JSON.stringify(cats) !== before;
         })
         .catch(() => false);

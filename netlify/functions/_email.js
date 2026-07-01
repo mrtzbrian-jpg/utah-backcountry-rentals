@@ -159,4 +159,29 @@ async function notifyBooking(b) {
   return out;
 }
 
-module.exports = { sendEmail, notifyBooking, notifyReady };
+function returnReminderHtml(b, ref) {
+  const body = `
+    <p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">
+      Hi${b.renterName ? " " + esc(b.renterName) : ""}! Just a friendly reminder that your gear rental ends <strong>today</strong>.
+    </p>
+    ${detailsTable(b, ref)}
+    <div style="margin:14px 0 0;padding:12px 14px;background:#f6f3f2;border-left:3px solid #AB3500;border-radius:4px;">
+      <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">Return checklist:</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">
+        Please return all gear to <strong>${DEPOT}</strong> clean and dry today. Once we confirm the gear is in good condition, the authorization hold on your card will be released.
+      </p>
+    </div>`;
+  return shell("Your gear is due back today", body, "#AB3500");
+}
+
+async function notifyReturnReminder(b) {
+  if (!b.email) return { skipped: true };
+  const ref = "UBR-" + String(b.paypal_order || b.orderId || "").slice(-6).toUpperCase();
+  return sendEmail({
+    to: b.email,
+    subject: `Gear return reminder — due today (${ref})`,
+    html: returnReminderHtml(b, ref)
+  });
+}
+
+module.exports = { sendEmail, notifyBooking, notifyReady, notifyReturnReminder };

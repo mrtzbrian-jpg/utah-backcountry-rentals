@@ -35,6 +35,7 @@
   const storedBookings = (store.load("bookings", null) || []).filter(b => !/^UBR-\d{4}$/.test(b.orderId));
   window.STATE = {
     category: "Bundles",
+    search: "",
     calMonth: new Date(now.getFullYear(), now.getMonth(), 1),
     dates: { start: null, end: null },
     draft: null,
@@ -54,6 +55,8 @@
     ordersFilter: "upcoming",
     ordersLoading: false,
     adminAuthed: sessionStorage.getItem("ubr:admin") === "1",
+    blockedDates: [],   // ISO dates the owner has blocked
+    businessInfo: {},   // phone, email, hours, address
     adminEdit: null,
     bookings: storedBookings,
     unavailable: new Set(),   // ISO dates fully booked for the current item
@@ -259,6 +262,12 @@
       }
     } else if (parts[0] === "how") {
       html = window.VIEWS.howItWorks();
+    } else if (parts[0] === "pickup") {
+      html = window.VIEWS.pickupInfo();
+    } else if (parts[0] === "safety") {
+      html = window.VIEWS.safetyWaivers();
+    } else if (parts[0] === "help") {
+      html = window.VIEWS.helpSupport();
     } else if (parts[0] === "profile") {
       // Profile removed — bookings + confirmation email are the customer's record.
       go("#/"); return;
@@ -287,7 +296,9 @@
     nav: (el) => go(el.dataset.route),
     back: () => history.length > 1 ? history.back() : go("#/"),
 
-    category: (el) => { STATE.category = el.dataset.cat; render(); },
+    category: (el) => { STATE.category = el.dataset.cat; STATE.search = ""; render(); },
+    "search-input": (el) => { STATE.search = el.value; render(); document.getElementById("gear-search") && (document.getElementById("gear-search").focus()); },
+    "search-clear": () => { STATE.search = ""; render(); },
 
     "scroll-feed": () => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); },
 
@@ -526,6 +537,21 @@
       if (empty) empty.classList.remove("hidden");
       el.classList.add("hidden");
     },
+    "admin-include-add": () => {
+      const list = document.getElementById("admin-includes-list");
+      if (!list) return;
+      const idx = list.querySelectorAll(".admin-include-item").length;
+      const row = document.createElement("div");
+      row.className = "flex gap-1.5 items-center";
+      row.innerHTML = `<input type="text" class="admin-include-item flex-1 rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2" placeholder="e.g. Stuff sack" />
+        <button type="button" data-action="admin-include-remove" data-idx="${idx}" class="p-1.5 rounded-full hover:bg-error-container press shrink-0"><span class="material-symbols-outlined text-[18px] text-error">close</span></button>`;
+      list.appendChild(row);
+      row.querySelector("input").focus();
+    },
+    "admin-include-remove": (el) => {
+      const row = el.closest(".flex");
+      if (row) row.remove();
+    },
     "admin-save": () => {
       const val = (id) => (document.getElementById(id) || {}).value;
       const name = (val("admin-name") || "").trim();
@@ -533,6 +559,9 @@
       const e = STATE.adminEdit || {};
       const current = e.id ? (CATALOG.get(e.id) || {}) : {};
       const qRaw = parseInt(val("admin-quantity"), 10);
+      const wRaw = parseFloat(val("admin-weight"));
+      const includeInputs = document.querySelectorAll(".admin-include-item");
+      const includes = Array.from(includeInputs).map(i => i.value.trim()).filter(Boolean);
       const patch = {
         name,
         category: val("admin-cat") || "Bundles",
@@ -541,6 +570,8 @@
         unit: "rental",
         deposit: parseFloat(val("admin-deposit")) || 0,
         quantity: Number.isFinite(qRaw) ? Math.max(0, qRaw) : 1,
+        weight: Number.isFinite(wRaw) ? wRaw : null,
+        includes: includes.length ? includes : null,
         icon: e.icon || current.icon || "backpack"
       };
       if (e.img !== undefined) patch.img = e.img || undefined;
@@ -574,6 +605,52 @@
         catch (err) { toast("Import failed: " + err.message, "error"); }
       };
       reader.readAsText(f);
+    },
+
+    "admin-block-date": () => {
+      const input = document.getElementById("block-date-input");
+      const date = input ? input.value : "";
+      if (!date) { toast("Pick a date to block", "error"); return; }
+      if (STATE.blockedDates.includes(date)) { toast("Already blocked", "error"); return; }
+      STATE.blockedDates = [...STATE.blockedDates, date];
+      if (input) input.value = "";
+      render();
+    },
+    "admin-unblock-date": (el) => {
+      STATE.blockedDates = STATE.blockedDates.filter(d => d !== el.dataset.date);
+      render();
+    },
+    "admin-save-blocked": async () => {
+      const cfg = window.UBR_CONFIG || {};
+      const r = await fetch(cfg.FUNCTIONS_BASE + "/save-blocked-dates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-passcode": adminPass() },
+        body: JSON.stringify({ dates: STATE.blockedDates })
+      });
+      const d = await r.json();
+      if (!r.ok) { toast(d.error || "Save failed", "error"); return; }
+      toast(`${STATE.blockedDates.length} closed date(s) saved`, "cloud_done");
+    },
+    "admin-save-biz": async () => {
+      const cfg = window.UBR_CONFIG || {};
+      const info = {
+        phone: (document.getElementById("biz-phone") || {}).value || "",
+        email: (document.getElementById("biz-email") || {}).value || "",
+        address: (document.getElementById("biz-address") || {}).value || "",
+        hours: (document.getElementById("biz-hours") || {}).value || ""
+      };
+      STATE.businessInfo = info;
+      localStorage.setItem("ubr:biz", JSON.stringify(info));
+      if (cfg.BACKEND_ENABLED) {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/save-catalog", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-admin-passcode": adminPass() },
+          body: JSON.stringify({ products: CATALOG.gear(), categories: CATALOG.categories(), businessInfo: info })
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error || "Save failed", "error"); return; }
+      }
+      toast("Business info saved", "check_circle");
     },
 
     "admin-cat-add": () => {
@@ -640,6 +717,25 @@
       if (o) { o.status = "ready"; o.notifiedReadyAt = new Date().toISOString(); render(); }
       const sent = r.notify && r.notify.email && !r.notify.email.skipped && !r.notify.email.error;
       toast(sent ? "Ready email sent" : "Marked ready", "mark_chat_read");
+    },
+
+    "order-void-hold": async (el) => {
+      const id = el.dataset.id;
+      if (!window.confirm("Release the authorization hold on this booking? This cannot be undone.")) return;
+      const cfg = window.UBR_CONFIG || {};
+      toast("Releasing hold…", "lock_open");
+      try {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/void-hold", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-admin-passcode": adminPass() },
+          body: JSON.stringify({ orderId: id })
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error || "Release failed", "error"); return; }
+        const o = STATE.orders.find(x => x.orderId === id);
+        if (o) { o.hold = 0; render(); }
+        toast("Hold released — card unlocked", "lock_open");
+      } catch (e) { toast("Network error", "error"); }
     },
 
     "work-order": (el) => go("#/work-order/" + el.dataset.id),
@@ -730,7 +826,14 @@
   });
   // Keep the renter's legal name in state as they type (survives re-renders).
   document.addEventListener("input", (e) => {
-    if (e.target && e.target.id === "renter-name") STATE.renterName = e.target.value;
+    if (!e.target) return;
+    if (e.target.id === "renter-name") STATE.renterName = e.target.value;
+    if (e.target.id === "gear-search") {
+      STATE.search = e.target.value;
+      // Debounce re-render so fast typing doesn't flash
+      clearTimeout(window._searchTimer);
+      window._searchTimer = setTimeout(render, 200);
+    }
   });
 
   /* ---------------- drag-to-reorder (admin) ---------------- */
@@ -765,6 +868,12 @@
   window.addEventListener("hashchange", render);
   window.addEventListener("DOMContentLoaded", render);
   if (document.readyState !== "loading") render();
+
+  // Load persisted business info from localStorage
+  try {
+    const biz = JSON.parse(localStorage.getItem("ubr:biz"));
+    if (biz && typeof biz === "object") STATE.businessInfo = biz;
+  } catch (_) {}
 
   // If backend is enabled, load the live catalog from Supabase and re-render
   // if it differs from the locally cached version.

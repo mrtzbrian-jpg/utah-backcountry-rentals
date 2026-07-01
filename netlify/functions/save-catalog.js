@@ -16,6 +16,7 @@ exports.handler = async (event) => {
   // Accept both the old plain-array format and the new { products, categories } format.
   const products = Array.isArray(body) ? body : (body.products || []);
   const categories = Array.isArray(body.categories) ? body.categories : null;
+  const businessInfo = body.businessInfo && typeof body.businessInfo === "object" ? body.businessInfo : null;
   if (!Array.isArray(products)) return json(400, { error: "Expected array of products" });
 
   const supabase = getSupabase();
@@ -58,12 +59,11 @@ exports.handler = async (event) => {
     }
   }
 
-  // Save categories to site_settings if provided.
-  if (categories) {
-    await supabase.from("site_settings").upsert(
-      { key: "categories", value: JSON.stringify(categories) },
-      { onConflict: "key" }
-    );
+  const settingsUpserts = [];
+  if (categories) settingsUpserts.push({ key: "categories", value: JSON.stringify(categories) });
+  if (businessInfo) settingsUpserts.push({ key: "business_info", value: JSON.stringify(businessInfo) });
+  if (settingsUpserts.length) {
+    await supabase.from("site_settings").upsert(settingsUpserts, { onConflict: "key" });
   }
 
   return json(200, { ok: true, count: rows.length });
