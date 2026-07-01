@@ -179,8 +179,8 @@ window.DATA = (function () {
     "anker-10k": 12, "bear-spray": 12
   };
 
-  // Refundable security deposit (USD) per item = YOUR replacement cost, held at
-  // pickup. ⚠️ PLACEHOLDERS: edit in the admin; mirror in _pricing.js DEPOSITS.
+  // Auth hold amount (USD) per item = YOUR replacement cost. A hold (up to $250)
+  // is placed on the card at checkout, released on return. Edit in the admin.
   const DEPOSITS = {
     "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80,
     "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,

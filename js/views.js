@@ -917,7 +917,7 @@ window.VIEWS = (function () {
       <div class="w-14 h-14 shrink-0 rounded-md gear-tile relative overflow-hidden flex items-center justify-center">${mediaLayer(item, 28)}</div>
       <div class="min-w-0 flex-1">
         <p class="text-label-md text-on-surface truncate">${item.name}</p>
-        <p class="text-label-sm text-outline truncate">${item.category} · ${fmt.money(item.price)} · qty ${item.quantity != null ? item.quantity : 1}${item.deposit ? " · " + fmt.money(item.deposit) + " dep" : ""}</p>
+        <p class="text-label-sm text-outline truncate">${item.category} · ${fmt.money(item.price)} · qty ${item.quantity != null ? item.quantity : 1}${item.deposit ? " · " + fmt.money(item.deposit) + " hold" : ""}</p>
       </div>
       <button data-action="admin-edit" data-id="${item.id}" class="p-2 rounded-full hover:bg-surface-container press shrink-0"><span class="material-symbols-outlined text-on-surface-variant">edit</span></button>
       <button data-action="admin-delete" data-id="${item.id}" class="p-2 rounded-full hover:bg-error-container press shrink-0"><span class="material-symbols-outlined text-error">delete</span></button>
@@ -971,7 +971,7 @@ window.VIEWS = (function () {
             <label class="block"><span class="text-label-md text-on-surface-variant">Rental price ($)</span>
               <input id="admin-price" type="number" min="0" value="${item.price != null ? item.price : ""}" placeholder="65"
                 class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
-            <label class="block"><span class="text-label-md text-on-surface-variant">Deposit — your cost ($)</span>
+            <label class="block"><span class="text-label-md text-on-surface-variant">Auth hold amount — your cost ($)</span>
               <input id="admin-deposit" type="number" min="0" value="${item.deposit != null ? item.deposit : ""}" placeholder="400"
                 class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
           </div>
@@ -1226,7 +1226,7 @@ window.VIEWS = (function () {
         <table style="width:100%;border-collapse:collapse;margin-top:22px;font-size:14px;border-top:2px solid #061B0E;">
           <tr><td style="padding:8px 0;color:#5C5346;">Rental charged</td><td style="padding:8px 0;font-weight:700;text-align:right;">${fmt.money((o.amount || 0) / 100)}</td></tr>
           ${o.hold ? `<tr><td style="padding:8px 0;color:#5C5346;">Refundable hold on card</td><td style="padding:8px 0;font-weight:700;text-align:right;">${fmt.money((o.hold || 0) / 100)}</td></tr>` : ""}
-          ${o.deposit ? `<tr><td style="padding:8px 0;color:#5C5346;">Full replacement value</td><td style="padding:8px 0;font-weight:700;text-align:right;">${fmt.money((o.deposit || 0) / 100)}</td></tr>` : ""}
+          ${o.deposit ? `<tr><td style="padding:8px 0;color:#5C5346;">Max auth hold</td><td style="padding:8px 0;font-weight:700;text-align:right;">${fmt.money((o.deposit || 0) / 100)}</td></tr>` : ""}
         </table>
 
         <div style="margin-top:18px;padding:14px;border:2px solid #061B0E;border-radius:8px;">
