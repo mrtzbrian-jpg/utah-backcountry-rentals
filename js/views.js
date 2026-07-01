@@ -376,31 +376,28 @@ window.VIEWS = (function () {
 
     const inner = `
       ${topBar({ title: "Select Dates", back: true })}
-      <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[120px]">
-        <!-- item summary -->
-        <section class="mt-md bg-surface-container-lowest rounded-xl shadow-card p-md flex gap-md items-center">
-          <div class="w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-surface-container relative flex items-center justify-center">
-            <img src="${imageFor(item, 400)}" alt="${item.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover" />
-            <span class="gear-fallback-icon material-symbols-outlined opacity-0" style="font-size:44px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+      <main class="flex-grow px-md max-w-container-max mx-auto w-full pb-[260px]">
+        <!-- item summary — compact single row -->
+        <section class="mt-md flex gap-3 items-center">
+          <div class="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-surface-container relative flex items-center justify-center">
+            <img src="${imageFor(item, 200)}" alt="${item.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover" />
+            <span class="gear-fallback-icon material-symbols-outlined opacity-0" style="font-size:28px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
           </div>
-          <div class="min-w-0">
-            <h2 class="font-heading text-headline-sm text-on-surface">${item.name}</h2>
-            <p class="text-body-md text-on-surface-variant line-clamp-2">${item.tagline || item.desc || ""}</p>
-            <p class="mt-1 text-label-md text-secondary">${fmt.money(item.price)} rental</p>
+          <div class="min-w-0 flex-1">
+            <h2 class="font-heading text-headline-xs text-on-surface truncate">${item.name}</h2>
+            <p class="text-label-sm text-secondary">${fmt.money(item.price)} rental</p>
           </div>
         </section>
 
-        ${includes ? `<section class="mt-md"><p class="text-label-md text-outline uppercase tracking-wider mb-sm">What's included</p><ul class="grid gap-2">${includes}</ul></section>` : ""}
-
         <section class="mt-md">${calendar()}</section>
 
-        <p class="text-center text-label-sm text-outline mt-sm flex items-center justify-center gap-1">
-          <span class="material-symbols-outlined text-[16px]">touch_app</span>
+        <p class="text-center text-label-sm text-outline mt-2 flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-[15px]">touch_app</span>
           Tap your pickup day, then your return day
         </p>
 
         <!-- Pickup time window -->
-        <section class="mt-5">
+        <section class="mt-4">
           <p class="text-label-md font-semibold text-on-surface mb-2 flex items-center gap-1.5">
             <span class="material-symbols-outlined text-[18px] text-canyon-clay">schedule</span>
             Pickup window
@@ -409,40 +406,38 @@ window.VIEWS = (function () {
             ${PICKUP_TIMES.map(t => {
               const on = pickupTime === t.label;
               return `<button data-action="pickup-time" data-time="${t.label}"
-                class="rounded-xl border-2 py-3 px-3 text-left press transition-colors
+                class="rounded-xl border-2 py-2.5 px-3 text-left press transition-colors
                 ${on ? "border-canyon-clay bg-canyon-clay/5" : "border-outline-variant bg-paper-white hover:border-forest-deep"}">
                 <p class="text-[13px] font-bold ${on ? "text-canyon-clay" : "text-forest-deep"}">${t.label}</p>
                 <p class="text-[11px] ${on ? "text-canyon-clay/70" : "text-earth-brown"}">${t.sub}</p>
               </button>`;
             }).join("")}
           </div>
-          ${!pickupTime ? `<p class="text-label-sm text-outline mt-1.5 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">info</span>Choose a window to continue</p>` : ""}
         </section>
       </main>
 
-      <!-- sticky footer total -->
-      <div class="fixed bottom-0 inset-x-0 z-40 bg-surface-container-lowest shadow-float rounded-t-xl safe-bottom">
-        <div class="max-w-container-max mx-auto px-md pt-md">
-          <div class="flex items-center justify-between mb-sm">
-            <span class="text-body-md text-on-surface-variant">Quantity</span>
-            <div class="flex items-center gap-3">
-              <button data-action="qty-dec" class="w-9 h-9 rounded-full bg-surface-container press flex items-center justify-center ${qty > 1 ? "" : "opacity-30 pointer-events-none"}"><span class="material-symbols-outlined text-[20px]">remove</span></button>
-              <span class="text-label-md w-6 text-center">${qty}</span>
-              <button data-action="qty-inc" class="w-9 h-9 rounded-full bg-primary text-on-primary press flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">add</span></button>
+      <!-- sticky footer — quantity + total + confirm -->
+      <div class="fixed bottom-0 inset-x-0 z-40 bg-surface-container-lowest border-t border-outline-variant safe-bottom">
+        <div class="max-w-container-max mx-auto px-md py-3">
+          <!-- quantity + total on one row -->
+          <div class="flex items-center gap-3 mb-2.5">
+            <div class="flex items-center gap-2 shrink-0">
+              <button data-action="qty-dec" class="w-8 h-8 rounded-full bg-surface-container press flex items-center justify-center ${qty > 1 ? "" : "opacity-30 pointer-events-none"}"><span class="material-symbols-outlined text-[18px]">remove</span></button>
+              <span class="text-label-md w-5 text-center">${qty}</span>
+              <button data-action="qty-inc" class="w-8 h-8 rounded-full bg-primary text-on-primary press flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">add</span></button>
             </div>
-          </div>
-          <div class="flex items-center justify-between mb-sm">
-            <div class="text-on-surface-variant text-body-md">
-              ${ready ? "Rental total" : (window.STATE.dates.start && !pickupTime ? "Choose pickup window" : "Select your dates")}
-              ${window.STATE.dates.start ? `<div class="text-label-sm text-outline">${fmt.range(window.STATE.dates)}${pickupTime ? " · " + pickupTime : ""}</div>` : ""}
+            <div class="flex-1 min-w-0">
+              <span class="text-label-sm text-outline block truncate">
+                ${window.STATE.dates.start ? fmt.range(window.STATE.dates) + (pickupTime ? " · " + pickupTime : "") : "Select dates"}
+              </span>
             </div>
-            <div class="font-heading text-headline-md text-primary">${fmt.money(total)}</div>
+            <div class="font-heading text-headline-sm text-primary shrink-0">${fmt.money(total)}</div>
           </div>
-          ${hold ? `<p class="text-label-sm text-outline -mt-1 mb-sm flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[15px] text-on-surface-variant">lock</span>
-            + ${fmt.money(hold)} refundable hold on your card, released when you return the gear</p>` : ""}
+          ${hold ? `<p class="text-label-sm text-outline mb-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">lock</span>
+            + ${fmt.money(hold)} auth hold on card, released on return</p>` : ""}
           <button data-action="confirm-dates" ${ready ? "" : "disabled"}
-            class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${ready ? "bg-secondary hover:bg-secondary-container" : "bg-secondary/40 cursor-not-allowed"}">
+            class="w-full rounded-full py-3 text-label-md text-on-secondary press transition-colors ${ready ? "bg-secondary hover:bg-secondary-container" : "bg-secondary/40 cursor-not-allowed"}">
             Confirm Dates
           </button>
         </div>
