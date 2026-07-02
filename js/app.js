@@ -34,7 +34,7 @@
   // Strip any seeded/fake bookings left over from demo mode (real PayPal IDs are long)
   const storedBookings = (store.load("bookings", null) || []).filter(b => !/^UBR-\d{4}$/.test(b.orderId));
   window.STATE = {
-    category: "Bundles",
+    category: "All",
     search: "",
     calMonth: new Date(now.getFullYear(), now.getMonth(), 1),
     dates: { start: null, end: null },
@@ -379,8 +379,7 @@
     "search-clear": () => { STATE.search = ""; render(); },
 
     "browse-gear": () => {
-      const cats = window.CATALOG ? [...new Set(window.CATALOG.gear().map(g => g.category))].filter(c => c !== "Bundles") : [];
-      STATE.category = cats[0] || "Backpacks";
+      STATE.category = "All";
       STATE.search = "";
       render();
       requestAnimationFrame(() => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });

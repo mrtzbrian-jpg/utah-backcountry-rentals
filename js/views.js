@@ -244,10 +244,10 @@ window.VIEWS = (function () {
     const all = window.CATALOG.gear();
     const filtered = search
       ? all.filter(g => (g.name + " " + (g.tagline || "") + " " + g.category).toLowerCase().includes(search))
-      : all.filter(g => g.category === cat);
+      : (cat === "All" ? all : all.filter(g => g.category === cat));
     const feed = (filtered.length ? filtered : (search ? [] : all));
 
-    const pills = window.CATALOG.categories().map(c => {
+    const pills = ["All", ...window.CATALOG.categories()].map(c => {
       const on = c === cat;
       return `<button data-action="category" data-cat="${c}"
         class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press transition-colors
