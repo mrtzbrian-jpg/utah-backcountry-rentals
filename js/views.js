@@ -267,7 +267,7 @@ window.VIEWS = (function () {
               class="text-white drop-shadow-lg mb-2">Great Gear.<br/><span style="color:#f5c060;">Skip the Retail Price.</span></h2>
             <p class="text-white/80 text-body-md mb-5 max-w-md">Pick your gear or build a custom bundle, choose your trail dates, and reserve online.</p>
             <div class="flex flex-wrap gap-3">
-              <button data-action="scroll-feed"
+              <button data-action="browse-gear"
                 class="bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
                 Browse Gear
               </button>

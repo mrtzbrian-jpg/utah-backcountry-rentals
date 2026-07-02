@@ -378,7 +378,13 @@
     "search-input": (el) => { STATE.search = el.value; render(); document.getElementById("gear-search") && (document.getElementById("gear-search").focus()); },
     "search-clear": () => { STATE.search = ""; render(); },
 
-    "scroll-feed": () => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); },
+    "browse-gear": () => {
+      const cats = window.CATALOG ? [...new Set(window.CATALOG.gear().map(g => g.category))].filter(c => c !== "Bundles") : [];
+      STATE.category = cats[0] || "Backpacks";
+      STATE.search = "";
+      render();
+      requestAnimationFrame(() => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    },
 
     view: (el) => go("#/product/" + el.dataset.id),
 
