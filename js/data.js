@@ -1,7 +1,7 @@
 /* Catalog + static data for Take a Hike Rentals */
 window.DATA = (function () {
   // Categories shown as pills on the home feed
-  const categories = ["Bundles", "Safety Tech", "Backpacks", "Camping", "Winter Gear"];
+  const categories = ["Bundles", "Singles", "Hiking", "Camping", "Sleeping", "Cooking", "Storage", "Power", "Safety Tech", "Winter Gear"];
 
   // Each gear item. `icon` is a Material Symbol; `tint` drives the tile accent.
   const gear = [

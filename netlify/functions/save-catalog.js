@@ -26,7 +26,7 @@ exports.handler = async (event) => {
     id: p.id,
     sort_order: i,
     name: p.name || "Unnamed",
-    category: p.category || "Bundles",
+    category: p.category || "Singles",
     tagline: p.tagline || "",
     description: p.desc || "",
     price: parseFloat(p.price) || 0,
