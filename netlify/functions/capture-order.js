@@ -45,8 +45,12 @@ exports.handler = async (event) => {
   if (!authId) return json(502, { error: "No authorization returned by PayPal." });
 
   // 2) Capture the rental fee, leaving the deposit held (final_capture only if no hold).
+  let captureId = null;
   if (rentalCents >= 50) {
-    try { await captureAuthorization(authId, rentalCents, holdC <= 0); }
+    try {
+      const captured = await captureAuthorization(authId, rentalCents, holdC <= 0);
+      captureId = captured ? captured.id : null;
+    }
     catch (e) { return json(502, { error: e.message || "Could not capture the rental fee." }); }
   }
 
@@ -86,6 +90,8 @@ exports.handler = async (event) => {
       hold_cents: booking.hold,
       deposit_cents: booking.deposit,
       authorization_id: authId,
+      capture_id: captureId || null,
+      cart_items: booking.cartItems ? JSON.stringify(booking.cartItems) : null,
       customer_email: booking.email,
       customer_name: booking.customerName,
       renter_name: booking.renterName,
@@ -95,6 +101,15 @@ exports.handler = async (event) => {
       pickup_time: booking.pickupTime || null,
       status: "confirmed"
     }, { onConflict: "paypal_order" });
+  }
+
+  // Fetch the item's includes list so the owner email can show a gear checklist.
+  if (supabase && booking.itemId) {
+    const { data: product } = await supabase.from("products").select("includes, weight").eq("id", booking.itemId).maybeSingle();
+    if (product) {
+      if (Array.isArray(product.includes) && product.includes.length) booking.includes = product.includes;
+      if (product.weight) booking.weight = product.weight;
+    }
   }
 
   if (!(row && row.emailed)) {

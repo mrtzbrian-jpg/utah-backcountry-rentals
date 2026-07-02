@@ -39,6 +39,7 @@ exports.handler = async (event) => {
     weight: parseFloat(p.weight) || null,
     quantity: Number.isFinite(parseInt(p.quantity, 10)) ? Math.max(0, parseInt(p.quantity, 10)) : 1,
     includes: p.includes || null,
+    per_day: !!(p.perDay || p.per_day),
     active: true,
     updated_at: new Date().toISOString()
   }));

@@ -211,13 +211,14 @@ window.VIEWS = (function () {
       ${topBar({ title: "Take a Hike Rentals", location: true })}
       <main class="flex-grow max-w-container-max mx-auto w-full">
         <!-- Hero — full-bleed, edge to edge -->
-        <section class="relative min-h-[340px] sm:min-h-[420px] overflow-hidden flex flex-col justify-end">
+        <section class="relative min-h-[220px] sm:min-h-[280px] overflow-hidden flex flex-col justify-end">
           ${ART.heroScene()}
           <div class="hero-gradient absolute inset-0 pointer-events-none"></div>
           <div class="relative z-10 p-6 sm:p-10">
-            <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(26px,5.5vw,44px);line-height:1.15;letter-spacing:-0.02em;font-weight:800;"
-              class="text-white drop-shadow-lg mb-2">Rent Premium Gear.<br/>Skip the Retail Price.</h2>
-            <p class="text-white/85 text-body-md mb-5 max-w-md">Pick your gear or build a custom bundle, choose your trail dates, and reserve online.</p>
+            <p class="text-white/55 text-[11px] font-bold tracking-[0.18em] uppercase mb-1">Take a Hike Rentals</p>
+            <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(24px,4.5vw,40px);line-height:1.15;letter-spacing:-0.02em;font-weight:800;"
+              class="text-white drop-shadow-lg mb-2">Great Gear.<br/><span style="color:#f5c060;">Skip the Retail Price.</span></h2>
+            <p class="text-white/80 text-body-md mb-5 max-w-md">Pick your gear or build a custom bundle, choose your trail dates, and reserve online.</p>
             <div class="flex flex-wrap gap-3">
               <button data-action="scroll-feed"
                 class="bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">

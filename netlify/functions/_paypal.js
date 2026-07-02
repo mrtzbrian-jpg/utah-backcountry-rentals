@@ -109,4 +109,21 @@ async function getOrder(orderId) {
   return data;
 }
 
-module.exports = { accessToken, createOrder, captureOrder, authorizeOrder, captureAuthorization, voidAuthorization, getOrder, BASE, ENV };
+// Refund a captured payment (e.g. customer cancellation).
+// Pass amountCents to do a partial refund; omit for full refund.
+async function refundCapture(captureId, amountCents) {
+  const token = await accessToken();
+  const body = amountCents != null
+    ? { amount: { currency_code: "USD", value: (amountCents / 100).toFixed(2) } }
+    : {};
+  const res = await fetch(`${BASE}/v2/payments/captures/${captureId}/refund`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (res.status === 201 || res.status === 200) return await res.json().catch(() => ({ refunded: true }));
+  const data = await res.json().catch(() => ({}));
+  throw new Error(data.message || "Refund failed");
+}
+
+module.exports = { accessToken, createOrder, captureOrder, authorizeOrder, captureAuthorization, voidAuthorization, refundCapture, getOrder, BASE, ENV };

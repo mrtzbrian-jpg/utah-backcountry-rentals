@@ -99,16 +99,40 @@ function customerHtml(b, ref) {
   return shell("Reservation confirmed", body, "#AB3500");
 }
 
+function gearChecklist(b) {
+  const lines = [];
+  // Individual includes items (e.g. tent, sleeping bag, poles...)
+  if (Array.isArray(b.includes) && b.includes.length) {
+    b.includes.forEach(item => lines.push(esc(item)));
+  }
+  // Fallback: just show the item name × qty when no includes list exists
+  if (!lines.length) {
+    const label = esc(b.name || "Gear");
+    const qty = b.qty && b.qty > 1 ? ` ×${b.qty}` : "";
+    lines.push(label + qty);
+  }
+  const bullets = lines.map(l => `<li style="font-size:13px;color:#1b1c1c;line-height:1.8;">${l}</li>`).join("");
+  const weightNote = b.weight ? `<p style="font-size:12px;color:#5C5346;margin:6px 0 0;">Total pack weight: ~${b.weight} lbs</p>` : "";
+  return `<div style="margin:14px 0 0;padding:12px 14px;background:#e8f0e9;border-left:3px solid #1b3022;border-radius:4px;">
+    <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0 0 4px;font-weight:700;">Gear checklist — pull these items:</p>
+    <ul style="margin:0;padding-left:18px;">${bullets}</ul>
+    ${weightNote}
+  </div>`;
+}
+
 function ownerHtml(b, ref) {
   const body = `
     <p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">
       A new rental was just booked and paid. Get this gear ready for pickup:
     </p>
     ${detailsTable(b, ref)}
-    <table style="width:100%;border-collapse:collapse;margin:4px 0;">
+    ${gearChecklist(b)}
+    <table style="width:100%;border-collapse:collapse;margin:14px 0 4px;">
       ${row("Renter (verify ID)", esc(b.renterName || "—"))}
       ${row("Card / PayPal name", esc(b.customerName || "—"))}
       ${row("Email", esc(b.email || "—"))}
+      ${row("Phone", esc(b.phone || "—"))}
+      ${row("Pickup window", esc(b.pickupTime || "—"))}
       ${row("Agreed to terms", b.agreedTerms ? "Yes" + (b.agreedAt ? " · " + new Date(b.agreedAt).toLocaleString("en-US") : "") : "—")}
     </table>
     <div style="margin:12px 0 0;padding:12px 14px;background:#f6f3f2;border-left:3px solid #061B0E;border-radius:4px;">
@@ -184,4 +208,92 @@ async function notifyReturnReminder(b) {
   });
 }
 
-module.exports = { sendEmail, notifyBooking, notifyReady, notifyReturnReminder };
+function cancellationHtml(b, ref) {
+  const body = `
+    <p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">
+      Hi${b.customerName ? ", " + esc(b.customerName) : ""}! Your booking has been cancelled and a full refund is on its way.
+    </p>
+    ${detailsTable(b, ref)}
+    <div style="margin:14px 0 0;padding:12px 14px;background:#f6f3f2;border-left:3px solid #5C5346;border-radius:4px;">
+      <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">Refund timeline:</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">Your rental fee will be refunded to your original payment method within 3–5 business days. Any authorization hold on your card has been released immediately.</p>
+    </div>
+    <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
+      Questions? Reply to this email or contact us directly. We hope to see you on the trail soon!</p>`;
+  return shell("Booking cancelled — refund issued", body, "#5C5346");
+}
+
+async function notifyCancellation(b) {
+  if (!b.email) return { skipped: true };
+  const ref = "UBR-" + String(b.paypal_order || b.orderId || "").slice(-6).toUpperCase();
+  const out = {};
+  try {
+    out.customer = await sendEmail({
+      to: b.email,
+      subject: `Your Take a Hike Rentals booking was cancelled (${ref})`,
+      html: cancellationHtml(b, ref)
+    });
+  } catch (e) { out.customer = { error: e.message }; }
+  const owner = process.env.OWNER_EMAIL;
+  try {
+    out.owner = owner ? await sendEmail({
+      to: owner,
+      subject: `❌ Booking cancelled: ${b.name || "Gear"} (${ref})`,
+      html: shell("Booking cancelled", `<p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">A booking was cancelled and refunded.</p>${detailsTable(b, ref)}<table style="width:100%;border-collapse:collapse;margin:4px 0;">${row("Customer", esc(b.customerName || "—"))}${row("Email", esc(b.email || "—"))}</table>`, "#5C5346")
+    }) : { skipped: true };
+  } catch (e) { out.owner = { error: e.message }; }
+  return out;
+}
+
+function returnConfirmHtml(b, ref) {
+  const body = `
+    <p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">
+      Hi${b.renterName ? ", " + esc(b.renterName) : ""}! Your gear has been checked in and everything looks great. Thank you for taking care of the equipment!
+    </p>
+    ${detailsTable(b, ref)}
+    <div style="margin:14px 0 0;padding:12px 14px;background:#e8f0e9;border-left:3px solid #1b3022;border-radius:4px;">
+      <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">Authorization hold released:</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">The refundable hold on your card has been released. Depending on your bank, it may take 1–5 business days to fully clear.</p>
+    </div>
+    <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">We hope you had an amazing adventure! Book again soon — your next trail is waiting.</p>`;
+  return shell("Gear returned — you're all set!", body, "#1b3022");
+}
+
+async function notifyReturn(b) {
+  if (!b.email) return { skipped: true };
+  const ref = "UBR-" + String(b.paypal_order || b.orderId || "").slice(-6).toUpperCase();
+  return sendEmail({
+    to: b.email,
+    subject: `Gear returned — you're all set! (${ref})`,
+    html: returnConfirmHtml(b, ref)
+  });
+}
+
+function waitlistNotifyHtml(itemName, startDate, endDate) {
+  const range = (() => {
+    const s = fmtDate(startDate), e = fmtDate(endDate);
+    if (!s) return "the dates you requested";
+    return (e && e !== s) ? `${s} → ${e}` : s;
+  })();
+  const body = `
+    <p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">
+      Great news! <strong>${esc(itemName || "Gear")}</strong> is now available for <strong>${range}</strong> — a booking just opened up.
+    </p>
+    <div style="margin:14px 0 0;padding:12px 14px;background:#e8f0e9;border-left:3px solid #1b3022;border-radius:4px;">
+      <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">Book before it's gone:</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">Visit takeahikerentals.com and select those dates — availability is first-come, first-served.</p>
+    </div>
+    <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">We'll only send one notification per waitlist entry. Reply to this email with any questions.</p>`;
+  return shell("Dates now available!", body, "#1b3022");
+}
+
+async function notifyWaitlistEntry({ email, itemName, startDate, endDate }) {
+  if (!email) return { skipped: true };
+  return sendEmail({
+    to: email,
+    subject: `${itemName || "Gear"} just opened up for your dates!`,
+    html: waitlistNotifyHtml(itemName, startDate, endDate)
+  });
+}
+
+module.exports = { sendEmail, notifyBooking, notifyReady, notifyReturnReminder, notifyCancellation, notifyReturn, notifyWaitlistEntry };

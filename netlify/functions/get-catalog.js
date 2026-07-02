@@ -20,6 +20,8 @@ exports.handler = async () => {
     const obj = { ...p };
     obj.desc = p.description || "";
     delete obj.description;
+    obj.perDay = !!p.per_day;
+    delete obj.per_day;
     return obj;
   });
 

@@ -7,7 +7,7 @@
  *
  * Status flow: confirmed → prepped → ready → picked_up → returned */
 const { getSupabase } = require("./_supabase");
-const { notifyReady }  = require("./_email");
+const { notifyReady, notifyReturn } = require("./_email");
 const { checkAdmin }   = require("./_auth");
 
 exports.handler = async (event) => {
@@ -54,6 +54,21 @@ exports.handler = async (event) => {
       : { skipped: true };
 
     notifyResult = { email: emailR };
+  }
+
+  // Auto-email customer when owner marks gear returned (first time only).
+  if (status === "returned" && row.status !== "returned" && row.customer_email) {
+    notifyReturn({
+      orderId,
+      paypal_order: orderId,
+      name:       row.item_name,
+      startDate:  row.start_date,
+      endDate:    row.end_date,
+      renterName: row.renter_name,
+      email:      row.customer_email,
+      amount:     row.amount_cents,
+      hold:       row.hold_cents
+    }).catch(() => {});
   }
 
   const { error } = await supabase.from("bookings").update(patch).eq("paypal_order", orderId);

@@ -41,13 +41,13 @@ const FALLBACK_DEPOSITS = {
   "winter-traction-kit": 100, "water-filter": 20
 };
 
-// Read a published product's price/deposit/quantity straight from the DB.
+// Read a published product's price/deposit/quantity/per_day straight from the DB.
 async function productRow(itemId) {
   const supabase = getSupabase();
   if (!supabase || !itemId) return null;
   const { data, error } = await supabase
     .from("products")
-    .select("price,deposit,quantity")
+    .select("price,deposit,quantity,per_day")
     .eq("id", itemId)
     .single();
   if (error || !data) return null;
@@ -68,9 +68,10 @@ async function sumComponents(field, components, packFallback) {
   return dollars;
 }
 
-/** Authoritative rental charge in cents (price × quantity). */
-async function quoteCents({ itemId, qty = 1, components = [], addons = [] }) {
+/** Authoritative rental charge in cents (price × quantity, × days when per_day is set). */
+async function quoteCents({ itemId, qty = 1, components = [], addons = [], days = 1 }) {
   const q = Math.max(1, parseInt(qty, 10) || 1);
+  const d = Math.max(1, parseInt(days, 10) || 1);
   let dollars = 0;
   if (itemId === "custom") {
     dollars = await sumComponents("price", components, PACK_PRICES);
@@ -78,6 +79,7 @@ async function quoteCents({ itemId, qty = 1, components = [], addons = [] }) {
   } else {
     const row = await productRow(itemId);
     dollars = row ? Number(row.price) || 0 : (FALLBACK_PRICES[itemId] || 0);
+    if (row && row.per_day) dollars *= d;
   }
   return Math.round(dollars * q * 100);
 }
