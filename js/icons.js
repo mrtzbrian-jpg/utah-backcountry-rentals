@@ -124,5 +124,77 @@ window.ART = (function () {
     </svg>`;
   }
 
-  return { heroScene, mountainBand, trailLine, topoMap };
+  // Animated backpack SVG for the pack builder drag-drop zone.
+  // fillPct = 0–1 (how full), count = item count shown in badge.
+  function packSvg(fillPct, count) {
+    const fp = Math.max(0, Math.min(1, fillPct || 0));
+    const fillH = Math.round(fp * 62); // body inner height ~62px
+    const uid = "p" + Math.random().toString(36).slice(2, 7);
+    return `
+    <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-md" aria-hidden="true">
+      <defs>
+        <clipPath id="body-clip-${uid}">
+          <rect x="14" y="46" width="72" height="78" rx="14"/>
+        </clipPath>
+        <linearGradient id="body-grad-${uid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#223a28"/>
+          <stop offset="100%" stop-color="#0e1d12"/>
+        </linearGradient>
+        <linearGradient id="pocket-grad-${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2d4a38"/>
+          <stop offset="100%" stop-color="#1a2e1e"/>
+        </linearGradient>
+        <filter id="glow-${uid}"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+
+      <!-- Shoulder straps -->
+      <path d="M34 48 Q24 36 28 22 Q31 12 44 9 Q50 7 56 9 Q69 12 72 22 Q76 36 66 48"
+        fill="none" stroke="#364c3c" stroke-width="11" stroke-linecap="round"/>
+
+      <!-- Sternum strap -->
+      <rect x="32" y="34" width="36" height="7" rx="3.5" fill="#4a6650"/>
+
+      <!-- Top handle -->
+      <rect x="38" y="4" width="24" height="8" rx="4" fill="#4a6650"/>
+
+      <!-- Pack body -->
+      <rect x="14" y="46" width="72" height="78" rx="14" fill="url(#body-grad-${uid})"/>
+
+      <!-- Fill meter (grows from bottom, clipped to body) -->
+      ${fillH > 0 ? `<rect x="14" y="${124 - fillH}" width="72" height="${fillH}" fill="#ab3500" opacity="0.35" clip-path="url(#body-clip-${uid})"/>` : ""}
+
+      <!-- Main compartment seam -->
+      <rect x="20" y="52" width="60" height="66" rx="10" fill="none" stroke="#3a5842" stroke-width="1.5"/>
+
+      <!-- Zipper top -->
+      <path d="M22 68 Q50 73 78 68" fill="none" stroke="#5d7a60" stroke-width="1.5" stroke-dasharray="4,3" stroke-linecap="round"/>
+
+      <!-- Front pocket -->
+      <rect x="22" y="82" width="56" height="36" rx="9" fill="url(#pocket-grad-${uid})"/>
+
+      <!-- Front pocket zipper -->
+      <path d="M24 82 Q50 87 76 82" fill="none" stroke="#4a6650" stroke-width="1.5" stroke-dasharray="3,2.5" stroke-linecap="round"/>
+
+      <!-- Side mesh pockets -->
+      <rect x="4" y="60" width="10" height="34" rx="5" fill="#2a3e2e" opacity="0.8"/>
+      <rect x="86" y="60" width="10" height="34" rx="5" fill="#2a3e2e" opacity="0.8"/>
+
+      <!-- Hip belt tabs -->
+      <rect x="9" y="112" width="12" height="7" rx="3.5" fill="#364c3c"/>
+      <rect x="79" y="112" width="12" height="7" rx="3.5" fill="#364c3c"/>
+
+      <!-- Item count badge -->
+      ${count > 0 ? `
+      <circle cx="78" cy="52" r="13" fill="#ab3500" filter="url(#glow-${uid})"/>
+      <circle cx="78" cy="52" r="12" fill="#ab3500"/>
+      <text x="78" y="57" text-anchor="middle" fill="white" font-size="${count > 9 ? 11 : 13}" font-weight="700" font-family="system-ui,sans-serif">${count}</text>` : `
+      <!-- Drop hint arrow when empty -->
+      <g opacity="0.35">
+        <path d="M50 56 L50 72" stroke="#8aaa8c" stroke-width="2" stroke-linecap="round"/>
+        <path d="M44 66 L50 73 L56 66" stroke="#8aaa8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>`}
+    </svg>`;
+  }
+
+  return { heroScene, mountainBand, trailLine, topoMap, packSvg };
 })();

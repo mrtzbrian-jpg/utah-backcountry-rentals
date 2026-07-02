@@ -44,7 +44,8 @@
     favs: new Set(store.load("favs", [])),
     pack: new Map(),
     packAddons: new Set(),
-    packBase: null,        // selected backpack id for a custom bundle
+    packBase: null,
+    packSize: null,        // chosen litre size (18/22/28/35/45/55/65/75)
     packCat: "All",
     bookingTab: "Upcoming",
     safetyAccepted: false,
@@ -296,6 +297,74 @@
 
     root.innerHTML = html;
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    setupPackDragDrop();
+  }
+
+  function setupPackDragDrop() {
+    const zone = document.getElementById("pack-zone");
+    if (!zone) return;
+    let dragId = null;
+
+    document.querySelectorAll("[data-pack-drag]").forEach(el => {
+      el.addEventListener("dragstart", e => {
+        dragId = el.dataset.packDrag;
+        el.classList.add("pack-dragging");
+        e.dataTransfer.effectAllowed = "copy";
+      });
+      el.addEventListener("dragend", () => { dragId = null; el.classList.remove("pack-dragging"); });
+    });
+
+    zone.addEventListener("dragover", e => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; zone.classList.add("pack-drop-active"); });
+    zone.addEventListener("dragleave", e => { if (!zone.contains(e.relatedTarget)) zone.classList.remove("pack-drop-active"); });
+    zone.addEventListener("drop", e => {
+      e.preventDefault();
+      zone.classList.remove("pack-drop-active");
+      if (!dragId) return;
+      const id = dragId; dragId = null;
+      STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1);
+      zone.classList.add("pack-bounce");
+      setTimeout(() => zone.classList.remove("pack-bounce"), 460);
+      render();
+      const g = window.CATALOG.get(id);
+      if (g) toast(g.name + " packed!", "backpack");
+    });
+
+    // Touch drag-and-drop
+    let ghost = null, touchId = null;
+    document.querySelectorAll("[data-pack-drag]").forEach(el => {
+      el.addEventListener("touchstart", e => {
+        touchId = el.dataset.packDrag;
+        const r = el.getBoundingClientRect();
+        ghost = el.cloneNode(true);
+        Object.assign(ghost.style, { position: "fixed", left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", opacity: "0.85", pointerEvents: "none", zIndex: "9999", borderRadius: "12px", overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.25)", transition: "none" });
+        document.body.appendChild(ghost);
+      }, { passive: true });
+      el.addEventListener("touchmove", e => {
+        if (!ghost) return;
+        const t = e.touches[0], w = parseFloat(ghost.style.width), h = parseFloat(ghost.style.height);
+        ghost.style.left = (t.clientX - w / 2) + "px";
+        ghost.style.top = (t.clientY - h / 2) + "px";
+        const zr = zone.getBoundingClientRect();
+        zone.classList.toggle("pack-drop-active", t.clientX >= zr.left && t.clientX <= zr.right && t.clientY >= zr.top && t.clientY <= zr.bottom);
+      }, { passive: true });
+      el.addEventListener("touchend", e => {
+        if (!ghost) return;
+        const t = e.changedTouches[0];
+        ghost.remove(); ghost = null;
+        zone.classList.remove("pack-drop-active");
+        const zr = zone.getBoundingClientRect();
+        if (touchId && t.clientX >= zr.left && t.clientX <= zr.right && t.clientY >= zr.top && t.clientY <= zr.bottom) {
+          const id = touchId;
+          STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1);
+          zone.classList.add("pack-bounce");
+          setTimeout(() => zone.classList.remove("pack-bounce"), 460);
+          render();
+          const g = window.CATALOG.get(id);
+          if (g) toast(g.name + " packed!", "backpack");
+        }
+        touchId = null;
+      }, { passive: true });
+    });
   }
 
   const go = (route) => { if (location.hash === route) render(); else location.hash = route; };
@@ -448,6 +517,7 @@
     "booking-tab": (el) => { STATE.bookingTab = el.dataset.tab; render(); },
 
     /* pack builder */
+    "pack-size": (el) => { STATE.packSize = parseInt(el.dataset.size, 10); render(); },
     "pack-cat": (el) => { STATE.packCat = el.dataset.cat; render(); },
     "pack-base": (el) => { STATE.packBase = el.dataset.id; render(); },
     "pack-add": (el) => { const id = el.dataset.id; STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1); render(); },
@@ -461,7 +531,8 @@
       el.checked ? STATE.packAddons.add(id) : STATE.packAddons.delete(id);
       render();
     },
-    "pack-reset": () => { STATE.pack = new Map(); STATE.packAddons = new Set(); render(); toast("Pack cleared", "delete"); },
+    "pack-remove-all": (el) => { STATE.pack.delete(el.dataset.id); render(); },
+    "pack-reset": () => { STATE.pack = new Map(); STATE.packAddons = new Set(); STATE.packSize = null; render(); toast("Pack cleared", "delete"); },
 
     "load-kit": (el) => {
       const kit = D.kits.find(k => k.id === el.dataset.kit);
@@ -653,6 +724,12 @@
       const includes = Array.from(includeInputs).map(i => i.value.trim()).filter(Boolean);
       const perDayEl = document.getElementById("admin-per-day");
       const descVal = ((document.getElementById("admin-desc") || {}).value || "").trim();
+      // Parse bundleItems from textarea (one per line: "id × qty")
+      const biRaw = ((document.getElementById("admin-bundle-items") || {}).value || "");
+      const bundleItems = biRaw.split("\n").map(l => {
+        const m = l.trim().match(/^([^\s×x]+)\s*[×x]\s*(\d+)/i);
+        return m ? { id: m[1].trim(), qty: parseInt(m[2], 10) } : null;
+      }).filter(Boolean);
       const patch = {
         name,
         category: val("admin-cat") || "Bundles",
@@ -664,6 +741,7 @@
         quantity: Number.isFinite(qRaw) ? Math.max(0, qRaw) : 1,
         weight: Number.isFinite(wRaw) ? wRaw : null,
         includes: includes.length ? includes : null,
+        bundleItems: bundleItems.length ? bundleItems : undefined,
         icon: e.icon || current.icon || "backpack",
         perDay: perDayEl ? perDayEl.checked : !!(current.perDay)
       };

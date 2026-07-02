@@ -22,6 +22,8 @@ exports.handler = async () => {
     delete obj.description;
     obj.perDay = !!p.per_day;
     delete obj.per_day;
+    try { obj.bundleItems = p.bundle_items ? JSON.parse(p.bundle_items) : null; } catch { obj.bundleItems = null; }
+    delete obj.bundle_items;
     return obj;
   });
 

@@ -102,6 +102,31 @@ body { overscroll-behavior-y: none; }
   box-shadow: 2px 2px 0px 0px rgba(6,27,14,0.08);
 }
 
+/* ---- Pack builder drag-drop ---- */
+.pack-drop-active {
+  animation: packGlow 0.7s ease-in-out infinite alternate;
+}
+@keyframes packGlow {
+  from { filter: drop-shadow(0 0 2px rgba(171,53,0,0.4)); }
+  to   { filter: drop-shadow(0 0 14px rgba(171,53,0,0.85)); }
+}
+.pack-bounce {
+  animation: packBounce 0.45s cubic-bezier(0.36,0.07,0.19,0.97);
+}
+@keyframes packBounce {
+  0%   { transform: scale(1) rotate(0deg); }
+  20%  { transform: scale(1.13) rotate(-4deg); }
+  50%  { transform: scale(0.94) rotate(3deg); }
+  75%  { transform: scale(1.04) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.pack-dragging { opacity: 0.35; transform: scale(0.94); transition: opacity .15s, transform .15s; }
+@keyframes flyIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.85); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fly-in { animation: flyIn 0.28s cubic-bezier(0.22,1,0.36,1) both; }
+
 /* ---- Print: work order only ---- */
 @media print {
   body { background: #fff !important; }

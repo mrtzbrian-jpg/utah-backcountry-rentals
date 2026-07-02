@@ -5,6 +5,97 @@ window.DATA = (function () {
 
   // Each gear item. `icon` is a Material Symbol; `tint` drives the tile accent.
   const gear = [
+    /* ---- PRE-BUILT BUNDLES ---- */
+    {
+      id: "solo-weekend-bundle",
+      name: "Single Person Weekend",
+      category: "Bundles",
+      tagline: "Everything one solo hiker needs for 2–3 nights out",
+      desc: "Our most popular starter kit. A full-size pack, shelter, warm sleep system, water filtration, and bear canister — everything you need, nothing you don't. Packed and ready at pickup.",
+      price: 79,
+      unit: "weekend",
+      weight: 14.1,
+      icon: "backpack",
+      tint: "#1b3022",
+      badge: "Best for solo",
+      deposit: 200,
+      bundleItems: [
+        { id: "osprey-aether-65", qty: 1 },
+        { id: "msr-hubba-tent",   qty: 1 },
+        { id: "nemo-disco-15",    qty: 1 },
+        { id: "water-filter",     qty: 1 },
+        { id: "bearvault-bv500",  qty: 1 }
+      ],
+      includes: ["Osprey Aether 65L backpack", "MSR Hubba Hubba 2 tent", "Nemo Disco 15° sleeping bag", "Katadyn BeFree water filter", "BearVault BV500 canister"]
+    },
+    {
+      id: "couples-weekend-bundle",
+      name: "Couples Weekend",
+      category: "Bundles",
+      tagline: "Two-person kit — share the weight, share the views",
+      desc: "Built for two. Two full-size packs, a two-person tent, two sleep systems, water filter, bear canister, and satellite communicator. You're covered from trailhead to camp and back.",
+      price: 145,
+      unit: "weekend",
+      weight: 28.4,
+      icon: "people",
+      tint: "#364c3c",
+      badge: "Best for two",
+      deposit: 250,
+      bundleItems: [
+        { id: "osprey-aether-65", qty: 2 },
+        { id: "msr-hubba-tent",   qty: 1 },
+        { id: "nemo-disco-15",    qty: 2 },
+        { id: "water-filter",     qty: 1 },
+        { id: "bearvault-bv500",  qty: 1 },
+        { id: "garmin-inreach",   qty: 1 }
+      ],
+      includes: ["2× Osprey Aether 65L backpacks", "MSR Hubba Hubba 2-person tent", "2× Nemo Disco 15° sleeping bags", "Katadyn BeFree water filter", "BearVault BV500 canister", "Garmin inReach Mini 2 satellite communicator"]
+    },
+    {
+      id: "budget-bundle",
+      name: "Wilding on a Budget",
+      category: "Bundles",
+      tagline: "Get out there without breaking the bank",
+      desc: "You don't need a $2,000 kit to have a killer weekend. This no-frills bundle covers the essentials — a reliable pack, shelter, sleep system, and water filter. Adventure first, gear second.",
+      price: 49,
+      unit: "weekend",
+      weight: 11.2,
+      icon: "savings",
+      tint: "#5d6b46",
+      badge: "Budget pick",
+      deposit: 150,
+      bundleItems: [
+        { id: "osprey-aether-65", qty: 1 },
+        { id: "msr-hubba-tent",   qty: 1 },
+        { id: "nemo-disco-15",    qty: 1 },
+        { id: "water-filter",     qty: 1 }
+      ],
+      includes: ["Osprey Aether 65L backpack", "MSR Hubba Hubba tent", "Nemo Disco 15° sleeping bag", "Katadyn BeFree water filter"]
+    },
+    {
+      id: "family-weekend-bundle",
+      name: "Family Weekend",
+      category: "Bundles",
+      tagline: "Enough gear for the whole crew — parents and kids",
+      desc: "Take the whole family off-grid. Built for 2 adults + 2 kids: packs for everyone, two tents, four sleeping bags, dual water filtration, bear canister, and satellite safety. The full family setup.",
+      price: 195,
+      unit: "weekend",
+      weight: 45.0,
+      icon: "family_restroom",
+      tint: "#2b4a57",
+      badge: "Family pick",
+      deposit: 250,
+      bundleItems: [
+        { id: "osprey-aether-65", qty: 2 },
+        { id: "msr-hubba-tent",   qty: 2 },
+        { id: "nemo-disco-15",    qty: 4 },
+        { id: "water-filter",     qty: 2 },
+        { id: "bearvault-bv500",  qty: 1 },
+        { id: "garmin-inreach",   qty: 1 }
+      ],
+      includes: ["2× Osprey Aether 65L backpacks (adult)", "2× MSR Hubba Hubba tents (sleeps 2 each)", "4× Nemo Disco 15° sleeping bags", "2× Katadyn BeFree water filters", "BearVault BV500 canister", "Garmin inReach Mini 2 satellite communicator", "Kids' gear available on request"]
+    },
+    /* ---- INDIVIDUAL GEAR ---- */
     {
       id: "master-safety-kit",
       name: "The Master Safety Kit",
@@ -171,6 +262,7 @@ window.DATA = (function () {
   // the sum of its items × quantity. ⚠️ PLACEHOLDERS: edit in the Manage Gear admin
   // (per item) and keep netlify/functions/_pricing.js PRICES in sync.
   const PRICES = {
+    "solo-weekend-bundle": 79, "couples-weekend-bundle": 145, "budget-bundle": 49, "family-weekend-bundle": 195,
     "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40,
     "bearvault-bv500": 12, "nemo-disco-15": 25, "msr-hubba-tent": 30,
     "winter-traction-kit": 35, "water-filter": 10,
@@ -182,6 +274,7 @@ window.DATA = (function () {
   // Auth hold amount (USD) per item = YOUR replacement cost. A hold (up to $250)
   // is placed on the card at checkout, released on return. Edit in the admin.
   const DEPOSITS = {
+    "solo-weekend-bundle": 200, "couples-weekend-bundle": 250, "budget-bundle": 150, "family-weekend-bundle": 250,
     "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80,
     "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,
     "winter-traction-kit": 100, "water-filter": 20,
