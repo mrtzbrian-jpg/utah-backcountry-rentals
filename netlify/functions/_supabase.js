@@ -9,4 +9,23 @@ function getSupabase() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-module.exports = { getSupabase };
+// Columns added by later migrations. If the live DB hasn't been migrated yet,
+// including these would make PostgREST reject the whole write. bookingUpsert
+// retries once without them so a booking is never lost over a missing column.
+const OPTIONAL_BOOKING_COLS = ["capture_id", "cart_items"];
+
+async function bookingUpsert(supabase, row, opts) {
+  let res = await supabase.from("bookings").upsert(row, opts);
+  if (res && res.error) {
+    const msg = (res.error.message || "").toLowerCase();
+    const missing = OPTIONAL_BOOKING_COLS.some(c => msg.includes(c));
+    if (missing || msg.includes("column")) {
+      const trimmed = { ...row };
+      OPTIONAL_BOOKING_COLS.forEach(c => delete trimmed[c]);
+      res = await supabase.from("bookings").upsert(trimmed, opts);
+    }
+  }
+  return res;
+}
+
+module.exports = { getSupabase, bookingUpsert };

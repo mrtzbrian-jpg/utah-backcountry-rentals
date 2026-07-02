@@ -7,7 +7,7 @@
  * can release it on safe return (void) or capture it if gear is damaged/stolen.
  * Idempotent: a page refresh re-reads the confirmed row instead of charging again. */
 const { authorizeOrder, captureAuthorization, getOrder } = require("./_paypal");
-const { getSupabase } = require("./_supabase");
+const { getSupabase, bookingUpsert } = require("./_supabase");
 const { quoteCents, holdCents } = require("./_pricing");
 const { notifyBooking } = require("./_email");
 
@@ -78,7 +78,7 @@ exports.handler = async (event) => {
 
   // 3) Persist + notify (once).
   if (supabase) {
-    await supabase.from("bookings").upsert({
+    await bookingUpsert(supabase, {
       paypal_order: orderId,
       item_id: booking.itemId,
       item_name: booking.name,
@@ -102,6 +102,7 @@ exports.handler = async (event) => {
       status: "confirmed"
     }, { onConflict: "paypal_order" });
   }
+
 
   // Fetch the item's includes list so the owner email can show a gear checklist.
   if (supabase && booking.itemId) {

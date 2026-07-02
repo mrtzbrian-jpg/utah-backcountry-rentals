@@ -10,7 +10,7 @@
 const { createOrder } = require("./_paypal");
 const { quoteCents, holdCents, depositCents } = require("./_pricing");
 const { rangeAvailable } = require("./_inventory");
-const { getSupabase } = require("./_supabase");
+const { getSupabase, bookingUpsert } = require("./_supabase");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
@@ -54,7 +54,7 @@ exports.handler = async (event) => {
 
       const supabase = getSupabase();
       if (supabase) {
-        await supabase.from("bookings").upsert({
+        await bookingUpsert(supabase, {
           paypal_order: order.id,
           item_id: "cart",
           item_name: cartLabel,
