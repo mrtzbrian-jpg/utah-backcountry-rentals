@@ -262,7 +262,7 @@ window.VIEWS = (function () {
           </section>
         </div>
       </main>`;
-    return page(inner, { active: "#/" });
+    return page(inner + cartFab(), { active: "#/" });
   }
 
   /* ---------- PRODUCT DETAIL ---------- */
@@ -278,15 +278,38 @@ window.VIEWS = (function () {
     const inner = `
       ${topBar({ title: item.name, back: true })}
       <main class="flex-grow max-w-container-max mx-auto w-full pb-[120px]">
-        <!-- big image -->
-        <section class="relative h-72 sm:h-96 overflow-hidden bg-surface-container flex items-center justify-center">
-          <img src="${imageFor(item, 1000)}" alt="${item.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover" />
-          <span class="gear-fallback-icon material-symbols-outlined opacity-0" style="font-size:120px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
-          ${item.badge ? `<span class="absolute top-4 left-4 bg-forest-deep text-paper-white text-[11px] font-bold tracking-wide px-3 py-1 rounded-full">${item.badge}</span>` : ""}
-          <button data-action="fav" data-id="${item.id}" class="absolute top-4 right-4 bg-paper-white/90 rounded-full p-2 press">
-            <span class="material-symbols-outlined text-[22px] ${fav ? "ms-fill text-canyon-clay" : "text-outline"}">favorite</span>
-          </button>
-        </section>
+        <!-- photo gallery -->
+        ${(() => {
+          const allImgs = [item.img, ...(item.imgs || [])].filter(Boolean);
+          const primary = allImgs[0] || null;
+          if (allImgs.length > 1) {
+            const thumbs = allImgs.map((src, idx) =>
+              `<button data-action="gallery-thumb" data-idx="${idx}" class="gallery-thumb shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 ${idx === 0 ? "border-canyon-clay" : "border-transparent"} press">
+                <img src="${src}" alt="" loading="lazy" class="w-full h-full object-cover" /></button>`
+            ).join("");
+            return `
+            <section class="relative bg-surface-container" id="gallery-wrap">
+              <div class="relative h-72 sm:h-96 overflow-hidden flex items-center justify-center">
+                <img id="gallery-main" src="${primary}" alt="${item.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover" />
+                <span class="gear-fallback-icon material-symbols-outlined opacity-0" style="font-size:120px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+                ${item.badge ? `<span class="absolute top-4 left-4 bg-forest-deep text-paper-white text-[11px] font-bold tracking-wide px-3 py-1 rounded-full">${item.badge}</span>` : ""}
+                <button data-action="fav" data-id="${item.id}" class="absolute top-4 right-4 bg-paper-white/90 rounded-full p-2 press">
+                  <span class="material-symbols-outlined text-[22px] ${fav ? "ms-fill text-canyon-clay" : "text-outline"}">favorite</span>
+                </button>
+              </div>
+              <div class="flex gap-2 px-4 py-3 overflow-x-auto">${thumbs}</div>
+            </section>`;
+          }
+          return `
+          <section class="relative h-72 sm:h-96 overflow-hidden bg-surface-container flex items-center justify-center">
+            <img src="${primary ? primary : imageFor(item, 1000)}" alt="${item.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover" />
+            <span class="gear-fallback-icon material-symbols-outlined opacity-0" style="font-size:120px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+            ${item.badge ? `<span class="absolute top-4 left-4 bg-forest-deep text-paper-white text-[11px] font-bold tracking-wide px-3 py-1 rounded-full">${item.badge}</span>` : ""}
+            <button data-action="fav" data-id="${item.id}" class="absolute top-4 right-4 bg-paper-white/90 rounded-full p-2 press">
+              <span class="material-symbols-outlined text-[22px] ${fav ? "ms-fill text-canyon-clay" : "text-outline"}">favorite</span>
+            </button>
+          </section>`;
+        })()}
 
         <div class="px-4 sm:px-6 mt-5">
           <span class="inline-block text-[11px] font-bold tracking-widest uppercase text-canyon-clay">${item.category || "Gear"}</span>
@@ -295,7 +318,7 @@ window.VIEWS = (function () {
 
           <div class="mt-4 flex items-baseline gap-2">
             <span class="font-heading text-headline-md text-forest-deep">${fmt.money(item.price)}</span>
-            <span class="text-[12px] font-semibold tracking-wide text-outline uppercase">rental</span>
+            <span class="text-[12px] font-semibold tracking-wide text-outline uppercase">${item.perDay ? "/ day" : "rental"}</span>
           </div>
 
           ${item.desc ? `<p class="text-body-md text-on-surface-variant mt-4 leading-relaxed">${item.desc}</p>` : ""}
@@ -304,24 +327,32 @@ window.VIEWS = (function () {
 
           ${hold ? `<div class="mt-6 rounded-xl bg-granite-wash border border-outline-variant p-4 flex gap-3 items-start">
             <span class="material-symbols-outlined text-[20px] text-forest-deep mt-0.5">lock</span>
-            <p class="text-[13px] text-earth-brown leading-relaxed">A refundable <strong class="text-forest-deep">${fmt.money(hold)}</strong> hold (max $250) is placed on your card for damage or theft and released when you return the gear. Only the rental fee is charged.</p>
-          </div>` : ""}
+            <p class="text-[13px] text-earth-brown leading-relaxed">A refundable <strong class="text-forest-deep">${fmt.money(hold)}</strong> hold is placed on your card for damage or theft and released when you return the gear. Only the rental fee is charged.</p>
+          </div>` : `<div class="mt-6 rounded-xl bg-surface-container border border-outline-variant p-4 flex gap-3 items-start">
+            <span class="material-symbols-outlined text-[20px] text-primary mt-0.5">lock_open</span>
+            <p class="text-[13px] text-earth-brown leading-relaxed"><strong class="text-on-surface">No auth hold</strong> — only the rental fee is charged. No security hold is placed on your card.</p>
+          </div>`}
         </div>
       </main>
 
       <!-- sticky reserve bar -->
       <div class="fixed bottom-0 inset-x-0 z-40 bg-paper-white border-t-2 border-granite-wash safe-bottom">
-        <div class="max-w-container-max mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
-          <div class="min-w-0">
+        <div class="max-w-container-max mx-auto px-4 sm:px-6 py-3 flex items-center gap-2">
+          <div class="min-w-0 shrink-0">
             <p class="text-[11px] text-outline uppercase tracking-wider font-semibold">From</p>
             <p class="font-heading text-headline-sm text-forest-deep leading-none">${fmt.money(item.price)}</p>
           </div>
+          <button data-action="cart-add" data-id="${item.id}"
+            class="flex-1 border-2 border-canyon-clay text-canyon-clay rounded-lg py-3 text-[13px] font-bold tracking-wide press hover:bg-canyon-clay/5">
+            + Cart
+          </button>
           <button data-action="book" data-id="${item.id}"
-            class="flex-1 bg-canyon-clay text-on-secondary rounded-lg py-3.5 text-[14px] font-bold tracking-wide inner-shadow-stamped press hover:brightness-105">
-            Book Dates
+            class="flex-1 bg-canyon-clay text-on-secondary rounded-lg py-3 text-[13px] font-bold tracking-wide inner-shadow-stamped press hover:brightness-105">
+            Book Now
           </button>
         </div>
-      </div>`;
+      </div>
+      ${cartFab()}`;
     return `<div class="view-enter min-h-screen flex flex-col">${inner}</div>`;
   }
 
@@ -357,6 +388,8 @@ window.VIEWS = (function () {
         class="cal-day h-11 flex items-center justify-center text-body-md ${cls}" style="${style}">${d}</button>`;
     }
 
+    const allBooked = booked.size > 0 && booked.has(fmt.iso(today));
+    const cfg = window.UBR_CONFIG || {};
     return `
     <div class="bg-surface-container-lowest rounded-xl shadow-card p-md">
       <div class="flex items-center justify-between mb-sm">
@@ -371,7 +404,6 @@ window.VIEWS = (function () {
       </div>
       <div class="grid grid-cols-7">${cells}</div>
       ${(() => {
-        // Find next available date if today or near future is all booked
         if (!booked.size) return "";
         const check = new Date(today);
         let nextAvail = null;
@@ -380,10 +412,21 @@ window.VIEWS = (function () {
           if (!booked.has(iso)) { nextAvail = iso; break; }
           check.setDate(check.getDate() + 1);
         }
-        if (!nextAvail || !booked.has(fmt.iso(today))) return ""; // don't show if today is open
+        if (!nextAvail || !allBooked) return "";
         const label = new Date(nextAvail + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
         return `<p class="text-label-sm text-secondary mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">event_available</span>Next available: ${label}</p>`;
       })()}
+      ${allBooked && cfg.BACKEND_ENABLED && window.STATE.draft ? `
+        <div class="mt-3 pt-3 border-t border-outline-variant">
+          <p class="text-label-sm text-on-surface-variant mb-2 flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">notifications</span>Get notified when dates open up:</p>
+          <div class="flex gap-2">
+            <input id="waitlist-email" type="email" placeholder="Your email" class="flex-1 rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-3 py-2 text-label-sm min-w-0" />
+            <button data-action="waitlist-join" data-id="${window.STATE.draft.id}"
+              class="shrink-0 bg-primary text-on-primary rounded-lg px-3 py-2 text-label-sm press hover:bg-primary-container">
+              Notify me
+            </button>
+          </div>
+        </div>` : ""}
     </div>`;
   }
 
@@ -391,7 +434,9 @@ window.VIEWS = (function () {
     const item = window.STATE.draft;
     if (!item) return notFound();
     const qty = window.STATE.qty || 1;
-    const total = (item.price || 0) * qty;       // flat price × quantity, charged now
+    const days = Math.max(1, fmt.days(window.STATE.dates));
+    const basePrice = (item.price || 0) * (item.perDay ? days : 1);
+    const total = basePrice * qty;               // respects per-day pricing
     const hold = Math.min((item.deposit || 0) * qty, 250); // refundable card hold, capped at $250
     const pickupTime = window.STATE.pickupTime;
     const ready = !!window.STATE.dates.start && !!pickupTime; // both date AND pickup window required
@@ -410,7 +455,7 @@ window.VIEWS = (function () {
           </div>
           <div class="min-w-0 flex-1">
             <h2 class="font-heading text-headline-xs text-on-surface truncate">${item.name}</h2>
-            <p class="text-label-sm text-secondary">${fmt.money(item.price)} rental</p>
+            <p class="text-label-sm text-secondary">${fmt.money(item.price)}${item.perDay ? "/day" : " rental"}</p>
           </div>
         </section>
 
@@ -455,12 +500,16 @@ window.VIEWS = (function () {
               <span class="text-label-sm text-outline block truncate">
                 ${window.STATE.dates.start ? fmt.range(window.STATE.dates) + (pickupTime ? " · " + pickupTime : "") : "Select dates"}
               </span>
+              ${item.perDay && window.STATE.dates.start ? `<span class="text-label-sm text-secondary block">${fmt.money(item.price)}/day × ${days} day${days > 1 ? "s" : ""}</span>` : ""}
             </div>
             <div class="font-heading text-headline-sm text-primary shrink-0">${fmt.money(total)}</div>
           </div>
           ${hold ? `<p class="text-label-sm text-outline mb-2 flex items-center gap-1">
             <span class="material-symbols-outlined text-[14px]">lock</span>
-            + ${fmt.money(hold)} auth hold on card, released on return</p>` : ""}
+            + ${fmt.money(hold)} auth hold on card, released on return</p>`
+            : `<p class="text-label-sm text-primary mb-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">lock_open</span>
+            No auth hold — rental fee only</p>`}
           <button data-action="confirm-dates" ${ready ? "" : "disabled"}
             class="w-full rounded-full py-3 text-label-md text-on-secondary press transition-colors ${ready ? "bg-secondary hover:bg-secondary-container" : "bg-secondary/40 cursor-not-allowed"}">
             Confirm Dates
@@ -474,7 +523,9 @@ window.VIEWS = (function () {
     const accepted = window.STATE.safetyAccepted;
     const name = window.STATE.renterName || "";
     const qty = window.STATE.qty || 1;
-    const dep = window.STATE.draft ? Math.min((window.STATE.draft.deposit || 0) * qty, 250) : 0;
+    const dep = window.STATE.cartMode
+      ? Math.min((window.STATE.cart || []).reduce((s, e) => s + (e.item.deposit || 0) * e.qty, 0), 250)
+      : (window.STATE.draft ? Math.min((window.STATE.draft.deposit || 0) * qty, 250) : 0);
     const okBtn = accepted
       ? "bg-secondary hover:bg-secondary-container"
       : "bg-secondary/40 cursor-not-allowed";
@@ -672,6 +723,14 @@ window.VIEWS = (function () {
         <div class="mt-md flex flex-col gap-sm">
           <button data-action="nav" data-route="#/bookings" class="w-full rounded-full py-3.5 bg-secondary text-on-secondary text-label-md press hover:bg-secondary-container">View My Bookings</button>
           <button data-action="nav" data-route="#/" class="w-full rounded-full py-3.5 border-2 border-primary text-primary text-label-md press">Back to Home</button>
+          ${(b.status === "confirmed" || b.status === "prepped") ? `
+          <button data-action="customer-cancel" data-id="${b.orderId}"
+            class="w-full py-2.5 text-label-sm text-error press hover:underline flex items-center justify-center gap-1 mt-1">
+            <span class="material-symbols-outlined text-[16px]">cancel</span>Cancel my booking
+          </button>` : (b.status === "cancelled" ? `
+          <p class="text-center text-label-sm text-error mt-1 flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-[15px]">cancel</span>This booking was cancelled
+          </p>` : "")}
         </div>
       </main>`;
     return page(inner, { active: "#/bookings" });
@@ -774,6 +833,16 @@ window.VIEWS = (function () {
       <main class="flex-grow px-4 sm:px-6 max-w-container-max mx-auto w-full">
         <div class="mt-6">
           <h2 class="font-heading text-headline-lg text-forest-deep">My Bookings</h2>
+          <!-- Order lookup by email -->
+          ${(window.UBR_CONFIG || {}).BACKEND_ENABLED ? `
+          <div class="mt-3 flex gap-2">
+            <input id="lookup-email" type="email" placeholder="Enter booking email to look up orders"
+              class="flex-1 rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-3 py-2.5 text-label-md min-w-0" />
+            <button data-action="lookup-booking"
+              class="shrink-0 bg-surface-container text-on-surface rounded-lg px-4 py-2.5 text-label-md press hover:bg-granite-wash flex items-center gap-1">
+              <span class="material-symbols-outlined text-[18px]">search</span>Find
+            </button>
+          </div>` : ""}
           <p class="text-body-md text-earth-brown mt-1">Manage your upcoming adventures and past gear rentals.</p>
         </div>
         <div class="flex mt-6 border-b-2 border-granite-wash">
@@ -937,7 +1006,7 @@ window.VIEWS = (function () {
       <div class="w-14 h-14 shrink-0 rounded-md gear-tile relative overflow-hidden flex items-center justify-center">${mediaLayer(item, 28)}</div>
       <div class="min-w-0 flex-1">
         <p class="text-label-md text-on-surface truncate">${item.name}</p>
-        <p class="text-label-sm text-outline truncate">${item.category} · ${fmt.money(item.price)} · qty ${item.quantity != null ? item.quantity : 1}${item.deposit ? " · " + fmt.money(item.deposit) + " hold" : ""}</p>
+        <p class="text-label-sm text-outline truncate">${item.category} · ${fmt.money(item.price)}${item.perDay ? "/day" : ""} · qty ${item.quantity != null ? item.quantity : 1} · ${item.deposit > 0 ? fmt.money(item.deposit) + " hold" : '<span class="text-primary font-semibold">no hold</span>'}</p>
       </div>
       <button data-action="admin-edit" data-id="${item.id}" class="p-2 rounded-full hover:bg-surface-container press shrink-0"><span class="material-symbols-outlined text-on-surface-variant">edit</span></button>
       <button data-action="admin-delete" data-id="${item.id}" class="p-2 rounded-full hover:bg-error-container press shrink-0"><span class="material-symbols-outlined text-error">delete</span></button>
@@ -965,16 +1034,28 @@ window.VIEWS = (function () {
           <button data-action="admin-cancel" class="p-2 -mr-2 rounded-full hover:bg-surface-container press"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-md space-y-md">
-          <!-- photo dropzone -->
-          <div data-dropzone class="relative h-40 rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-low flex items-center justify-center overflow-hidden">
-            <img id="admin-img-preview" src="${img || ""}" class="${img ? "" : "hidden"} absolute inset-0 w-full h-full object-contain p-2" />
-            <div id="admin-img-empty" class="${img ? "hidden" : ""} text-center text-on-surface-variant pointer-events-none">
-              <span class="material-symbols-outlined text-[40px]">add_photo_alternate</span>
-              <p class="text-label-sm">Drag a photo here, or tap to upload</p>
+          <!-- multi-photo gallery -->
+          <div>
+            <span class="text-label-md text-on-surface-variant">Photos <span class="text-outline font-normal">(first photo is the cover)</span></span>
+            <div id="admin-photo-grid" class="mt-2 flex flex-wrap gap-2">
+              ${(() => {
+                const allImgs = [e.img !== undefined ? e.img : item.img, ...((e.imgs !== undefined ? e.imgs : (item.imgs || [])))].filter(Boolean);
+                return allImgs.map((src, idx) => `
+                  <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-outline-variant shrink-0">
+                    <img src="${src}" class="w-full h-full object-cover" />
+                    <button type="button" data-action="admin-photo-remove" data-idx="${idx}"
+                      class="absolute top-0.5 right-0.5 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center press">
+                      <span class="material-symbols-outlined text-white text-[13px]">close</span>
+                    </button>
+                  </div>`).join("") +
+                `<label class="w-20 h-20 rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-low flex flex-col items-center justify-center cursor-pointer shrink-0 hover:border-primary press">
+                  <span class="material-symbols-outlined text-on-surface-variant text-[28px]">add_photo_alternate</span>
+                  <span class="text-[10px] text-on-surface-variant mt-0.5">Add photo</span>
+                  <input type="file" accept="image/*" data-action="admin-image" class="hidden" />
+                </label>`;
+              })()}
             </div>
-            <input type="file" id="admin-file" accept="image/*" data-action="admin-image" class="absolute inset-0 opacity-0 cursor-pointer" title="Upload photo" />
           </div>
-          ${img ? `<button data-action="admin-image-clear" class="text-label-sm text-error press">Remove photo</button>` : ""}
 
           <label class="block"><span class="text-label-md text-on-surface-variant">Name</span>
             <input id="admin-name" value="${(item.name || "").replace(/"/g, "&quot;")}" placeholder="e.g. Osprey Rook 65"
@@ -983,18 +1064,29 @@ window.VIEWS = (function () {
           <label class="block"><span class="text-label-md text-on-surface-variant">Category</span>
             <select id="admin-cat" class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5">${cats}</select></label>
 
-          <label class="block"><span class="text-label-md text-on-surface-variant">Short description</span>
-            <input id="admin-tagline" value="${(item.tagline || "").replace(/"/g, "&quot;")}" placeholder="One line shown on the card"
+          <label class="block"><span class="text-label-md text-on-surface-variant">Card tagline <span class="text-outline font-normal text-[12px]">— one short line shown on the listing card</span></span>
+            <input id="admin-tagline" value="${(item.tagline || "").replace(/"/g, "&quot;")}" placeholder="e.g. 65L pack with adjustable suspension"
               class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
+
+          <label class="block"><span class="text-label-md text-on-surface-variant">Full description <span class="text-outline font-normal text-[12px]">— shown on the product page</span></span>
+            <textarea id="admin-desc" rows="3" placeholder="Describe the gear, condition, what makes it great for the trail…"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5 resize-y text-[14px]">${(item.desc || "").replace(/</g, "&lt;")}</textarea></label>
 
           <div class="grid grid-cols-2 gap-sm">
             <label class="block"><span class="text-label-md text-on-surface-variant">Rental price ($)</span>
               <input id="admin-price" type="number" min="0" value="${item.price != null ? item.price : ""}" placeholder="65"
                 class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
-            <label class="block"><span class="text-label-md text-on-surface-variant">Auth hold amount — your cost ($)</span>
-              <input id="admin-deposit" type="number" min="0" value="${item.deposit != null ? item.deposit : ""}" placeholder="400"
-                class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" /></label>
+            <label class="block"><span class="text-label-md text-on-surface-variant">Auth hold on card ($)</span>
+              <input id="admin-deposit" type="number" min="0" value="${item.deposit != null ? item.deposit : ""}" placeholder="0"
+                class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5" />
+              <span class="block text-label-sm text-outline mt-1">Set to 0 = no hold placed on customer's card.</span></label>
           </div>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" id="admin-per-day" ${item.perDay ? "checked" : ""}
+              class="tick w-5 h-5 rounded border-outline-variant text-secondary focus:ring-secondary shrink-0" />
+            <span class="text-label-md text-on-surface">Price is <strong>per day</strong> (multiplied by trip length at checkout)</span>
+          </label>
 
           <div class="grid grid-cols-2 gap-sm">
             <label class="block"><span class="text-label-md text-on-surface-variant">Quantity in stock</span>
@@ -1245,6 +1337,12 @@ window.VIEWS = (function () {
             ${o.hold > 0 ? `<button data-action="order-void-hold" data-id="${o.orderId}"
               class="border-2 border-secondary text-secondary px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-secondary/5">
               <span class="material-symbols-outlined text-[16px]">lock_open</span>Release hold</button>` : ""}
+            ${o.hold > 0 ? `<button data-action="order-capture-hold" data-id="${o.orderId}"
+              class="border-2 border-error text-error px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-error/5">
+              <span class="material-symbols-outlined text-[16px]">warning</span>Charge damage</button>` : ""}
+            ${o.status !== "cancelled" && o.status !== "returned" ? `<button data-action="order-cancel" data-id="${o.orderId}"
+              class="border-2 border-outline-variant text-on-surface-variant px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-surface-container">
+              <span class="material-symbols-outlined text-[16px]">cancel</span>Cancel &amp; refund</button>` : ""}
           </div>
           ${notified ? `<p class="text-[11px] text-outline mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">schedule</span>Customer notified ${new Date(o.notifiedReadyAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>` : ""}
         </div>
@@ -1496,5 +1594,156 @@ window.VIEWS = (function () {
       </main>`, { active: "#/" });
   }
 
-  return { home, productDetail, gear, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, pickupInfo, safetyWaivers, helpSupport, admin, adminGate, safetyModal, adminOrders, workOrder, notFound };
+  /* ---------- CART ---------- */
+  function cartCalendar() {
+    const m = window.STATE.calMonth;
+    const today = fmt.midnight(new Date());
+    const year = m.getFullYear(), month = m.getMonth();
+    const monthName = m.toLocaleString("en-US", { month: "long", year: "numeric" });
+    const firstDow = new Date(year, month, 1).getDay();
+    const daysIn = new Date(year, month + 1, 0).getDate();
+    const { start, end } = window.STATE.cartDates;
+    let cells = "";
+    for (let i = 0; i < firstDow; i++) cells += `<div></div>`;
+    for (let d = 1; d <= daysIn; d++) {
+      const date = new Date(year, month, d);
+      const iso = fmt.iso(date);
+      const isPast = date < today;
+      const isStart = iso === start, isEnd = iso === end;
+      const inRange = start && end && iso > start && iso < end;
+      let cls = "relative h-9 rounded-lg flex items-center justify-center text-[13px] font-semibold transition-colors ";
+      if (isPast) cls += "text-outline cursor-not-allowed opacity-40";
+      else if (isStart || isEnd) cls += "bg-canyon-clay text-paper-white cursor-pointer";
+      else if (inRange) cls += "bg-canyon-clay/15 text-forest-deep cursor-pointer";
+      else cls += "text-on-surface hover:bg-granite-wash cursor-pointer press";
+      cells += isPast
+        ? `<div class="${cls}">${d}</div>`
+        : `<button data-action="cal-day" data-date="${iso}" class="${cls}">${d}</button>`;
+    }
+    return `<div data-cart-cal="1">
+      <div class="flex items-center justify-between mb-3">
+        <button data-action="cal-prev" class="p-1.5 rounded-full hover:bg-granite-wash press"><span class="material-symbols-outlined text-[20px]">chevron_left</span></button>
+        <span class="text-label-md font-semibold text-on-surface">${monthName}</span>
+        <button data-action="cal-next" class="p-1.5 rounded-full hover:bg-granite-wash press"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button>
+      </div>
+      <div class="grid grid-cols-7 gap-0.5 mb-1">
+        ${["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => `<div class="h-7 flex items-center justify-center text-[11px] font-bold text-outline">${d}</div>`).join("")}
+      </div>
+      <div class="grid grid-cols-7 gap-0.5">${cells}</div>
+    </div>`;
+  }
+
+  function cart() {
+    const items = window.STATE.cart || [];
+    const dates = window.STATE.cartDates;
+    const pickupTime = window.STATE.cartPickupTime;
+    const daysCount = dates.start && dates.end
+      ? Math.round((fmt.parse(dates.end) - fmt.parse(dates.start)) / 86400000) + 1 : 1;
+    const total = items.reduce((s, e) => {
+      const d = e.item.perDay ? daysCount : 1;
+      return s + (e.item.price || 0) * e.qty * d;
+    }, 0);
+    const holdAmt = Math.min(items.reduce((s, e) => s + (e.item.deposit || 0) * e.qty, 0), 250);
+    const ready = items.length > 0 && dates.start && pickupTime;
+
+    const itemRows = items.map(({ item, qty }) => `
+      <div class="bg-paper-white rounded-xl border border-outline-variant p-3 flex gap-3 items-center">
+        <div class="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-surface-container relative flex items-center justify-center">
+          <img src="${imageFor(item, 200)}" alt="${item.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover"/>
+          <span class="gear-fallback-icon material-symbols-outlined opacity-0" style="font-size:28px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-label-md font-semibold text-on-surface truncate">${item.name}</p>
+          <p class="text-label-sm text-outline">${item.perDay ? `${fmt.money(item.price)}/day × ${daysCount} day${daysCount > 1 ? "s" : ""} × ${qty} = ${fmt.money(item.price * qty * daysCount)}` : `${fmt.money(item.price)} × ${qty} = ${fmt.money(item.price * qty)}`}</p>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button data-action="cart-qty-dec" data-id="${item.id}" class="w-7 h-7 rounded-full bg-surface-container press flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">remove</span></button>
+          <span class="w-5 text-center text-label-md">${qty}</span>
+          <button data-action="cart-qty-inc" data-id="${item.id}" class="w-7 h-7 rounded-full bg-primary text-on-primary press flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">add</span></button>
+          <button data-action="cart-remove" data-id="${item.id}" class="w-7 h-7 rounded-full hover:bg-error-container press flex items-center justify-center ml-1"><span class="material-symbols-outlined text-[16px] text-error">close</span></button>
+        </div>
+      </div>`).join("");
+
+    const emptyState = `<div class="text-center py-16 flex flex-col items-center">
+      <span class="material-symbols-outlined text-[48px] text-outline opacity-50">shopping_cart</span>
+      <p class="font-heading text-headline-sm text-on-surface mt-3">Your cart is empty</p>
+      <p class="text-body-md text-on-surface-variant mt-1">Browse gear and tap "Add to Cart"</p>
+      <button data-action="nav" data-route="#/" class="mt-5 bg-secondary text-on-secondary px-6 py-3 rounded-full text-label-md press">Browse Gear</button>
+    </div>`;
+
+    const inner = `
+      ${topBar({ title: "Your Cart", back: true, trailing: items.length > 0 ? `<button data-action="cart-clear" class="text-[13px] text-error press px-2">Clear</button>` : `<span class="w-8"></span>` })}
+      <main class="flex-grow max-w-container-max mx-auto w-full px-4 sm:px-6 pb-[200px]">
+        ${items.length === 0 ? emptyState : `
+          <!-- Items -->
+          <section class="mt-4 grid gap-3">${itemRows}</section>
+
+          <!-- Trip dates -->
+          <section class="mt-6">
+            <h2 class="text-label-md font-bold text-on-surface mb-3 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px] text-canyon-clay">calendar_today</span>Trip Dates
+            </h2>
+            ${cartCalendar()}
+          </section>
+
+          <!-- Pickup window -->
+          <section class="mt-5">
+            <h2 class="text-label-md font-bold text-on-surface mb-3 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px] text-canyon-clay">schedule</span>Pickup Window
+            </h2>
+            <div class="grid grid-cols-2 gap-2">
+              ${PICKUP_TIMES.map(t => {
+                const on = pickupTime === t.label;
+                return `<button data-action="cart-pickup-time" data-time="${t.label}"
+                  class="rounded-xl border-2 py-2.5 px-3 text-left press transition-colors
+                  ${on ? "border-canyon-clay bg-canyon-clay/5" : "border-outline-variant bg-paper-white hover:border-forest-deep"}">
+                  <p class="text-[13px] font-bold ${on ? "text-canyon-clay" : "text-forest-deep"}">${t.label}</p>
+                  <p class="text-[11px] ${on ? "text-canyon-clay/70" : "text-earth-brown"}">${t.sub}</p>
+                </button>`;
+              }).join("")}
+            </div>
+          </section>
+        `}
+      </main>
+
+      ${items.length > 0 ? `
+      <div class="fixed bottom-0 inset-x-0 z-40 bg-surface-container-lowest border-t border-outline-variant safe-bottom">
+        <div class="max-w-container-max mx-auto px-4 sm:px-6 py-3">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <p class="text-label-sm text-outline">${items.length} item${items.length > 1 ? "s" : ""}${dates.start ? " · " + fmt.range(dates) : ""}</p>
+              <p class="font-heading text-headline-sm text-primary">${fmt.money(total)} rental${holdAmt ? ` + ${fmt.money(holdAmt)} hold` : ""}</p>
+            </div>
+            <button data-action="nav" data-route="#/" class="text-[13px] text-primary font-semibold press underline">+ Add more</button>
+          </div>
+          <button data-action="cart-checkout" ${ready ? "" : "disabled"}
+            class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${ready ? "bg-secondary hover:bg-secondary-container" : "bg-secondary/40 cursor-not-allowed"}">
+            ${ready ? "Proceed to Checkout" : !dates.start ? "Select trip dates above" : "Choose a pickup window"}
+          </button>
+        </div>
+      </div>` : ""}`;
+    return `<div class="view-enter min-h-screen flex flex-col">${inner}</div>`;
+  }
+
+  function cartFab() {
+    const count = (window.STATE.cart || []).length;
+    if (!count) return "";
+    const cartDays = (() => { const d = window.STATE.cartDates; return (d.start && d.end) ? Math.round((fmt.parse(d.end) - fmt.parse(d.start)) / 86400000) + 1 : 1; })();
+    const total = (window.STATE.cart || []).reduce((s, e) => s + (e.item.price || 0) * e.qty * (e.item.perDay ? cartDays : 1), 0);
+    return `<div class="fixed bottom-[72px] right-4 z-50">
+      <button data-action="nav" data-route="#/cart"
+        class="bg-canyon-clay text-paper-white rounded-2xl pl-3 pr-4 py-2.5 flex items-center gap-2 shadow-lift press">
+        <span class="relative">
+          <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+          <span class="absolute -top-1.5 -right-1.5 bg-forest-deep text-paper-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">${count}</span>
+        </span>
+        <div class="text-left leading-none">
+          <p class="text-[10px] font-semibold opacity-80">${count} item${count > 1 ? "s" : ""}</p>
+          <p class="text-[14px] font-bold">${fmt.money(total)}</p>
+        </div>
+      </button>
+    </div>`;
+  }
+
+  return { home, productDetail, gear, cart, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, pickupInfo, safetyWaivers, helpSupport, admin, adminGate, safetyModal, adminOrders, workOrder, notFound };
 })();

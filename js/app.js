@@ -61,12 +61,18 @@
     bookings: storedBookings,
     unavailable: new Set(),   // ISO dates fully booked for the current item
     itemQty: 1,               // units in stock for the current item
-    availItem: null           // which itemId STATE.unavailable was loaded for
+    availItem: null,          // which itemId STATE.unavailable was loaded for
+    // Cart
+    cart: store.load("cart", []),  // [{item, qty}]
+    cartDates: { start: null, end: null },
+    cartPickupTime: null,
+    cartMode: false           // true when safety modal was opened from cart
   };
 
   const persist = () => {
     store.save("bookings", window.STATE.bookings);
     store.save("favs", [...window.STATE.favs]);
+    store.save("cart", window.STATE.cart);
   };
 
   /* ---------------- image fallback ---------------- */
@@ -114,6 +120,7 @@
       hold: Math.round((d.hold || 0) / 100),
       deposit: Math.round((d.deposit || 0) / 100), past: false,
       renterName: d.renterName || null,
+      status: d.status || "confirmed",
       rangeLabel: start ? fmt.range({ start, end }) : "Flexible"
     };
     const existing = STATE.bookings.find(b => b.orderId === d.orderId);
@@ -281,6 +288,8 @@
       }
     } else if (parts[0] === "work-order") {
       html = STATE.adminAuthed ? window.VIEWS.workOrder(parts[1]) : window.VIEWS.adminGate();
+    } else if (parts[0] === "cart") {
+      html = window.VIEWS.cart();
     } else {
       html = window.VIEWS.notFound();
     }
@@ -334,16 +343,21 @@
     "cal-next": () => { const m = STATE.calMonth; STATE.calMonth = new Date(m.getFullYear(), m.getMonth() + 1, 1); render(); },
     "cal-day": (el) => {
       const iso = el.dataset.date;
-      if (STATE.unavailable.has(iso)) { toast("That day is fully booked", "event_busy"); return; }
-      const { start, end } = STATE.dates;
-      if (!start || (start && end)) STATE.dates = { start: iso, end: null };
-      else if (iso < start) STATE.dates = { start: iso, end: null };
+      const inCart = !!el.closest("[data-cart-cal]");
+      if (!inCart && STATE.unavailable.has(iso)) { toast("That day is fully booked", "event_busy"); return; }
+      const current = inCart ? STATE.cartDates : STATE.dates;
+      const { start, end } = current;
+      let next;
+      if (!start || (start && end)) next = { start: iso, end: null };
+      else if (iso < start) next = { start: iso, end: null };
       else {
-        // Reject a range that spans any fully-booked day.
-        const blocked = window.daysBetween(start, iso).some(d => STATE.unavailable.has(d));
-        if (blocked) { toast("Some days in that range are booked", "event_busy"); return; }
-        STATE.dates = { start, end: iso };
+        if (!inCart) {
+          const blocked = window.daysBetween(start, iso).some(d => STATE.unavailable.has(d));
+          if (blocked) { toast("Some days in that range are booked", "event_busy"); return; }
+        }
+        next = { start, end: iso };
       }
+      if (inCart) STATE.cartDates = next; else STATE.dates = next;
       render();
     },
 
@@ -377,8 +391,6 @@
       const phoneEl = document.getElementById("renter-phone");
       const phone = ((phoneEl && phoneEl.value) || STATE.phone || "").trim();
       STATE.phone = phone;
-      const item = STATE.draft;
-      const qty = STATE.qty || 1;
       const cfg = window.UBR_CONFIG || {};
 
       // --- LIVE: hand off to PayPal via our serverless function ---
@@ -386,24 +398,43 @@
         closeModal();
         toast("Opening secure checkout…", "lock");
         try {
-          const payload = {
-            itemId: item.id, name: item.name, qty,
-            startDate: STATE.dates.start, endDate: STATE.dates.end,
-            components: item.components, addons: item.addons,
-            renterName, agreedTerms: true,
-            phone, pickupTime: STATE.pickupTime || null
-          };
+          let payload;
+          if (STATE.cartMode && STATE.cart.length) {
+            // Cart checkout — send all items in one order
+            payload = {
+              items: STATE.cart.map(e => ({ itemId: e.item.id, name: e.item.name, qty: e.qty })),
+              startDate: STATE.cartDates.start, endDate: STATE.cartDates.end,
+              renterName, agreedTerms: true,
+              phone, pickupTime: STATE.cartPickupTime || null
+            };
+          } else {
+            // Single-item checkout (existing flow)
+            const item = STATE.draft;
+            const qty = STATE.qty || 1;
+            payload = {
+              itemId: item.id, name: item.name, qty,
+              startDate: STATE.dates.start, endDate: STATE.dates.end,
+              components: item.components, addons: item.addons,
+              renterName, agreedTerms: true,
+              phone, pickupTime: STATE.pickupTime || null
+            };
+          }
           const res = await fetch(cfg.FUNCTIONS_BASE + "/create-checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           });
           const data = await res.json();
-          if (res.ok && data.url) { window.location.href = data.url; return; }
+          if (res.ok && data.url) {
+            if (STATE.cartMode) { STATE.cart = []; STATE.cartDates = { start: null, end: null }; STATE.cartPickupTime = null; persist(); }
+            STATE.cartMode = false;
+            window.location.href = data.url; return;
+          }
           toast(data.error || "Checkout couldn't start — try again", "error");
         } catch (e) {
           toast("Network error — please try again", "error");
         }
+        STATE.cartMode = false;
         return;
       }
 
@@ -520,22 +551,80 @@
     "admin-image": (el) => {
       const f = el.files && el.files[0];
       if (!f) return;
-      downscaleImage(f, 1000, (dataUrl) => {
+      toast("Uploading photo…", "cloud_upload");
+      downscaleImage(f, 1200, async (dataUrl) => {
+        const cfg = window.UBR_CONFIG || {};
+        let finalUrl = dataUrl;
+        if (cfg.BACKEND_ENABLED) {
+          try {
+            const r = await fetch(cfg.FUNCTIONS_BASE + "/upload-image", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "x-admin-passcode": adminPass() },
+              body: JSON.stringify({ dataUrl, name: f.name })
+            });
+            const d = await r.json();
+            if (r.ok && d.url) finalUrl = d.url;
+          } catch (_) {}
+        }
         if (!STATE.adminEdit) STATE.adminEdit = {};
-        STATE.adminEdit.img = dataUrl;
-        const p = document.getElementById("admin-img-preview");
-        const empty = document.getElementById("admin-img-empty");
-        if (p) { p.src = dataUrl; p.classList.remove("hidden"); }
-        if (empty) empty.classList.add("hidden");
+        const e = STATE.adminEdit;
+        const current = e.id ? (CATALOG.get(e.id) || {}) : {};
+        // First photo becomes the cover; subsequent ones go into imgs[]
+        const existingImgs = e.imgs !== undefined ? e.imgs : (current.imgs || []);
+        const coverImg = e.img !== undefined ? e.img : (current.img || "");
+        if (!coverImg) {
+          e.img = finalUrl;
+        } else {
+          e.imgs = [...existingImgs, finalUrl];
+        }
+        // Re-render just the photo grid without closing the form
+        const grid = document.getElementById("admin-photo-grid");
+        if (grid) {
+          const allImgs = [e.img !== undefined ? e.img : current.img, ...(e.imgs !== undefined ? e.imgs : (current.imgs || []))].filter(Boolean);
+          grid.innerHTML = allImgs.map((src, idx) => `
+            <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-outline-variant shrink-0">
+              <img src="${src}" class="w-full h-full object-cover" />
+              <button type="button" data-action="admin-photo-remove" data-idx="${idx}"
+                class="absolute top-0.5 right-0.5 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center press">
+                <span class="material-symbols-outlined text-white text-[13px]">close</span>
+              </button>
+            </div>`).join("") +
+            `<label class="w-20 h-20 rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-low flex flex-col items-center justify-center cursor-pointer shrink-0 hover:border-primary press">
+              <span class="material-symbols-outlined text-on-surface-variant text-[28px]">add_photo_alternate</span>
+              <span class="text-[10px] text-on-surface-variant mt-0.5">Add photo</span>
+              <input type="file" accept="image/*" data-action="admin-image" class="hidden" />
+            </label>`;
+        }
+        toast("Photo added", "check_circle");
+        // Reset the file input
+        if (el.closest) { const lbl = el.closest("label"); if (lbl) { const inp = lbl.querySelector("input[type=file]"); if (inp) inp.value = ""; } }
       });
     },
-    "admin-image-clear": (el) => {
-      if (STATE.adminEdit) STATE.adminEdit.img = "";
-      const p = document.getElementById("admin-img-preview");
-      const empty = document.getElementById("admin-img-empty");
-      if (p) { p.src = ""; p.classList.add("hidden"); }
-      if (empty) empty.classList.remove("hidden");
-      el.classList.add("hidden");
+    "admin-photo-remove": (el) => {
+      const idx = parseInt(el.dataset.idx, 10);
+      if (!STATE.adminEdit) STATE.adminEdit = {};
+      const e = STATE.adminEdit;
+      const current = e.id ? (CATALOG.get(e.id) || {}) : {};
+      const allImgs = [e.img !== undefined ? e.img : current.img, ...(e.imgs !== undefined ? e.imgs : (current.imgs || []))].filter(Boolean);
+      allImgs.splice(idx, 1);
+      e.img = allImgs[0] || "";
+      e.imgs = allImgs.slice(1);
+      const grid = document.getElementById("admin-photo-grid");
+      if (grid) {
+        grid.innerHTML = allImgs.map((src, i) => `
+          <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-outline-variant shrink-0">
+            <img src="${src}" class="w-full h-full object-cover" />
+            <button type="button" data-action="admin-photo-remove" data-idx="${i}"
+              class="absolute top-0.5 right-0.5 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center press">
+              <span class="material-symbols-outlined text-white text-[13px]">close</span>
+            </button>
+          </div>`).join("") +
+          `<label class="w-20 h-20 rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-low flex flex-col items-center justify-center cursor-pointer shrink-0 hover:border-primary press">
+            <span class="material-symbols-outlined text-on-surface-variant text-[28px]">add_photo_alternate</span>
+            <span class="text-[10px] text-on-surface-variant mt-0.5">Add photo</span>
+            <input type="file" accept="image/*" data-action="admin-image" class="hidden" />
+          </label>`;
+      }
     },
     "admin-include-add": () => {
       const list = document.getElementById("admin-includes-list");
@@ -562,19 +651,30 @@
       const wRaw = parseFloat(val("admin-weight"));
       const includeInputs = document.querySelectorAll(".admin-include-item");
       const includes = Array.from(includeInputs).map(i => i.value.trim()).filter(Boolean);
+      const perDayEl = document.getElementById("admin-per-day");
+      const descVal = ((document.getElementById("admin-desc") || {}).value || "").trim();
       const patch = {
         name,
         category: val("admin-cat") || "Bundles",
         tagline: (val("admin-tagline") || "").trim(),
+        desc: descVal || undefined,
         price: parseFloat(val("admin-price")) || 0,
         unit: "rental",
         deposit: parseFloat(val("admin-deposit")) || 0,
         quantity: Number.isFinite(qRaw) ? Math.max(0, qRaw) : 1,
         weight: Number.isFinite(wRaw) ? wRaw : null,
         includes: includes.length ? includes : null,
-        icon: e.icon || current.icon || "backpack"
+        icon: e.icon || current.icon || "backpack",
+        perDay: perDayEl ? perDayEl.checked : !!(current.perDay)
       };
-      if (e.img !== undefined) patch.img = e.img || undefined;
+      // Persist multi-photo array; first entry is also the cover img
+      const allImgs = e.imgs !== undefined ? e.imgs : (current.imgs || []);
+      if (e.img !== undefined || allImgs.length) {
+        const cover = e.img !== undefined ? e.img : (current.img || "");
+        const extras = allImgs.filter(s => s && s !== cover);
+        patch.img = cover || (allImgs[0] || undefined);
+        patch.imgs = extras.length ? extras : undefined;
+      }
       if (e.id) { CATALOG.update(e.id, patch); toast("Saved"); }
       else { patch.tint = "#1b3022"; CATALOG.add(patch); toast("Product added"); }
       STATE.adminEdit = null; render();
@@ -738,8 +838,160 @@
       } catch (e) { toast("Network error", "error"); }
     },
 
+    "order-capture-hold": async (el) => {
+      const id = el.dataset.id;
+      const o = STATE.orders.find(x => x.orderId === id);
+      const holdAmt = o ? fmt.money(Math.round((o.hold || 0) / 100)) : "the hold";
+      if (!window.confirm(`Charge ${holdAmt} for damage? This captures the auth hold on the customer's card and cannot be undone.`)) return;
+      const cfg = window.UBR_CONFIG || {};
+      toast("Capturing damage hold…", "warning");
+      try {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/capture-hold", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-admin-passcode": adminPass() },
+          body: JSON.stringify({ orderId: id })
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error || "Capture failed", "error"); return; }
+        if (o) { o.hold = 0; o.status = "returned"; render(); }
+        toast("Hold captured — customer charged for damage", "warning");
+      } catch (e) { toast("Network error", "error"); }
+    },
+
+    "order-cancel": async (el) => {
+      const id = el.dataset.id;
+      if (!window.confirm("Cancel this booking and issue a full refund? This cannot be undone.")) return;
+      const cfg = window.UBR_CONFIG || {};
+      toast("Cancelling and refunding…", "undo");
+      try {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/cancel-booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-admin-passcode": adminPass() },
+          body: JSON.stringify({ orderId: id })
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error || "Cancel failed", "error"); return; }
+        const o = STATE.orders.find(x => x.orderId === id);
+        if (o) { o.status = "cancelled"; o.hold = 0; render(); }
+        toast(d.refunded ? "Cancelled & refunded" : "Cancelled (no refund — no capture on file)", "check_circle");
+      } catch (e) { toast("Network error", "error"); }
+    },
+
+    "gallery-thumb": (el) => {
+      const main = document.getElementById("gallery-main");
+      if (!main) return;
+      const src = el.querySelector("img") && el.querySelector("img").src;
+      if (src) main.src = src;
+      document.querySelectorAll(".gallery-thumb").forEach(b => b.classList.replace("border-canyon-clay", "border-transparent"));
+      el.classList.replace("border-transparent", "border-canyon-clay");
+    },
+
+    // Cart actions
+    "cart-add": (el) => {
+      const item = window.CATALOG.get(el.dataset.id);
+      if (!item) return;
+      const existing = STATE.cart.find(e => e.item.id === item.id);
+      if (existing) { existing.qty += 1; }
+      else { STATE.cart.push({ item, qty: 1 }); }
+      persist();
+      render();
+      toast(`${item.name} added to cart`, "shopping_cart");
+    },
+    "cart-remove": (el) => {
+      STATE.cart = STATE.cart.filter(e => e.item.id !== el.dataset.id);
+      persist(); render();
+    },
+    "cart-qty-inc": (el) => {
+      const e = STATE.cart.find(x => x.item.id === el.dataset.id);
+      if (e) { e.qty += 1; persist(); render(); }
+    },
+    "cart-qty-dec": (el) => {
+      const e = STATE.cart.find(x => x.item.id === el.dataset.id);
+      if (e) {
+        e.qty -= 1;
+        if (e.qty <= 0) STATE.cart = STATE.cart.filter(x => x.item.id !== el.dataset.id);
+        persist(); render();
+      }
+    },
+    "cart-clear": () => {
+      if (!window.confirm("Clear your cart?")) return;
+      STATE.cart = []; STATE.cartDates = { start: null, end: null }; STATE.cartPickupTime = null;
+      persist(); render();
+    },
+    "cart-checkout": () => {
+      if (!STATE.cart.length) { toast("Your cart is empty", "error"); return; }
+      if (!STATE.cartDates.start) { toast("Pick your trip dates first", "error"); return; }
+      if (!STATE.cartPickupTime) { toast("Choose a pickup window", "error"); return; }
+      STATE.cartMode = true;
+      STATE.safetyAccepted = false;
+      openModal(window.VIEWS.safetyModal());
+    },
+    "cart-pickup-time": (el) => { STATE.cartPickupTime = el.dataset.time; render(); },
+
     "work-order": (el) => go("#/work-order/" + el.dataset.id),
-    "do-print": () => window.print()
+    "do-print": () => window.print(),
+
+    // Customer cancels their own booking (only allowed when status is confirmed/prepped)
+    "customer-cancel": async (el) => {
+      const id = el.dataset.id;
+      if (!window.confirm("Cancel this booking? A full refund will be issued to your original payment method. This cannot be undone.")) return;
+      const cfg = window.UBR_CONFIG || {};
+      toast("Processing cancellation…", "undo");
+      try {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/customer-cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: id })
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error || "Cancellation failed", "error"); return; }
+        const b = STATE.bookings.find(x => x.orderId === id);
+        if (b) b.status = "cancelled";
+        persist(); render();
+        toast(d.refunded ? "Booking cancelled — refund is on its way" : "Booking cancelled", "check_circle");
+      } catch (e) { toast("Network error", "error"); }
+    },
+
+    // Customer looks up bookings by email
+    "lookup-booking": async () => {
+      const emailEl = document.getElementById("lookup-email");
+      const email = emailEl ? emailEl.value.trim() : "";
+      if (!email || !email.includes("@")) { toast("Enter your email address", "error"); return; }
+      const cfg = window.UBR_CONFIG || {};
+      toast("Looking up bookings…", "search");
+      try {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/lookup-booking?email=" + encodeURIComponent(email));
+        const d = await r.json();
+        if (!r.ok) { toast(d.error || "Lookup failed", "error"); return; }
+        const found = d.bookings || [];
+        if (!found.length) { toast("No bookings found for that email", "search"); return; }
+        found.forEach(b => { storeServerBooking(b); }); // storeServerBooking handles dedup
+        persist();
+        STATE.bookingTab = "Upcoming"; render();
+        toast(`Found ${found.length} booking${found.length > 1 ? "s" : ""}`, "check_circle");
+      } catch (e) { toast("Network error", "error"); }
+    },
+
+    // Customer joins waitlist for an item+dates
+    "waitlist-join": async (el) => {
+      const itemId = el.dataset.id;
+      const emailEl = document.getElementById("waitlist-email");
+      const email = emailEl ? emailEl.value.trim() : "";
+      if (!email || !email.includes("@")) { toast("Enter your email to join the waitlist", "error"); if (emailEl) emailEl.focus(); return; }
+      const cfg = window.UBR_CONFIG || {};
+      toast("Joining waitlist…", "notifications");
+      try {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/add-to-waitlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, itemId, startDate: STATE.dates.start, endDate: STATE.dates.end })
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error || "Could not join waitlist", "error"); return; }
+        toast("You're on the waitlist — we'll email you when it opens", "notifications_active");
+        closeModal();
+      } catch (e) { toast("Network error", "error"); }
+    }
   };
 
   /* ---------------- orders (owner ops) ---------------- */
