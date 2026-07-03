@@ -133,32 +133,33 @@ window.VIEWS = (function () {
     if (item.category === "Bundles") return bundleCard(item, i);
     const fav = window.STATE.favs.has(item.id);
     return `
-    <article class="bg-paper-white border border-outline-variant card-elevation rounded-xl overflow-hidden reveal" style="animation-delay:${i * 70}ms">
-      <div data-action="view" data-id="${item.id}" class="relative h-48 overflow-hidden bg-surface-container flex items-center justify-center cursor-pointer">
+    <article class="group flex flex-col bg-paper-white border border-outline-variant/70 rounded-2xl overflow-hidden hover:shadow-[0_10px_28px_-8px_rgba(6,27,14,0.22)] hover:-translate-y-0.5 transition-all duration-200 reveal" style="animation-delay:${i * 60}ms">
+      <div data-action="view" data-id="${item.id}" class="relative aspect-[4/3] overflow-hidden bg-surface-container flex items-center justify-center cursor-pointer">
         <img src="${imageFor(item, 800)}" alt="${item.name}" loading="lazy"
-          class="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+          class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onerror="imgFallback(this)" />
         <span class="gear-fallback-icon material-symbols-outlined opacity-0"
-          style="font-size:80px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
-        ${item.badge ? `<span class="absolute top-3 left-3 bg-forest-deep text-paper-white text-[11px] font-bold tracking-wide px-2.5 py-1 rounded-full">${item.badge}</span>` : ""}
+          style="font-size:72px;color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+        ${item.badge ? `<span class="absolute top-2.5 left-2.5 bg-paper-white/95 text-forest-deep text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full shadow-sm">${item.badge}</span>` : ""}
         <button data-action="fav" data-id="${item.id}"
-          class="absolute top-3 right-3 bg-paper-white/90 rounded-full p-1.5 press">
-          <span class="material-symbols-outlined text-[20px] ${fav ? "ms-fill text-canyon-clay" : "text-outline"}">favorite</span>
+          class="absolute top-2 right-2 bg-paper-white/85 backdrop-blur rounded-full p-1.5 press opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity ${fav ? "!opacity-100" : ""}">
+          <span class="material-symbols-outlined text-[18px] ${fav ? "ms-fill text-canyon-clay" : "text-outline"}">favorite</span>
         </button>
       </div>
-      <div class="p-4 flex flex-col gap-3">
-        <div data-action="view" data-id="${item.id}" class="cursor-pointer">
-          <h3 class="font-heading text-headline-sm text-forest-deep leading-tight">${item.name}</h3>
-          <p class="text-body-md text-earth-brown mt-1 line-clamp-2">${item.tagline || item.desc || ""}</p>
+      <div class="p-3.5 sm:p-4 flex flex-col flex-1">
+        <div data-action="view" data-id="${item.id}" class="cursor-pointer flex-1">
+          <span class="text-[10px] font-bold tracking-[0.13em] uppercase text-canyon-clay">${item.category}</span>
+          <h3 class="font-heading text-[15px] sm:text-[16px] text-forest-deep leading-snug mt-0.5 line-clamp-2">${item.name}</h3>
+          <p class="text-[12px] text-earth-brown mt-1 line-clamp-1 hidden sm:block">${item.tagline || item.desc || ""}</p>
         </div>
-        <div class="flex items-end justify-between pt-1">
-          <div>
-            <span class="text-[11px] text-outline uppercase tracking-wider font-semibold">Rental</span>
-            <p class="text-lg font-bold text-forest-deep leading-tight">${fmt.money(item.price)}</p>
+        <div class="flex items-center justify-between gap-2 mt-3">
+          <div class="leading-none min-w-0">
+            <span class="text-[10px] text-outline uppercase tracking-wider font-semibold">Rental</span>
+            <p class="text-[17px] font-extrabold text-forest-deep leading-tight">${fmt.money(item.price)}</p>
           </div>
           <button data-action="book" data-id="${item.id}"
-            class="bg-canyon-clay text-on-secondary rounded-lg px-4 py-2.5 text-[13px] font-bold tracking-wide inner-shadow-stamped press hover:brightness-105">
-            Book Dates
+            class="bg-canyon-clay text-on-secondary rounded-lg px-3 sm:px-4 py-2 text-[12px] sm:text-[13px] font-bold tracking-wide press hover:brightness-105 shrink-0">
+            Book
           </button>
         </div>
       </div>
@@ -236,16 +237,53 @@ window.VIEWS = (function () {
     </article>`;
   }
 
+  /* ---------- BUNDLE MINI CARD (showcase strip) ---------- */
+
+  function bundleMiniCard(item) {
+    const count = (item.bundleItems || item.includes || []).length;
+    return `
+    <article class="group snap-start shrink-0 w-60 sm:w-64 bg-paper-white border border-outline-variant/70 rounded-2xl overflow-hidden card-elevation press">
+      <div class="relative aspect-[3/2] bg-surface-container overflow-hidden cursor-pointer" data-action="view" data-id="${item.id}">
+        <img src="${imageFor(item, 600)}" alt="${item.name}" loading="lazy"
+          class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onerror="imgFallback(this)" />
+        <span class="gear-fallback-icon material-symbols-outlined opacity-0 absolute inset-0 flex items-center justify-center text-[56px]"
+          style="color:${item.tint};font-variation-settings:'FILL' 1,'wght' 300;">${item.icon}</span>
+        <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent pointer-events-none"></div>
+        ${item.badge ? `<span class="absolute top-2.5 left-2.5 bg-paper-white/95 text-forest-deep text-[10px] font-bold px-2 py-0.5 rounded-full">${item.badge}</span>` : ""}
+      </div>
+      <div class="p-3.5">
+        <span class="text-[10px] font-bold tracking-[0.14em] uppercase text-canyon-clay">Bundle · ${count} items</span>
+        <h3 class="font-heading text-[16px] text-forest-deep leading-tight mt-0.5 line-clamp-1 cursor-pointer" data-action="view" data-id="${item.id}">${item.name}</h3>
+        <p class="text-[12px] text-earth-brown mt-0.5 line-clamp-1">${item.tagline || ""}</p>
+        <div class="flex items-center justify-between mt-2.5">
+          <div class="leading-none">
+            <span class="text-[10px] text-outline uppercase tracking-wider font-semibold">From</span>
+            <p class="text-[17px] font-extrabold text-forest-deep leading-tight">${fmt.money(item.price)}</p>
+          </div>
+          <button data-action="book" data-id="${item.id}"
+            class="bg-canyon-clay text-on-secondary rounded-lg px-3.5 py-2 text-[12px] font-bold tracking-wide press hover:brightness-105 shrink-0">
+            Book
+          </button>
+        </div>
+      </div>
+    </article>`;
+  }
+
   /* ---------- HOME ---------- */
 
   function home() {
     const cat = window.STATE.category;
     const search = (window.STATE.search || "").toLowerCase().trim();
     const all = window.CATALOG.gear();
+    const bundles = all.filter(g => g.category === "Bundles");
+    const singles = all.filter(g => g.category !== "Bundles");
     const filtered = search
       ? all.filter(g => (g.name + " " + (g.tagline || "") + " " + g.category).toLowerCase().includes(search))
-      : (cat === "All" ? all : all.filter(g => g.category === cat));
-    const feed = (filtered.length ? filtered : (search ? [] : all));
+      : (cat === "All" ? singles : all.filter(g => g.category === cat));
+    const feed = filtered;
+    // Show the bundles showcase strip only on the default "All" view (never mixed into the gear grid).
+    const showBundleStrip = !search && cat === "All" && bundles.length > 0;
 
     const pills = ["All", ...window.CATALOG.categories()].map(c => {
       const on = c === cat;
@@ -321,15 +359,29 @@ window.VIEWS = (function () {
             <div class="flex gap-3 overflow-x-auto no-scrollbar py-1">${pills}</div>
           </section>`}
 
+          <!-- Featured bundles showcase (kept separate from the gear grid) -->
+          ${showBundleStrip ? `<section class="mt-7">
+            <div class="flex items-end justify-between mb-3">
+              <div>
+                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-canyon-clay">Curated &amp; ready</p>
+                <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
+              </div>
+              <button data-action="category" data-cat="Bundles" class="text-[13px] font-bold text-canyon-clay press flex items-center gap-0.5 shrink-0">View all<span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+            </div>
+            <div class="-mx-4 sm:-mx-6 px-4 sm:px-6 flex gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
+              ${bundles.map(b => bundleMiniCard(b)).join("")}
+            </div>
+          </section>` : ""}
+
           <!-- Section header -->
-          ${search ? "" : `<div class="flex items-baseline justify-between mt-6 mb-1 scroll-mt-20">
-            <h2 class="font-heading text-headline-md text-forest-deep">${cat === "All" ? "Shop All Gear" : cat === "Bundles" ? "Ready-Made Bundles" : cat}</h2>
+          ${search ? "" : `<div class="flex items-baseline justify-between mt-8 mb-1 scroll-mt-20">
+            <h2 class="font-heading text-headline-md text-forest-deep">${cat === "All" ? "Shop Gear" : cat === "Bundles" ? "Ready-Made Bundles" : cat}</h2>
             <span class="text-[12px] font-semibold text-outline">${feed.length} item${feed.length === 1 ? "" : "s"}</span>
           </div>`}
 
           <!-- Feed -->
-          <section id="gear-feed" class="mt-3 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 scroll-mt-20">
-            ${feed.length ? feed.map((g, i) => gearCard(g, i)).join("") : `<div class="col-span-full text-center py-lg text-on-surface-variant"><span class="material-symbols-outlined text-[40px] opacity-40">search_off</span><p class="mt-2 text-body-md">No gear matches "${search}"</p></div>`}
+          <section id="gear-feed" class="mt-3 pb-4 grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 scroll-mt-20">
+            ${feed.length ? feed.map((g, i) => gearCard(g, i)).join("") : `<div class="col-span-full text-center py-lg text-on-surface-variant"><span class="material-symbols-outlined text-[40px] opacity-40">search_off</span><p class="mt-2 text-body-md">${search ? `No gear matches "${search}"` : "Nothing here yet — check back soon."}</p></div>`}
           </section>
         </div>
       </main>`;
