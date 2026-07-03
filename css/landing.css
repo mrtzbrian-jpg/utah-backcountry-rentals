@@ -1,0 +1,143 @@
+/* Shared styles for Take a Hike Rentals SEO landing pages.
+ * On-brand with the main app (forest green + canyon clay), fully responsive. */
+:root {
+  --forest: #061B0E;
+  --forest-soft: #0d2a1a;
+  --clay: #AB3500;
+  --clay-dark: #8a2b00;
+  --paper: #FCF9F8;
+  --granite: #F0EDED;
+  --earth: #5C5346;
+  --sage: #b4cdb8;
+  --gold: #f5c060;
+  --line: #c3c8c1;
+  --ink: #1b1c1c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .head { font-family: Montserrat, system-ui, sans-serif; letter-spacing: -0.02em; }
+.serif { font-family: "Playfair Display", Georgia, serif; }
+a { color: inherit; }
+img { display: block; max-width: 100%; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.site-head {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(252,249,248,0.92); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.site-head .row { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+.brand { display: flex; align-items: center; gap: 8px; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 19px; color: var(--forest); text-decoration: none; }
+.brand svg { width: 24px; height: 24px; }
+.head-actions { display: flex; align-items: center; gap: 14px; }
+.head-phone { display: none; font-weight: 700; font-size: 14px; color: var(--forest); text-decoration: none; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-weight: 700; font-size: 14px; text-decoration: none;
+  padding: 11px 18px; border-radius: 10px; transition: filter .15s, transform .15s;
+}
+.btn:hover { filter: brightness(1.06); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--clay); color: #fff; }
+.btn-ghost { background: var(--paper); color: var(--forest); border: 2px solid var(--forest); }
+.btn-light { background: #fff; color: var(--forest); }
+.btn-lg { padding: 14px 26px; font-size: 15px; }
+
+/* Hero */
+.hero { position: relative; min-height: 460px; display: flex; align-items: flex-end; overflow: hidden; }
+.hero img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero .scrim { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(6,27,14,.86) 0%, rgba(6,27,14,.6) 45%, rgba(6,27,14,.15) 100%); }
+.hero .inner { position: relative; z-index: 2; padding: 48px 0 52px; color: #fff; }
+.eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.78); margin-bottom: 12px; }
+.hero h1 { font-size: clamp(30px, 5vw, 52px); line-height: 1.08; font-weight: 800; max-width: 15ch; }
+.hero h1 .accent { color: var(--gold); }
+.hero p.sub { margin-top: 14px; font-size: clamp(16px,2vw,19px); color: rgba(255,255,255,.9); max-width: 52ch; }
+.hero .cta { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* Trust bar */
+.trust { background: var(--forest); color: #fff; }
+.trust .grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 18px 24px; padding: 22px 0; }
+.trust .item { display: flex; align-items: center; gap: 10px; }
+.trust .item svg { width: 24px; height: 24px; flex: none; color: var(--sage); }
+.trust .item b { display: block; font-size: 13px; }
+.trust .item span { font-size: 12px; color: var(--sage); }
+
+/* Sections */
+section.block { padding: 56px 0; }
+.kicker { font-size: 12px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; color: var(--clay); }
+h2.title { font-size: clamp(24px,3.4vw,34px); font-weight: 800; color: var(--forest); margin-top: 6px; }
+.lead { max-width: 68ch; margin-top: 14px; color: #3a423b; font-size: 17px; }
+.lead p + p { margin-top: 14px; }
+.lead strong { color: var(--forest); }
+
+/* Gear chips */
+.chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 9px 15px; font-size: 14px; font-weight: 600; color: var(--forest); }
+.chip svg { width: 17px; height: 17px; color: var(--clay); }
+
+/* Spot cards */
+.cards { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 26px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+.card h3 { font-size: 18px; color: var(--forest); font-weight: 800; }
+.card .meta { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--clay); margin-bottom: 4px; }
+.card p { margin-top: 6px; font-size: 14.5px; color: #40473f; }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: 1fr; gap: 18px; margin-top: 26px; }
+.step { display: flex; gap: 14px; }
+.step .num { flex: none; width: 38px; height: 38px; border-radius: 999px; background: var(--forest); color: #fff; font-family: Montserrat; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.step h3 { font-size: 16px; color: var(--forest); }
+.step p { font-size: 14.5px; color: #40473f; }
+
+/* Band CTA */
+.band { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-soft) 100%); color: #fff; border-radius: 20px; padding: 40px 28px; text-align: center; margin: 8px 0; }
+.band h2 { font-size: clamp(22px,3vw,30px); font-weight: 800; }
+.band p { color: var(--sage); margin-top: 8px; max-width: 46ch; margin-inline: auto; }
+.band .cta { margin-top: 22px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* FAQ */
+.faq { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-top: 24px; }
+.faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+.faq details:last-child { border-bottom: 0; }
+.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; gap: 16px; font-weight: 700; color: var(--forest); font-size: 17px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary .pm { transition: transform .2s; color: var(--clay); font-size: 22px; line-height: 1; }
+.faq details[open] summary .pm { transform: rotate(45deg); }
+.faq p { margin-top: 10px; color: #40473f; }
+
+/* Related */
+.related { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 24px; }
+.related a { display: flex; align-items: center; justify-content: space-between; background: var(--granite); border-radius: 12px; padding: 16px 18px; text-decoration: none; font-weight: 700; color: var(--forest); }
+.related a:hover { background: #e7e3e2; }
+
+/* Footer */
+.site-foot { background: var(--forest); color: #fff; margin-top: 20px; }
+.site-foot .grid { display: grid; grid-template-columns: 1fr; gap: 28px; padding: 44px 0; }
+.site-foot h4 { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 12px; }
+.site-foot a, .site-foot li { color: var(--sage); font-size: 14px; text-decoration: none; }
+.site-foot ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.site-foot .fbrand { font-family: Montserrat; font-weight: 800; font-size: 18px; color: #fff; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.site-foot .fbrand svg { width: 22px; height: 22px; }
+.site-foot .fnote { color: var(--sage); font-size: 13px; max-width: 34ch; }
+.site-foot .fcontact a { color: #fff; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.copy { border-top: 1px solid rgba(255,255,255,.1); text-align: center; padding: 16px 0; font-size: 12px; color: rgba(180,205,184,.7); }
+
+@media (min-width: 640px) {
+  .head-phone { display: inline; }
+  .trust .grid { grid-template-columns: repeat(4,1fr); }
+  .cards { grid-template-columns: repeat(2,1fr); }
+  .steps { grid-template-columns: repeat(3,1fr); }
+  .related { grid-template-columns: repeat(3,1fr); }
+  .site-foot .grid { grid-template-columns: 1.4fr 1fr 1fr; }
+}
+@media (min-width: 900px) {
+  .cards { grid-template-columns: repeat(3,1fr); }
+}
