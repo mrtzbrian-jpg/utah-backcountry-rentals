@@ -42,16 +42,21 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "LocalBusiness",
+  "@type": ["LocalBusiness", "Store"],
+  "@id": "https://takeahikerentals.com/#business",
   "name": "Take a Hike Rentals",
-  "description": "Hiking, backpacking and backcountry camping gear rentals in Saratoga Springs, Utah.",
+  "description": "Outdoor gear rentals in Utah — camping, hiking and backpacking equipment. Tents, backpacks, sleeping bags, camp stoves, coolers and power stations, reserved online with local pickup in Saratoga Springs.",
   "url": "https://takeahikerentals.com/",
   "image": "https://takeahikerentals.com/og-image.jpg",
+  "logo": "https://takeahikerentals.com/favicon.svg",
   "priceRange": "$$",
+  "currenciesAccepted": "USD",
+  "paymentAccepted": "Credit Card, PayPal",
   "address": {
     "@type": "PostalAddress",
     "addressLocality": "Saratoga Springs",
     "addressRegion": "UT",
+    "postalCode": "84045",
     "addressCountry": "US"
   },
   "geo": {
@@ -59,8 +64,59 @@
     "latitude": 40.3477,
     "longitude": -111.9047
   },
-  "areaServed": ["Saratoga Springs", "Lehi", "Provo", "Salt Lake City", "Utah County", "Wasatch Front"],
-  "knowsAbout": ["hiking gear rental", "backpacking gear rental", "camping equipment rental", "tent rental", "sleeping bag rental"]
+  "areaServed": [
+    { "@type": "City", "name": "Saratoga Springs" },
+    { "@type": "City", "name": "Eagle Mountain" },
+    { "@type": "City", "name": "Lehi" },
+    { "@type": "City", "name": "American Fork" },
+    { "@type": "City", "name": "Provo" },
+    { "@type": "City", "name": "Orem" },
+    { "@type": "City", "name": "Salt Lake City" },
+    { "@type": "AdministrativeArea", "name": "Utah County" }
+  ],
+  "knowsAbout": ["camping gear rental", "hiking gear rental", "backpacking gear rental", "tent rental", "sleeping bag rental", "camp stove rental", "cooler rental", "outdoor gear rental Utah"],
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Outdoor Gear Rentals",
+    "itemListElement": [
+      { "@type": "OfferCatalog", "name": "Camping Gear Rentals" },
+      { "@type": "OfferCatalog", "name": "Hiking & Backpacking Rentals" },
+      { "@type": "OfferCatalog", "name": "Sleeping Bag Rentals" },
+      { "@type": "OfferCatalog", "name": "Camp Stove & Cooking Rentals" },
+      { "@type": "OfferCatalog", "name": "Cooler & Storage Rentals" },
+      { "@type": "OfferCatalog", "name": "Portable Power Station Rentals" }
+    ]
+  }
+}
+</script>
+
+<!-- FAQ structured data for rich results -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Where can I rent camping gear in Utah?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Take a Hike Rentals offers camping, hiking and backpacking gear rentals with local pickup in Saratoga Springs, Utah — convenient for all of Utah County, Salt Lake City and the Wasatch Front. Reserve online and pick up on your trip dates." }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does it cost to rent outdoor gear?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Most individual items rent for $8–$40 per weekend, and complete bundles start around $49. A small refundable deposit is placed on your card and released when you return the gear in good condition." }
+    },
+    {
+      "@type": "Question",
+      "name": "What outdoor gear can I rent?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Tents, backpacks, sleeping bags, camp stoves, coolers, bear canisters, satellite communicators and portable power stations — plus curated bundles for solo hikers, couples, families and budget trips." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I rent gear for a weekend backpacking trip?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pick your dates at checkout, choose individual items or a ready-made bundle, and we'll have everything packed and ready for pickup in Saratoga Springs, Utah." }
+    }
+  ]
 }
 </script>
 
@@ -179,7 +235,7 @@
     }
   };
 </script>
-<link rel="stylesheet" href="css/styles.css?v=27" />
+<link rel="stylesheet" href="css/styles.css?v=29" />
 </head>
 
 <body class="bg-granite-wash text-on-surface font-body-md antialiased min-h-screen">
@@ -192,11 +248,11 @@
   <!-- Toast layer -->
   <div id="toast-root" class="fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4 pointer-events-none"></div>
 
-  <script src="js/config.js?v=27"></script>
-  <script src="js/data.js?v=27"></script>
-  <script src="js/icons.js?v=27"></script>
-  <script src="js/store.js?v=27"></script>
-  <script src="js/views.js?v=27"></script>
-  <script src="js/app.js?v=27"></script>
+  <script src="js/config.js?v=29"></script>
+  <script src="js/data.js?v=29"></script>
+  <script src="js/icons.js?v=29"></script>
+  <script src="js/store.js?v=29"></script>
+  <script src="js/views.js?v=29"></script>
+  <script src="js/app.js?v=29"></script>
 </body>
 </html>

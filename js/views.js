@@ -406,9 +406,93 @@ window.VIEWS = (function () {
           <section id="gear-feed" class="mt-3 pb-4 grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 scroll-mt-20">
             ${feed.length ? feed.map((g, i) => gearCard(g, i)).join("") : `<div class="col-span-full text-center py-lg text-on-surface-variant"><span class="material-symbols-outlined text-[40px] opacity-40">search_off</span><p class="mt-2 text-body-md">${search ? `No gear matches "${search}"` : "Nothing here yet — check back soon."}</p></div>`}
           </section>
+
+          <!-- SEO content — crawlable, keyword-rich copy for local search -->
+          ${search ? "" : `<section class="mt-12 max-w-3xl">
+            <h2 class="font-heading text-headline-md text-forest-deep">Outdoor Gear Rentals in Utah — Camping, Hiking &amp; Backpacking</h2>
+            <div class="mt-3 space-y-3 text-body-md text-on-surface-variant leading-relaxed">
+              <p><strong class="text-forest-deep">Take a Hike Rentals</strong> is your local shop for affordable outdoor gear rentals in Utah. Skip the sticker shock of buying — rent premium <strong>camping gear, hiking and backpacking equipment</strong> by the day or weekend and hit the trail for a fraction of retail. We proudly serve Saratoga Springs, Lehi, American Fork, Eagle Mountain, Orem, Provo and the greater <strong>Utah County</strong> and <strong>Salt Lake City</strong> area, plus adventurers headed into the Wasatch and Uinta mountains.</p>
+              <p>Our rental fleet covers everything you need for a night — or a week — in the backcountry: <strong>tents, backpacks, sleeping bags, camp stoves, coolers, bear canisters, satellite communicators and portable power stations</strong>. New to backpacking? Build a custom pack or grab one of our ready-made bundles and we'll have it packed and ready at pickup.</p>
+              <p>Whether you're searching for <em>camping rentals near me</em>, <em>hiking gear rental in Utah County</em>, or <em>backpacking gear rentals in Salt Lake</em>, reserve online in minutes, choose your trail dates, and pick up locally in Saratoga Springs.</p>
+            </div>
+          </section>`}
+
+          <!-- FAQ — targets long-tail local queries + FAQ rich results -->
+          ${search ? "" : `<section class="mt-10 max-w-3xl">
+            <h2 class="font-heading text-headline-md text-forest-deep mb-4">Frequently Asked Questions</h2>
+            <div class="divide-y divide-outline-variant border-y border-outline-variant">
+              ${[
+                ["Where can I rent camping gear in Utah?", "Take a Hike Rentals offers camping, hiking and backpacking gear rentals with local pickup in Saratoga Springs, Utah — convenient for all of Utah County, Salt Lake City and the Wasatch Front. Reserve online and pick up on your trip dates."],
+                ["How much does it cost to rent outdoor gear?", "Most individual items rent for $8–$40 per weekend, and complete bundles start around $49. A small refundable deposit is placed on your card and released when you return the gear in good condition."],
+                ["What gear can I rent?", "Tents, backpacks, sleeping bags, camp stoves, coolers, bear canisters, satellite communicators and portable power stations — plus curated bundles for solo hikers, couples, families and budget trips."],
+                ["Can I rent gear for a weekend backpacking trip?", "Absolutely. Pick your dates at checkout, choose individual items or a ready-made bundle, and we'll have everything packed and ready for pickup in Saratoga Springs."]
+              ].map(([q, a], idx) => `
+                <details class="group py-4" ${idx === 0 ? "open" : ""}>
+                  <summary class="flex items-center justify-between cursor-pointer list-none font-semibold text-forest-deep text-body-lg">
+                    ${q}
+                    <span class="material-symbols-outlined text-outline transition-transform group-open:rotate-180">expand_more</span>
+                  </summary>
+                  <p class="mt-2 text-body-md text-on-surface-variant leading-relaxed">${a}</p>
+                </details>`).join("")}
+            </div>
+          </section>`}
         </div>
+        ${siteFooter()}
       </main>`;
     return page(inner + cartFab(), { active: "#/" });
+  }
+
+  /* ---------- SITE FOOTER (local SEO / trust) ---------- */
+
+  function siteFooter() {
+    const link = (route, label) => `<button data-action="nav" data-route="${route}" class="text-left text-[13px] text-primary-fixed-dim hover:text-paper-white press">${label}</button>`;
+    return `
+    <footer class="mt-12 bg-forest-deep text-paper-white">
+      <div class="max-w-container-max mx-auto px-6 py-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="sm:col-span-2 lg:col-span-1">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="material-symbols-outlined text-[22px] text-primary-fixed-dim">landscape</span>
+            <span class="font-heading text-headline-sm">Take a Hike Rentals</span>
+          </div>
+          <p class="text-[13px] text-primary-fixed-dim leading-relaxed">Affordable outdoor gear rentals in Utah. Camping, hiking &amp; backpacking equipment — reserved online, picked up local.</p>
+          <p class="text-[12px] text-primary-fixed-dim/80 mt-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px]">distance</span>Saratoga Springs, Utah</p>
+        </div>
+        <div>
+          <h3 class="text-[11px] font-bold tracking-[0.14em] uppercase text-white/50 mb-3">Shop</h3>
+          <div class="flex flex-col gap-2">
+            ${link("#/", "Browse Gear")}
+            ${link("#/builder", "Build a Bundle")}
+            ${link("#/bookings", "My Bookings")}
+            ${link("#/how", "How It Works")}
+          </div>
+        </div>
+        <div>
+          <h3 class="text-[11px] font-bold tracking-[0.14em] uppercase text-white/50 mb-3">We Serve</h3>
+          <ul class="flex flex-col gap-1.5 text-[13px] text-primary-fixed-dim">
+            <li>Saratoga Springs &amp; Eagle Mountain</li>
+            <li>Lehi &amp; American Fork</li>
+            <li>Provo &amp; Orem</li>
+            <li>Salt Lake City &amp; Utah County</li>
+            <li>Wasatch &amp; Uinta Mountains</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-[11px] font-bold tracking-[0.14em] uppercase text-white/50 mb-3">Rentals</h3>
+          <ul class="flex flex-col gap-1.5 text-[13px] text-primary-fixed-dim">
+            <li>Tent &amp; Camping Rentals</li>
+            <li>Backpack &amp; Hiking Gear</li>
+            <li>Sleeping Bags</li>
+            <li>Camp Stoves &amp; Coolers</li>
+            <li>Portable Power Stations</li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-white/10">
+        <div class="max-w-container-max mx-auto px-6 py-4 text-[12px] text-primary-fixed-dim/70 text-center">
+          © ${new Date().getFullYear()} Take a Hike Rentals · Outdoor Gear Rentals in Saratoga Springs, Utah
+        </div>
+      </div>
+    </footer>`;
   }
 
   /* ---------- PRODUCT DETAIL ---------- */
