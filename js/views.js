@@ -295,11 +295,11 @@ window.VIEWS = (function () {
     const inner = `
       ${topBar({ title: "Take a Hike Rentals", location: true })}
       <main class="flex-grow max-w-container-max mx-auto w-full">
-        <!-- Hero — full-bleed, edge to edge -->
-        <section class="relative min-h-[220px] sm:min-h-[280px] overflow-hidden flex flex-col justify-end">
-          ${ART.heroScene()}
-          <div class="hero-gradient absolute inset-0 pointer-events-none"></div>
-          <div class="relative z-10 p-6 sm:p-10">
+        <!-- Hero — full-bleed photographic, edge to edge -->
+        <section class="relative min-h-[380px] sm:min-h-[520px] overflow-hidden flex flex-col justify-end">
+          <img src="images/hero.jpg" alt="Hikers on a Wasatch ridgeline at sunrise" class="absolute inset-0 w-full h-full object-cover" />
+          <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(90deg,rgba(6,27,14,0.82) 0%,rgba(6,27,14,0.55) 42%,rgba(6,27,14,0.12) 100%);"></div>
+          <div class="relative z-10 p-6 sm:p-12 max-w-container-max mx-auto w-full">
             <p class="text-white/70 text-[11px] font-bold tracking-[0.18em] uppercase mb-2 flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings:'FILL' 1;">distance</span>Saratoga Springs · Utah</p>
             <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(26px,4.8vw,42px);line-height:1.12;letter-spacing:-0.02em;font-weight:800;"
               class="text-white drop-shadow-lg mb-2">The Trail Is Calling.<br/><span style="color:#f5c060;">Grab the Gear &amp; Go.</span></h2>
@@ -335,9 +335,32 @@ window.VIEWS = (function () {
               </div>`).join("")}
           </section>
 
+          <!-- Shop by category — photographic tiles (Backcountry-style) -->
+          <section class="mt-7">
+            <div class="flex items-end justify-between mb-3">
+              <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop by Category</h2>
+            </div>
+            <div class="-mx-4 sm:-mx-6 px-4 sm:px-6 flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
+              ${[
+                ["Camping", "tile-camping.jpg"],
+                ["Hiking", "tile-hiking.jpg"],
+                ["Sleeping", "tile-sleeping.jpg"],
+                ["Cooking", "tile-cooking.jpg"],
+                ["Storage", "tile-storage.jpg"],
+                ["Winter Gear", "tile-winter.jpg"]
+              ].map(([label, img]) => `
+                <button data-action="category" data-cat="${label}"
+                  class="group snap-start shrink-0 w-40 sm:w-52 relative rounded-2xl overflow-hidden aspect-[3/4] press">
+                  <img src="images/${img}" alt="${label}" loading="lazy" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(6,27,14,0.72) 0%,rgba(6,27,14,0.15) 45%,rgba(6,27,14,0) 75%);"></div>
+                  <span class="absolute left-3 bottom-3 right-3 text-left text-white leading-tight" style="font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:22px;text-shadow:0 1px 8px rgba(0,0,0,0.45);">${label}</span>
+                </button>`).join("")}
+            </div>
+          </section>
+
           <!-- Build your own pack banner -->
           <button data-action="nav" data-route="#/builder"
-            class="w-full mt-5 text-left bg-forest-deep text-paper-white rounded-xl p-5 flex items-center gap-4 press overflow-hidden relative inner-shadow-stamped">
+            class="w-full mt-6 text-left bg-forest-deep text-paper-white rounded-xl p-5 flex items-center gap-4 press overflow-hidden relative inner-shadow-stamped">
             <span class="material-symbols-outlined text-[44px] text-primary-fixed-dim shrink-0" style="font-variation-settings:'FILL' 1;">backpack</span>
             <div class="flex-1 min-w-0">
               <p class="font-heading text-headline-sm">Build Your Own Pack</p>
