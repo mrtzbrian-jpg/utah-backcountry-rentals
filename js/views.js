@@ -456,6 +456,8 @@ window.VIEWS = (function () {
           </div>
           <p class="text-[13px] text-primary-fixed-dim leading-relaxed">Affordable outdoor gear rentals in Utah. Camping, hiking &amp; backpacking equipment — reserved online, picked up local.</p>
           <p class="text-[12px] text-primary-fixed-dim/80 mt-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px]">distance</span>Saratoga Springs, Utah</p>
+          <a href="tel:+15104806761" class="text-[13px] font-semibold text-paper-white mt-2 flex items-center gap-1.5 hover:text-primary-fixed-dim press"><span class="material-symbols-outlined text-[15px]">call</span>(510) 480-6761</a>
+          <p class="text-[12px] text-primary-fixed-dim/80 mt-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px]">schedule</span>By appointment only</p>
         </div>
         <div>
           <h3 class="text-[11px] font-bold tracking-[0.14em] uppercase text-white/50 mb-3">Shop</h3>
