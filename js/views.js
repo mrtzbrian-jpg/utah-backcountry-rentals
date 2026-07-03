@@ -262,10 +262,10 @@ window.VIEWS = (function () {
           ${ART.heroScene()}
           <div class="hero-gradient absolute inset-0 pointer-events-none"></div>
           <div class="relative z-10 p-6 sm:p-10">
-            <p class="text-white/55 text-[11px] font-bold tracking-[0.18em] uppercase mb-1">Take a Hike Rentals</p>
-            <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(24px,4.5vw,40px);line-height:1.15;letter-spacing:-0.02em;font-weight:800;"
-              class="text-white drop-shadow-lg mb-2">Great Gear.<br/><span style="color:#f5c060;">Skip the Retail Price.</span></h2>
-            <p class="text-white/80 text-body-md mb-5 max-w-md">Pick your gear or build a custom bundle, choose your trail dates, and reserve online.</p>
+            <p class="text-white/70 text-[11px] font-bold tracking-[0.18em] uppercase mb-2 flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings:'FILL' 1;">distance</span>Saratoga Springs · Utah</p>
+            <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(26px,4.8vw,42px);line-height:1.12;letter-spacing:-0.02em;font-weight:800;"
+              class="text-white drop-shadow-lg mb-2">The Trail Is Calling.<br/><span style="color:#f5c060;">Grab the Gear &amp; Go.</span></h2>
+            <p class="text-white/85 text-body-md mb-5 max-w-md">Premium hiking, camping &amp; backpacking gear — rent it, reserve your dates, and hit the backcountry without the retail price tag.</p>
             <div class="flex flex-wrap gap-3">
               <button data-action="browse-gear"
                 class="bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
@@ -280,6 +280,23 @@ window.VIEWS = (function () {
         </section>
 
         <div class="px-4 sm:px-6">
+          <!-- Value props strip (REI-style trust bar) -->
+          <section class="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            ${[
+              ["forest", "Trail-Tested Gear", "Top brands, ready to roll"],
+              ["distance", "Local Pickup", "Saratoga Springs, UT"],
+              ["event_available", "Reserve Online", "Pick your trail dates"],
+              ["verified_user", "Refundable Hold", "Back when you return"]
+            ].map(([icon, title, sub]) => `
+              <div class="flex items-center gap-2.5 rounded-xl border border-outline-variant bg-paper-white px-3 py-2.5">
+                <span class="material-symbols-outlined text-[24px] text-forest-deep shrink-0" style="font-variation-settings:'FILL' 1;">${icon}</span>
+                <div class="min-w-0">
+                  <p class="text-[12px] font-bold text-forest-deep leading-tight">${title}</p>
+                  <p class="text-[11px] text-earth-brown leading-tight truncate">${sub}</p>
+                </div>
+              </div>`).join("")}
+          </section>
+
           <!-- Build your own pack banner -->
           <button data-action="nav" data-route="#/builder"
             class="w-full mt-5 text-left bg-forest-deep text-paper-white rounded-xl p-5 flex items-center gap-4 press overflow-hidden relative inner-shadow-stamped">
@@ -304,8 +321,14 @@ window.VIEWS = (function () {
             <div class="flex gap-3 overflow-x-auto no-scrollbar py-1">${pills}</div>
           </section>`}
 
+          <!-- Section header -->
+          ${search ? "" : `<div class="flex items-baseline justify-between mt-6 mb-1 scroll-mt-20">
+            <h2 class="font-heading text-headline-md text-forest-deep">${cat === "All" ? "Shop All Gear" : cat === "Bundles" ? "Ready-Made Bundles" : cat}</h2>
+            <span class="text-[12px] font-semibold text-outline">${feed.length} item${feed.length === 1 ? "" : "s"}</span>
+          </div>`}
+
           <!-- Feed -->
-          <section id="gear-feed" class="mt-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 scroll-mt-20">
+          <section id="gear-feed" class="mt-3 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 scroll-mt-20">
             ${feed.length ? feed.map((g, i) => gearCard(g, i)).join("") : `<div class="col-span-full text-center py-lg text-on-surface-variant"><span class="material-symbols-outlined text-[40px] opacity-40">search_off</span><p class="mt-2 text-body-md">No gear matches "${search}"</p></div>`}
           </section>
         </div>
