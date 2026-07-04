@@ -20,13 +20,13 @@ window.DATA = (function () {
       badge: "Best for solo",
       deposit: 200,
       bundleItems: [
-        { id: "osprey-aether-65", qty: 1 },
+        { id: "teton-explorer-65", qty: 1 },
         { id: "msr-hubba-tent",   qty: 1 },
         { id: "nemo-disco-15",    qty: 1 },
         { id: "water-filter",     qty: 1 },
         { id: "bearvault-bv500",  qty: 1 }
       ],
-      includes: ["Osprey Aether 65L backpack", "MSR Hubba Hubba 2 tent", "Nemo Disco 15° sleeping bag", "Katadyn BeFree water filter", "BearVault BV500 canister"]
+      includes: ["TETON Explorer 65L backpack", "MSR Hubba Hubba 2 tent", "Nemo Disco 15° sleeping bag", "Katadyn BeFree water filter", "BearVault BV500 canister"]
     },
     {
       id: "couples-weekend-bundle",
@@ -42,14 +42,14 @@ window.DATA = (function () {
       badge: "Best for two",
       deposit: 250,
       bundleItems: [
-        { id: "osprey-aether-65", qty: 2 },
+        { id: "teton-explorer-65", qty: 2 },
         { id: "msr-hubba-tent",   qty: 1 },
         { id: "nemo-disco-15",    qty: 2 },
         { id: "water-filter",     qty: 1 },
         { id: "bearvault-bv500",  qty: 1 },
         { id: "garmin-inreach",   qty: 1 }
       ],
-      includes: ["2× Osprey Aether 65L backpacks", "MSR Hubba Hubba 2-person tent", "2× Nemo Disco 15° sleeping bags", "Katadyn BeFree water filter", "BearVault BV500 canister", "Garmin inReach Mini 2 satellite communicator"]
+      includes: ["2× TETON Explorer 65L backpacks", "MSR Hubba Hubba 2-person tent", "2× Nemo Disco 15° sleeping bags", "Katadyn BeFree water filter", "BearVault BV500 canister", "Garmin inReach Mini 2 satellite communicator"]
     },
     {
       id: "budget-bundle",
@@ -124,6 +124,21 @@ window.DATA = (function () {
       icon: "satellite_alt",
       tint: "#ab3500",
       includes: ["inReach Mini 2 device", "USB-C charge cable", "Carabiner mount", "Pre-activated satellite plan"]
+    },
+    {
+      id: "teton-explorer-65",
+      name: "TETON Explorer 65L",
+      category: "Backpacks",
+      tagline: "Adjustable, unisex 65L pack built for multi-day trips",
+      desc: "A rugged 65-liter backpacking pack with a fully adjustable torso for a universal men's/women's fit. Multiple exterior pockets and compression straps keep gear organized and secure on the trail.",
+      price: 40,
+      unit: "weekend",
+      perDay: 14,
+      weight: 4.8,
+      icon: "hiking",
+      tint: "#4a4a4a",
+      img: "images/teton-explorer-65.jpg",
+      includes: ["TETON Explorer 65L backpack", "Adjustable, unisex fit", "Multiple exterior pockets"]
     },
     {
       id: "osprey-aether-65",
@@ -263,7 +278,7 @@ window.DATA = (function () {
   // (per item) and keep netlify/functions/_pricing.js PRICES in sync.
   const PRICES = {
     "solo-weekend-bundle": 79, "couples-weekend-bundle": 145, "budget-bundle": 49, "family-weekend-bundle": 195,
-    "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40,
+    "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40, "teton-explorer-65": 40,
     "bearvault-bv500": 12, "nemo-disco-15": 25, "msr-hubba-tent": 30,
     "winter-traction-kit": 35, "water-filter": 10,
     "osprey-rook-65": 40, "naturehike-cloudup-1": 30, "kelty-cosmic-20": 25,
@@ -275,7 +290,7 @@ window.DATA = (function () {
   // is placed on the card at checkout, released on return. Edit in the admin.
   const DEPOSITS = {
     "solo-weekend-bundle": 200, "couples-weekend-bundle": 250, "budget-bundle": 150, "family-weekend-bundle": 250,
-    "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80,
+    "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80, "teton-explorer-65": 80,
     "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,
     "winter-traction-kit": 100, "water-filter": 20,
     "osprey-rook-65": 80, "naturehike-cloudup-1": 60, "kelty-cosmic-20": 50,

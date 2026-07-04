@@ -31,12 +31,12 @@ const ADDONS = { batteries: 5, poncho: 3, "map-kit": 10 }; // add-ons carry no d
 // Last-resort fallback for the original built-in catalog ids, used only if the
 // database is unreachable. The live catalog normally comes from Supabase.
 const FALLBACK_PRICES = {
-  "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40,
+  "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40, "teton-explorer-65": 40,
   "bearvault-bv500": 12, "nemo-disco-15": 25, "msr-hubba-tent": 30,
   "winter-traction-kit": 35, "water-filter": 10
 };
 const FALLBACK_DEPOSITS = {
-  "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80,
+  "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80, "teton-explorer-65": 80,
   "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,
   "winter-traction-kit": 100, "water-filter": 20
 };
