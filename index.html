@@ -20,6 +20,10 @@
 <meta name="google-site-verification" content="JXbqL2ZWe4J8EB9VTblZPOE1xNS4xSlfnUOmV1Fg-4Y" />
 <link rel="canonical" href="https://takeahikerentals.com/" />
 
+<!-- Preload the largest above-the-fold image (LCP element) so the browser
+     fetches it immediately instead of waiting for the app's JS to render it -->
+<link rel="preload" as="image" href="images/hero.jpg" fetchpriority="high" />
+
 <!-- Geo targeting -->
 <meta name="geo.region" content="US-UT" />
 <meta name="geo.placename" content="Saratoga Springs, Utah" />
@@ -245,7 +249,7 @@
     }
   };
 </script>
-<link rel="stylesheet" href="css/styles.css?v=32" />
+<link rel="stylesheet" href="css/styles.css?v=33" />
 </head>
 
 <body class="bg-granite-wash text-on-surface font-body-md antialiased min-h-screen">
@@ -258,11 +262,11 @@
   <!-- Toast layer -->
   <div id="toast-root" class="fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4 pointer-events-none"></div>
 
-  <script src="js/config.js?v=32"></script>
-  <script src="js/data.js?v=32"></script>
-  <script src="js/icons.js?v=32"></script>
-  <script src="js/store.js?v=32"></script>
-  <script src="js/views.js?v=32"></script>
-  <script src="js/app.js?v=32"></script>
+  <script src="js/config.js?v=33"></script>
+  <script src="js/data.js?v=33"></script>
+  <script src="js/icons.js?v=33"></script>
+  <script src="js/store.js?v=33"></script>
+  <script src="js/views.js?v=33"></script>
+  <script src="js/app.js?v=33"></script>
 </body>
 </html>
