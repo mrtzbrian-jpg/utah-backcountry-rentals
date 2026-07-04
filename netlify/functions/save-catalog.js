@@ -32,6 +32,7 @@ exports.handler = async (event) => {
     price: parseFloat(p.price) || 0,
     deposit: parseFloat(p.deposit) || 0,
     icon: p.icon || "backpack",
+    graphic: p.graphic || "generic",
     tint: p.tint || "#1b3022",
     unit: p.unit || "rental",
     img: p.img || null,

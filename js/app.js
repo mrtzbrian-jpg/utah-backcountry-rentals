@@ -300,6 +300,20 @@
     setupPackDragDrop();
   }
 
+  // Adds one unit of `id` to the pack, respecting the item's stock (quantity).
+  // Returns true if it was added, false if already at (or over) stock.
+  function packAddOne(id) {
+    const g = window.CATALOG.get(id);
+    const stock = g && g.quantity != null ? g.quantity : 1;
+    const have = STATE.pack.get(id) || 0;
+    if (have >= stock) {
+      toast(stock <= 0 ? "Out of stock" : `Only ${stock} in stock`, "error");
+      return false;
+    }
+    STATE.pack.set(id, have + 1);
+    return true;
+  }
+
   function flyPlusOne(x, y) {
     const el = document.createElement("div");
     el.className = "pack-plus";
@@ -331,7 +345,7 @@
       zone.classList.remove("pack-drop-active");
       if (!dragId) return;
       const id = dragId; dragId = null;
-      STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1);
+      if (!packAddOne(id)) return;
       flyPlusOne(e.clientX, e.clientY);
       zone.classList.add("pack-bounce");
       setTimeout(() => zone.classList.remove("pack-bounce"), 460);
@@ -366,13 +380,14 @@
         const zr = zone.getBoundingClientRect();
         if (touchId && t.clientX >= zr.left && t.clientX <= zr.right && t.clientY >= zr.top && t.clientY <= zr.bottom) {
           const id = touchId;
-          STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1);
-          flyPlusOne(t.clientX, t.clientY);
-          zone.classList.add("pack-bounce");
-          setTimeout(() => zone.classList.remove("pack-bounce"), 460);
-          render();
-          const g = window.CATALOG.get(id);
-          if (g) toast(g.name + " packed!", "backpack");
+          if (packAddOne(id)) {
+            flyPlusOne(t.clientX, t.clientY);
+            zone.classList.add("pack-bounce");
+            setTimeout(() => zone.classList.remove("pack-bounce"), 460);
+            render();
+            const g = window.CATALOG.get(id);
+            if (g) toast(g.name + " packed!", "backpack");
+          }
         }
         touchId = null;
       }, { passive: true });
@@ -544,7 +559,11 @@
     "pack-size": (el) => { STATE.packSize = parseInt(el.dataset.size, 10); render(); },
     "pack-cat": (el) => { STATE.packCat = el.dataset.cat; render(); },
     "pack-base": (el) => { STATE.packBase = el.dataset.id; render(); },
-    "pack-add": (el) => { const id = el.dataset.id; STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1); render(); },
+    "pack-add": (el) => {
+      const id = el.dataset.id;
+      if (!packAddOne(id)) return;
+      render();
+    },
     "pack-remove": (el) => {
       const id = el.dataset.id; const n = (STATE.pack.get(id) || 0) - 1;
       if (n <= 0) STATE.pack.delete(id); else STATE.pack.set(id, n);
@@ -644,6 +663,19 @@
         b.classList.toggle("bg-surface-container", !on);
         b.classList.toggle("text-on-surface-variant", !on);
       });
+    },
+    "admin-graphic": (el) => {
+      if (!STATE.adminEdit) STATE.adminEdit = {};
+      STATE.adminEdit.graphic = el.dataset.graphic;
+      document.querySelectorAll(".admin-graphic").forEach(b => {
+        const on = b.dataset.graphic === el.dataset.graphic;
+        b.classList.toggle("bg-canyon-clay/15", on);
+        b.classList.toggle("ring-2", on);
+        b.classList.toggle("ring-canyon-clay", on);
+        b.classList.toggle("bg-surface-container", !on);
+      });
+      const label = document.getElementById("admin-graphic-label");
+      if (label) label.textContent = el.getAttribute("title") + " selected";
     },
     "admin-image": (el) => {
       const f = el.files && el.files[0];
@@ -769,6 +801,7 @@
         includes: includes.length ? includes : null,
         bundleItems: bundleItems.length ? bundleItems : undefined,
         icon: e.icon || current.icon || "backpack",
+        graphic: e.graphic || current.graphic || "generic",
         perDay: perDayEl ? perDayEl.checked : !!(current.perDay)
       };
       // Persist multi-photo array; first entry is also the cover img

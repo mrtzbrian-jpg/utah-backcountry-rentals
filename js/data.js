@@ -123,6 +123,7 @@ window.DATA = (function () {
       weight: 0.2,
       icon: "satellite_alt",
       tint: "#ab3500",
+      graphic: "satellite-comm",
       includes: ["inReach Mini 2 device", "USB-C charge cable", "Carabiner mount", "Pre-activated satellite plan"]
     },
     {
@@ -137,6 +138,7 @@ window.DATA = (function () {
       weight: 4.8,
       icon: "hiking",
       tint: "#4a4a4a",
+      graphic: "backpack",
       img: "images/teton-explorer-65.jpg",
       includes: ["TETON Explorer 65L backpack", "Adjustable, unisex fit", "Multiple exterior pockets"]
     },
@@ -152,6 +154,7 @@ window.DATA = (function () {
       weight: 4.6,
       icon: "hiking",
       tint: "#364c3c",
+      graphic: "backpack",
       includes: ["Osprey Aether 65L", "Integrated rain cover", "Sleeping bag compartment"]
     },
     {
@@ -165,7 +168,8 @@ window.DATA = (function () {
       perDay: 5,
       weight: 2.5,
       icon: "lunch_dining",
-      tint: "#5d6b46"
+      tint: "#5d6b46",
+      graphic: "bear-canister"
     },
     {
       id: "nemo-disco-15",
@@ -178,7 +182,8 @@ window.DATA = (function () {
       perDay: 15,
       weight: 2.8,
       icon: "bedtime",
-      tint: "#2b4a57"
+      tint: "#2b4a57",
+      graphic: "sleeping-bag"
     },
     {
       id: "msr-hubba-tent",
@@ -191,7 +196,8 @@ window.DATA = (function () {
       perDay: 10,
       weight: 3.1,
       icon: "cabin",
-      tint: "#3c6168"
+      tint: "#3c6168",
+      graphic: "tent-small"
     },
     {
       id: "winter-traction-kit",
@@ -205,6 +211,7 @@ window.DATA = (function () {
       weight: 6.4,
       icon: "ac_unit",
       tint: "#2b4a57",
+      graphic: "traction-cleats",
       includes: ["MSR Evo snowshoes", "Adjustable trekking poles", "Kahtoola microspikes"]
     },
     {
@@ -218,7 +225,8 @@ window.DATA = (function () {
       perDay: 6,
       weight: 0.6,
       icon: "water_drop",
-      tint: "#3c6168"
+      tint: "#3c6168",
+      graphic: "water-filter"
     }
   ];
 

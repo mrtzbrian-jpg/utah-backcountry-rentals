@@ -952,13 +952,16 @@ window.VIEWS = (function () {
     // Drag-and-drop gear cards — compact so the pack stays visible while dragging
     const dragCards = lib.map(x => {
       const count = chosen.get(x.id) || 0;
+      const stock = x.quantity != null ? x.quantity : 1;
+      const outOfStock = stock <= 0;
+      const atMax = count >= stock;
       return `
-      <div class="pack-card relative bg-paper-white rounded-lg border ${count ? "border-canyon-clay ring-1 ring-canyon-clay" : "border-outline-variant"} overflow-hidden flex flex-col select-none cursor-grab active:cursor-grabbing"
-        draggable="true" data-pack-drag="${x.id}">
-        <div class="relative aspect-[4/3] bg-surface-container flex items-center justify-center">
-          <img src="${imageFor(x, 240)}" alt="${x.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover pointer-events-none"/>
-          <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[28px]" style="color:${x.tint};font-variation-settings:'FILL' 1;">${x.icon}</span>
+      <div class="pack-card relative bg-paper-white rounded-lg border ${count ? "border-canyon-clay ring-1 ring-canyon-clay" : "border-outline-variant"} overflow-hidden flex flex-col select-none ${outOfStock ? "opacity-45" : "cursor-grab active:cursor-grabbing"}"
+        draggable="${outOfStock ? "false" : "true"}" data-pack-drag="${x.id}" data-stock="${stock}">
+        <div class="relative aspect-[4/3] bg-surface-container flex items-center justify-center p-2.5" data-action="view" data-id="${x.id}" title="Tap to see photo &amp; details">
+          <div class="w-full h-full pointer-events-none">${window.GEAR_ICONS.get(x.graphic)}</div>
           ${count ? `<span class="absolute top-1 right-1 bg-canyon-clay text-paper-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center shadow">${count}</span>` : `<span class="absolute top-1 left-1 bg-paper-white/85 text-outline rounded-full w-[18px] h-[18px] flex items-center justify-center"><span class="material-symbols-outlined text-[12px]">drag_indicator</span></span>`}
+          ${outOfStock ? `<span class="absolute inset-x-0 bottom-0 bg-forest-deep/85 text-paper-white text-[8px] font-bold uppercase tracking-wide text-center py-0.5">Out of stock</span>` : ""}
         </div>
         <div class="px-1.5 pt-1">
           <p class="text-[10px] font-bold text-forest-deep leading-tight line-clamp-1">${x.name}</p>
@@ -969,7 +972,7 @@ window.VIEWS = (function () {
             <span class="material-symbols-outlined text-[13px]">remove</span>
           </button>
           <span class="text-[11px] font-bold w-3 text-center text-forest-deep">${count}</span>
-          <button data-action="pack-add" data-id="${x.id}" class="w-5 h-5 rounded-full bg-forest-deep text-on-primary press flex items-center justify-center">
+          <button data-action="pack-add" data-id="${x.id}" class="w-5 h-5 rounded-full bg-forest-deep text-on-primary press flex items-center justify-center ${atMax ? "opacity-30 pointer-events-none" : ""}" title="${atMax ? "Only " + stock + " in stock" : ""}">
             <span class="material-symbols-outlined text-[13px]">add</span>
           </button>
         </div>
@@ -1397,6 +1400,7 @@ window.VIEWS = (function () {
     const isNew = !e.id;
     const item = isNew ? {} : (window.CATALOG.get(e.id) || {});
     const icon = e.icon || item.icon || "backpack";
+    const graphic = e.graphic !== undefined ? e.graphic : (item.graphic || "generic");
     const img = e.img !== undefined ? e.img : item.img;
     const cats = window.CATALOG.categories().map(c => `<option value="${c}" ${item.category === c ? "selected" : ""}>${c}</option>`).join("");
     const icons = ADMIN_ICONS.map(ic => `
@@ -1505,6 +1509,18 @@ window.VIEWS = (function () {
 
           <div><span class="text-label-md text-on-surface-variant">Icon (shown when there's no photo)</span>
             <div class="mt-1 grid grid-cols-7 gap-1">${icons}</div></div>
+
+          <div>
+            <span class="text-label-md text-on-surface-variant">Pack builder graphic <span class="text-outline font-normal">(small vector icon shown in Build Your Pack — pick the closest match)</span></span>
+            <div id="admin-graphic-grid" class="mt-1.5 grid grid-cols-5 sm:grid-cols-6 gap-1.5 max-h-48 overflow-y-auto p-1 border border-outline-variant rounded-lg">
+              ${window.GEAR_ICONS.list.map(g => `
+                <button type="button" data-action="admin-graphic" data-graphic="${g.key}" title="${g.label}"
+                  class="admin-graphic aspect-square rounded-lg flex items-center justify-center p-2 press ${g.key === graphic ? "bg-canyon-clay/15 ring-2 ring-canyon-clay" : "bg-surface-container hover:bg-granite-wash"}">
+                  ${window.GEAR_ICONS.get(g.key)}
+                </button>`).join("")}
+            </div>
+            <span id="admin-graphic-label" class="text-label-sm text-outline mt-1 block">${(window.GEAR_ICONS.list.find(g => g.key === graphic) || {}).label || "Generic gear"} selected</span>
+          </div>
         </div>
         <div class="sticky bottom-0 bg-surface-container-low p-md flex gap-2">
           <button data-action="admin-cancel" class="flex-1 rounded-full py-3 border-2 border-primary text-primary text-label-md press">Cancel</button>
