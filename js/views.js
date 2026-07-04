@@ -1015,8 +1015,20 @@ window.VIEWS = (function () {
           <div class="mt-5 flex flex-col items-center">
             <div class="relative flex items-center justify-center">
               <div class="pack-halo" style="opacity:${(0.12 + fillPct * 0.8).toFixed(2)};transform:scale(${(0.85 + fillPct * 0.25).toFixed(2)})"></div>
-              <div id="pack-zone" class="relative w-40 h-52 ${nonBaseCount ? "" : "pack-idle"} cursor-pointer" title="Drop gear here">
-                ${ART.packSvg(fillPct, nonBaseCount)}
+              <div id="pack-zone" class="relative w-44 h-44 ${nonBaseCount ? "" : "pack-idle"} cursor-pointer" title="Drop gear here">
+                <svg viewBox="0 0 100 100" class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="#e4e0df" stroke-width="3.5"/>
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="#AB3500" stroke-width="3.5" stroke-linecap="round"
+                    stroke-dasharray="289" stroke-dashoffset="${(289 * (1 - fillPct)).toFixed(1)}"
+                    style="transition:stroke-dashoffset .6s cubic-bezier(.22,1,.36,1)"/>
+                </svg>
+                <div class="pack-photo absolute inset-[9px] rounded-2xl bg-paper-white overflow-hidden flex items-center justify-center shadow-[inset_0_0_0_1px_rgba(6,27,14,0.06)]">
+                  <img src="${imageFor(base, 400)}" alt="Your TETON Explorer pack" draggable="false" onerror="imgFallback(this)" class="w-full h-full object-contain p-1.5 pointer-events-none"/>
+                  <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[54px]" style="color:${base.tint};font-variation-settings:'FILL' 1;">${base.icon}</span>
+                </div>
+                ${nonBaseCount > 0
+                  ? `<span class="absolute -top-1.5 -right-1.5 bg-canyon-clay text-paper-white text-[13px] font-extrabold min-w-7 h-7 px-1.5 rounded-full flex items-center justify-center shadow-lg count-pop">${nonBaseCount}</span>`
+                  : `<span class="absolute inset-x-0 bottom-1 flex justify-center pointer-events-none"><span class="material-symbols-outlined text-canyon-clay text-[22px] pack-hint">arrow_downward</span></span>`}
               </div>
             </div>
 

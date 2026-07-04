@@ -300,6 +300,16 @@
     setupPackDragDrop();
   }
 
+  function flyPlusOne(x, y) {
+    const el = document.createElement("div");
+    el.className = "pack-plus";
+    el.textContent = "+1";
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 850);
+  }
+
   function setupPackDragDrop() {
     const zone = document.getElementById("pack-zone");
     if (!zone) return;
@@ -322,6 +332,7 @@
       if (!dragId) return;
       const id = dragId; dragId = null;
       STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1);
+      flyPlusOne(e.clientX, e.clientY);
       zone.classList.add("pack-bounce");
       setTimeout(() => zone.classList.remove("pack-bounce"), 460);
       render();
@@ -356,6 +367,7 @@
         if (touchId && t.clientX >= zr.left && t.clientX <= zr.right && t.clientY >= zr.top && t.clientY <= zr.bottom) {
           const id = touchId;
           STATE.pack.set(id, (STATE.pack.get(id) || 0) + 1);
+          flyPlusOne(t.clientX, t.clientY);
           zone.classList.add("pack-bounce");
           setTimeout(() => zone.classList.remove("pack-bounce"), 460);
           render();
