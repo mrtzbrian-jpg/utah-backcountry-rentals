@@ -196,5 +196,75 @@ window.ART = (function () {
     </svg>`;
   }
 
-  return { heroScene, mountainBand, trailLine, topoMap, packSvg };
+  // Vector illustration styled after the TETON Explorer 65 — black body, charcoal
+  // top lid, front pocket, side pockets. Fill meter grows from the bottom as
+  // gear is added; count badge shows in the corner.
+  function tetonPackSvg(fillPct, count) {
+    const fp = Math.max(0, Math.min(1, fillPct || 0));
+    const fillH = Math.round(fp * 58);
+    const uid = "tp" + Math.random().toString(36).slice(2, 7);
+    return `
+    <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-md" aria-hidden="true">
+      <defs>
+        <clipPath id="tbody-clip-${uid}"><rect x="20" y="50" width="60" height="66" rx="12"/></clipPath>
+        <linearGradient id="tbody-grad-${uid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#2b2b2b"/><stop offset="100%" stop-color="#141414"/>
+        </linearGradient>
+        <linearGradient id="tlid-grad-${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7d7d7d"/><stop offset="100%" stop-color="#5a5a5a"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Shoulder straps -->
+      <path d="M38 44 Q30 32 33 20 Q36 10 47 8 Q50 7 53 8 Q64 10 67 20 Q70 32 62 44"
+        fill="none" stroke="#3a3a3a" stroke-width="9" stroke-linecap="round"/>
+      <!-- Sternum strap -->
+      <rect x="36" y="30" width="28" height="6" rx="3" fill="#8a8a8a"/>
+      <!-- Top carry handle -->
+      <rect x="40" y="3" width="20" height="7" rx="3.5" fill="#8a8a8a"/>
+
+      <!-- Top lid (rounded gray panel, drawstring closure) -->
+      <path d="M28 26 Q28 12 50 10 Q72 12 72 26 L72 42 L28 42 Z" fill="url(#tlid-grad-${uid})"/>
+      <path d="M36 22 Q50 17 64 22" fill="none" stroke="#3a3a3a" stroke-width="1.5" stroke-dasharray="3,2.5" opacity="0.6"/>
+      <circle cx="50" cy="30" r="2" fill="#2b2b2b"/>
+
+      <!-- Main body -->
+      <rect x="20" y="50" width="60" height="66" rx="12" fill="url(#tbody-grad-${uid})"/>
+
+      <!-- Fill meter (grows from bottom, canyon-clay) -->
+      ${fillH > 0 ? `<rect x="20" y="${116 - fillH}" width="60" height="${fillH}" fill="#AB3500" opacity="0.4" clip-path="url(#tbody-clip-${uid})"/>` : ""}
+
+      <!-- Center compression strap -->
+      <rect x="46" y="50" width="8" height="66" fill="#000" opacity="0.25"/>
+      <rect x="30" y="70" width="40" height="6" rx="3" fill="#5a5a5a" opacity="0.9"/>
+      <circle cx="50" cy="73" r="3.2" fill="#2b2b2b"/>
+
+      <!-- Front pocket -->
+      <rect x="26" y="86" width="48" height="26" rx="7" fill="#1c1c1c"/>
+      <path d="M28 86 Q50 90 72 86" fill="none" stroke="#3a3a3a" stroke-width="1.5" stroke-dasharray="3,2" stroke-linecap="round"/>
+
+      <!-- Side mesh pockets -->
+      <rect x="11" y="62" width="9" height="30" rx="4.5" fill="#5a5a5a" opacity="0.85"/>
+      <rect x="80" y="62" width="9" height="30" rx="4.5" fill="#5a5a5a" opacity="0.85"/>
+
+      <!-- Hip belt tabs -->
+      <rect x="16" y="110" width="11" height="6" rx="3" fill="#3a3a3a"/>
+      <rect x="73" y="110" width="11" height="6" rx="3" fill="#3a3a3a"/>
+
+      <!-- TETON wordmark (small triangle + text, like the real logo) -->
+      <path d="M45 36 L48.5 30 L52 36 Z" fill="#e8e8e8"/>
+      <text x="50" y="41.5" text-anchor="middle" fill="#e8e8e8" font-size="5.5" font-weight="800" font-family="Montserrat,system-ui,sans-serif" letter-spacing="0.5">TETON</text>
+
+      <!-- Item count badge -->
+      ${count > 0 ? `
+      <circle cx="82" cy="52" r="12" fill="#AB3500"/>
+      <text x="82" y="56.5" text-anchor="middle" fill="white" font-size="${count > 9 ? 10 : 12}" font-weight="700" font-family="system-ui,sans-serif">${count}</text>` : `
+      <g opacity="0.4">
+        <path d="M50 60 L50 76" stroke="#9a9a9a" stroke-width="2" stroke-linecap="round"/>
+        <path d="M44 70 L50 77 L56 70" stroke="#9a9a9a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>`}
+    </svg>`;
+  }
+
+  return { heroScene, mountainBand, trailLine, topoMap, packSvg, tetonPackSvg };
 })();
