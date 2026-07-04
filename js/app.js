@@ -385,6 +385,13 @@
       requestAnimationFrame(() => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });
     },
 
+    "shop-bundles": () => {
+      STATE.category = "Bundles";
+      STATE.search = "";
+      render();
+      requestAnimationFrame(() => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    },
+
     view: (el) => go("#/product/" + el.dataset.id),
 
     fav: (el) => {

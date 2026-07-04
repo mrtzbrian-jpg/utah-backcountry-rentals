@@ -282,8 +282,6 @@ window.VIEWS = (function () {
       ? all.filter(g => (g.name + " " + (g.tagline || "") + " " + g.category).toLowerCase().includes(search))
       : (cat === "All" ? singles : all.filter(g => g.category === cat));
     const feed = filtered;
-    // Show the bundles showcase strip only on the default "All" view (never mixed into the gear grid).
-    const showBundleStrip = !search && cat === "All" && bundles.length > 0;
 
     const pills = ["All", ...window.CATALOG.categories()].map(c => {
       const on = c === cat;
@@ -305,13 +303,13 @@ window.VIEWS = (function () {
               class="text-white drop-shadow-lg mb-2">The Trail Is Calling.<br/><span style="color:#f5c060;">Grab the Gear &amp; Go.</span></h2>
             <p class="text-white/85 text-body-md mb-5 max-w-md">Premium hiking, camping &amp; backpacking gear — rent it, reserve your dates, and hit the backcountry without the retail price tag.</p>
             <div class="flex flex-wrap gap-3">
-              <button data-action="browse-gear"
+              <button data-action="shop-bundles"
                 class="bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
-                Browse Gear
+                Shop Bundles
               </button>
               <button data-action="nav" data-route="#/builder"
                 class="bg-paper-white text-forest-deep px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide press inner-shadow-stamped">
-                Build a Bundle
+                Build Your Own Pack
               </button>
             </div>
           </div>
@@ -335,8 +333,53 @@ window.VIEWS = (function () {
               </div>`).join("")}
           </section>
 
+          <!-- Featured bundles showcase — promoted right after the trust strip so it's the
+               first real content people see. Curated bundles reduce decision fatigue and
+               convert better than an open item grid. -->
+          ${!search && cat !== "Bundles" && bundles.length > 0 ? `<section class="mt-8">
+            <div class="flex items-end justify-between mb-1">
+              <div>
+                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-canyon-clay">Curated &amp; ready to go</p>
+                <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
+              </div>
+              <button data-action="shop-bundles" class="text-[13px] font-bold text-canyon-clay press flex items-center gap-0.5 shrink-0">View all<span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+            </div>
+            <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork — everything you need for your trip, packed as one booking.</p>
+            <div class="-mx-4 sm:-mx-6 px-4 sm:px-6 flex gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
+              ${bundles.map(b => bundleMiniCard(b)).join("")}
+            </div>
+          </section>` : ""}
+
+          <!-- Build Your Own Pack — promoted section, not just a banner -->
+          ${!search ? `<section class="mt-9">
+            <div class="rounded-2xl bg-forest-deep text-paper-white overflow-hidden relative">
+              <div class="absolute inset-0 opacity-[0.07] pointer-events-none">${ART.mountainBand ? ART.mountainBand(1) : ""}</div>
+              <div class="relative p-6 sm:p-8">
+                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-primary-fixed-dim">Prefer to choose your own?</p>
+                <h2 class="font-heading text-headline-md mt-1">Build Your Own Pack</h2>
+                <p class="text-body-md text-primary-fixed-dim mt-2 max-w-md">Pick your backpack size, then drag and drop exactly the gear you want. See total weight and price update live.</p>
+                <div class="grid grid-cols-3 gap-3 mt-5 max-w-xl">
+                  ${[
+                    ["straighten", "1. Pick a size", "18L to 75L"],
+                    ["backpack", "2. Pick a pack", "Choose your model"],
+                    ["touch_app", "3. Drag &amp; drop", "Fill it with gear"]
+                  ].map(([icon, title, sub]) => `
+                    <div class="rounded-xl bg-white/10 p-3">
+                      <span class="material-symbols-outlined text-[22px] text-primary-fixed-dim">${icon}</span>
+                      <p class="text-[12px] font-bold mt-1.5 leading-tight">${title}</p>
+                      <p class="text-[11px] text-primary-fixed-dim/80 leading-tight mt-0.5">${sub}</p>
+                    </div>`).join("")}
+                </div>
+                <button data-action="nav" data-route="#/builder"
+                  class="mt-6 bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press inline-flex items-center gap-1.5">
+                  Start Building<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+          </section>` : ""}
+
           <!-- Shop by category — photographic tiles (Backcountry-style) -->
-          <section class="mt-7">
+          <section class="mt-9">
             <div class="flex items-end justify-between mb-3">
               <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop by Category</h2>
             </div>
@@ -358,17 +401,6 @@ window.VIEWS = (function () {
             </div>
           </section>
 
-          <!-- Build your own pack banner -->
-          <button data-action="nav" data-route="#/builder"
-            class="w-full mt-6 text-left bg-forest-deep text-paper-white rounded-xl p-5 flex items-center gap-4 press overflow-hidden relative inner-shadow-stamped">
-            <span class="material-symbols-outlined text-[44px] text-primary-fixed-dim shrink-0" style="font-variation-settings:'FILL' 1;">backpack</span>
-            <div class="flex-1 min-w-0">
-              <p class="font-heading text-headline-sm">Build Your Own Pack</p>
-              <p class="text-body-md text-primary-fixed-dim mt-0.5">Hand-pick gear, see total weight &amp; price</p>
-            </div>
-            <span class="text-[12px] font-bold tracking-widest text-primary-fixed-dim shrink-0">START →</span>
-          </button>
-
           <!-- Search bar -->
           <div class="mt-5 relative">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[20px] text-outline pointer-events-none">search</span>
@@ -381,20 +413,6 @@ window.VIEWS = (function () {
           ${search ? "" : `<section class="mt-3 -mx-4 sm:-mx-6 px-4 sm:px-6">
             <div class="flex gap-3 overflow-x-auto no-scrollbar py-1">${pills}</div>
           </section>`}
-
-          <!-- Featured bundles showcase (kept separate from the gear grid) -->
-          ${showBundleStrip ? `<section class="mt-7">
-            <div class="flex items-end justify-between mb-3">
-              <div>
-                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-canyon-clay">Curated &amp; ready</p>
-                <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
-              </div>
-              <button data-action="category" data-cat="Bundles" class="text-[13px] font-bold text-canyon-clay press flex items-center gap-0.5 shrink-0">View all<span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
-            </div>
-            <div class="-mx-4 sm:-mx-6 px-4 sm:px-6 flex gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
-              ${bundles.map(b => bundleMiniCard(b)).join("")}
-            </div>
-          </section>` : ""}
 
           <!-- Section header -->
           ${search ? "" : `<div class="flex items-baseline justify-between mt-8 mb-1 scroll-mt-20">
