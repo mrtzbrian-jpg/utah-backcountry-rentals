@@ -303,5 +303,20 @@ window.DATA = (function () {
   return { categories, gear, packLibrary, packCats, kits, addons, PRICES, DEPOSITS, steps, depot: "Saratoga Springs, UT" };
 })();
 
-// Every custom bundle is built on this base backpack (always included).
-window.BASE_PACK_ID = "osprey-rook-65";
+// Every custom bundle is built on this base backpack (always included). The
+// builder resolves it from the live catalog first, then falls back to this
+// object — so the pack builder works even if the catalog has no Backpacks yet.
+window.BASE_PACK_ID = "teton-explorer-65";
+window.BASE_PACK = {
+  id: "teton-explorer-65",
+  name: "TETON Explorer 65L",
+  category: "Backpacks",
+  tagline: "Adjustable, unisex 65L pack — the foundation of every custom kit",
+  desc: "A rugged 65-liter backpacking pack with a fully adjustable torso for a universal men's/women's fit. Multiple exterior pockets and compression straps keep gear organized and secure on the trail.",
+  price: 40,
+  deposit: 80,
+  weight: 4.8,
+  icon: "hiking",
+  tint: "#4a4a4a",
+  img: "images/teton-explorer-65.jpg"
+};

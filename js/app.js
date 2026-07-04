@@ -561,7 +561,9 @@
       // Build a custom bundle from the SAME catalog the storefront uses, so
       // every component matches its storefront price/image/description.
       const all = window.CATALOG.gear();
-      const base = all.find(g => g.id === STATE.packBase && g.category === "Backpacks")
+      // TETON Explorer 65L is the guaranteed foundation — resolve from the live
+      // catalog, else use the built-in fallback so booking always works.
+      const base = window.CATALOG.get(window.BASE_PACK_ID) || window.BASE_PACK
         || all.find(g => g.category === "Backpacks");
       if (!base) { toast("Add a backpack to the catalog first", "error"); return; }
 

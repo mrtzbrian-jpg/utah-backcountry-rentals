@@ -916,21 +916,12 @@ window.VIEWS = (function () {
 
   /* ---------- PACK BUILDER ---------- */
 
-  const PACK_SIZES = [
-    { l: 18, label: "Day Hike",   nights: "Up to 1 night",  rec: "Minimalist / day trips" },
-    { l: 22, label: "Overnight",  nights: "1 night",        rec: "Ultralight 1-nighter" },
-    { l: 28, label: "2-Night",    nights: "2 nights",       rec: "Fast-and-light weekend" },
-    { l: 35, label: "Weekend",    nights: "2–3 nights",     rec: "Most popular size" },
-    { l: 45, label: "3–5 Night",  nights: "3–5 nights",     rec: "Multi-day trips" },
-    { l: 55, label: "Week Trip",  nights: "5–7 nights",     rec: "Extended backcountry" },
-    { l: 65, label: "Extended",   nights: "7+ nights",      rec: "Heavy hauler" },
-    { l: 75, label: "Expedition", nights: "10+ nights",     rec: "Through-hiking / thru" }
-  ];
-
   function builder() {
     const all = window.CATALOG.gear();
-    const backpacks = all.filter(g => g.category === "Backpacks");
-    const base = backpacks.find(b => b.id === window.STATE.packBase) || backpacks[0] || null;
+    // The TETON Explorer 65L is the guaranteed foundation of every custom pack.
+    // Resolve from the live catalog first, else fall back to the built-in object
+    // so the builder works even before the catalog has a Backpacks row.
+    const base = window.CATALOG.get(window.BASE_PACK_ID) || window.BASE_PACK;
     const addable = all.filter(g => g.category !== "Backpacks" && g.category !== "Bundles");
 
     const cats = ["All", ...Array.from(new Set(addable.map(g => g.category).filter(Boolean)))];
@@ -938,11 +929,10 @@ window.VIEWS = (function () {
     const lib = cat === "All" ? addable : addable.filter(g => g.category === cat);
 
     const chosen = window.STATE.pack;
-    const packSize = window.STATE.packSize || null;
     const w = (x) => Number(x && x.weight) || 0;
-    let price = base ? (base.price || 0) : 0;
-    let deposit = base ? (base.deposit || 0) : 0;
-    let weight = base ? w(base) : 0;
+    let price = base.price || 0;
+    let deposit = base.deposit || 0;
+    let weight = w(base);
     chosen.forEach((count, id) => {
       const g = window.CATALOG.get(id);
       if (!g) return;
@@ -950,50 +940,25 @@ window.VIEWS = (function () {
     });
     const hold = Math.min(deposit, 250);
     const nonBaseCount = [...chosen.values()].reduce((s, n) => s + n, 0);
-    const totalItems = (base ? 1 : 0) + nonBaseCount;
-    const fillPct = Math.min(1, nonBaseCount / 7);
-
-    const sizeChips = PACK_SIZES.map(s => {
-      const on = s.l === packSize;
-      return `<button data-action="pack-size" data-size="${s.l}"
-        class="shrink-0 flex flex-col items-center px-4 py-3 rounded-xl border-2 press transition-all min-w-[72px] text-center
-        ${on ? "border-canyon-clay bg-canyon-clay/10" : "border-outline-variant bg-paper-white hover:border-canyon-clay/50"}">
-        <span class="font-heading text-xl font-black leading-none ${on ? "text-canyon-clay" : "text-forest-deep"}">${s.l}L</span>
-        <span class="text-[10px] font-semibold mt-1 leading-tight ${on ? "text-canyon-clay" : "text-earth-brown"}">${s.label}</span>
-        <span class="text-[10px] leading-tight ${on ? "text-canyon-clay/70" : "text-outline"}">${s.nights}</span>
-      </button>`;
-    }).join("");
+    const totalItems = 1 + nonBaseCount;
+    const fillPct = Math.min(1, nonBaseCount / 8);
+    const pct = Math.round(fillPct * 100);
 
     const pills = cats.map(c => {
       const on = c === cat;
       return `<button data-action="pack-cat" data-cat="${c}" class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press ${on ? "bg-forest-deep text-paper-white inner-shadow-stamped" : "bg-paper-white border border-outline-variant text-forest-deep hover:bg-granite-wash"}">${c}</button>`;
     }).join("");
 
-    const backpackCards = backpacks.map(b => {
-      const on = base && base.id === b.id;
-      return `<button data-action="pack-base" data-id="${b.id}" class="shrink-0 w-40 text-left bg-paper-white rounded-xl overflow-hidden border-2 ${on ? "border-canyon-clay" : "border-outline-variant"} press">
-        <div class="relative h-24 bg-surface-container flex items-center justify-center">
-          <img src="${imageFor(b, 400)}" alt="${b.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover"/>
-          <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[40px]" style="color:${b.tint};font-variation-settings:'FILL' 1;">${b.icon}</span>
-          ${on ? `<span class="absolute top-1.5 right-1.5 bg-canyon-clay text-paper-white rounded-full w-6 h-6 flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">check</span></span>` : ""}
-        </div>
-        <div class="p-2">
-          <p class="text-[13px] font-bold text-forest-deep leading-tight line-clamp-1">${b.name}</p>
-          <p class="text-[12px] text-canyon-clay font-bold mt-0.5">${fmt.money(b.price)}</p>
-        </div>
-      </button>`;
-    }).join("");
-
     // Drag-and-drop gear cards
     const dragCards = lib.map(x => {
       const count = chosen.get(x.id) || 0;
       return `
-      <div class="relative bg-paper-white rounded-xl border-2 ${count ? "border-canyon-clay" : "border-outline-variant"} overflow-hidden flex flex-col select-none"
+      <div class="pack-card relative bg-paper-white rounded-xl border-2 ${count ? "border-canyon-clay" : "border-outline-variant"} overflow-hidden flex flex-col select-none cursor-grab active:cursor-grabbing"
         draggable="true" data-pack-drag="${x.id}">
-        <div class="relative h-20 bg-surface-container flex items-center justify-center cursor-grab active:cursor-grabbing">
+        <div class="relative aspect-square bg-surface-container flex items-center justify-center">
           <img src="${imageFor(x, 300)}" alt="${x.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover pointer-events-none"/>
           <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[36px]" style="color:${x.tint};font-variation-settings:'FILL' 1;">${x.icon}</span>
-          ${count ? `<span class="absolute top-1 right-1 bg-canyon-clay text-paper-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center">${count}</span>` : ""}
+          ${count ? `<span class="absolute top-1 right-1 bg-canyon-clay text-paper-white text-[11px] font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center shadow">${count}</span>` : `<span class="absolute top-1 left-1 bg-paper-white/85 text-outline rounded-full w-5 h-5 flex items-center justify-center"><span class="material-symbols-outlined text-[13px]">drag_indicator</span></span>`}
         </div>
         <div class="px-2 pt-1.5 flex-1">
           <p class="text-[11px] font-bold text-forest-deep leading-tight line-clamp-2">${x.name}</p>
@@ -1011,9 +976,8 @@ window.VIEWS = (function () {
       </div>`;
     }).join("");
 
-    // Packed items chips
+    // Packed items chips (non-base only — the base pack is shown in the foundation card)
     const packedChips = [];
-    if (base) packedChips.push(`<span class="inline-flex items-center gap-1 bg-forest-deep/10 text-forest-deep text-[12px] font-semibold px-2.5 py-1 rounded-full">${base.name.replace(/ \d+L/i, "")}</span>`);
     chosen.forEach((count, id) => {
       const g = window.CATALOG.get(id); if (!g) return;
       packedChips.push(`<span class="inline-flex items-center gap-1 bg-canyon-clay/10 text-canyon-clay text-[12px] font-semibold px-2.5 py-1 rounded-full fly-in">
@@ -1022,49 +986,61 @@ window.VIEWS = (function () {
       </span>`);
     });
 
-    const stepDisabled = !packSize;
-    const packDisabled = !packSize || !base;
-
     const inner = `
       ${topBar({ title: "Build Your Pack", back: true, trailing: `<button data-action="pack-reset" class="text-[13px] text-earth-brown press px-2">Reset</button>` })}
-      <main class="flex-grow max-w-container-max mx-auto w-full pb-[190px]">
+      <main class="flex-grow max-w-container-max mx-auto w-full pb-[200px]">
 
-        <!-- 1 · Size -->
+        <!-- Foundation: TETON is always included -->
         <section class="px-4 sm:px-6 mt-5">
-          <h2 class="font-heading text-headline-sm text-forest-deep">1 · How long is your trip?</h2>
-          <p class="text-[13px] text-earth-brown mt-0.5">Pick the pack size that fits your adventure.</p>
-          <div class="flex gap-2.5 overflow-x-auto no-scrollbar mt-3 pb-1 -mx-4 sm:-mx-6 px-4 sm:px-6">${sizeChips}</div>
-          ${packSize ? `<p class="mt-2 text-[12px] text-canyon-clay font-semibold">${(PACK_SIZES.find(s => s.l === packSize) || {}).rec || ""}</p>` : ""}
-        </section>
-
-        <!-- 2 · Backpack model -->
-        <section class="px-4 sm:px-6 mt-6 transition-opacity ${stepDisabled ? "opacity-40 pointer-events-none" : ""}">
-          <h2 class="font-heading text-headline-sm text-forest-deep">2 · Pick your backpack</h2>
-          ${backpacks.length === 0
-            ? `<p class="mt-3 text-body-md text-earth-brown">No backpacks in the catalog yet — add one in Manage Gear.</p>`
-            : `<div class="flex gap-3 overflow-x-auto no-scrollbar mt-3 -mx-4 sm:-mx-6 px-4 sm:px-6">${backpackCards}</div>`}
-        </section>
-
-        <!-- 3 · Pack your bag (drop zone + gear grid) -->
-        <section class="px-4 sm:px-6 mt-6 transition-opacity ${packDisabled ? "opacity-40 pointer-events-none" : ""}">
-          <h2 class="font-heading text-headline-sm text-forest-deep">3 · Pack your bag</h2>
-          <p class="text-[13px] text-earth-brown mt-0.5">Drag gear onto the pack — or tap <strong class="text-forest-deep">+</strong> to add items.</p>
-
-          <!-- Drop zone centered -->
-          <div class="mt-4 flex flex-col items-center">
-            <div id="pack-zone" class="w-40 h-52 transition-all duration-200 cursor-pointer" title="Drop gear here">
-              ${ART.packSvg(fillPct, nonBaseCount)}
+          <div class="rounded-2xl border border-outline-variant bg-paper-white overflow-hidden flex items-stretch">
+            <div class="w-28 sm:w-36 shrink-0 bg-surface-container relative">
+              <img src="${imageFor(base, 400)}" alt="${base.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-contain p-2"/>
+              <span class="gear-fallback-icon material-symbols-outlined opacity-0 absolute inset-0 flex items-center justify-center text-[44px]" style="color:${base.tint};font-variation-settings:'FILL' 1;">${base.icon}</span>
             </div>
+            <div class="flex-1 p-4 flex flex-col justify-center min-w-0">
+              <span class="inline-flex items-center gap-1 self-start text-[10px] font-bold tracking-[0.12em] uppercase text-canyon-clay"><span class="material-symbols-outlined text-[14px]">verified</span>Your foundation</span>
+              <h2 class="font-heading text-headline-sm text-forest-deep leading-tight mt-1">${base.name}</h2>
+              <p class="text-[12px] text-earth-brown leading-snug mt-0.5 line-clamp-2">${base.tagline || "Adjustable, unisex fit"}</p>
+              <p class="text-[12px] font-bold text-forest-deep mt-1.5">${fmt.money(base.price)} <span class="text-canyon-clay">· always included</span></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Fill your pack (drop zone + gear grid) -->
+        <section class="px-4 sm:px-6 mt-7">
+          <h2 class="font-heading text-headline-sm text-forest-deep">Fill your pack</h2>
+          <p class="text-[13px] text-earth-brown mt-0.5">Drag gear onto the pack — or tap <strong class="text-forest-deep">+</strong> to add it.</p>
+
+          <!-- Animated drop zone -->
+          <div class="mt-5 flex flex-col items-center">
+            <div class="relative flex items-center justify-center">
+              <div class="pack-halo" style="opacity:${(0.12 + fillPct * 0.8).toFixed(2)};transform:scale(${(0.85 + fillPct * 0.25).toFixed(2)})"></div>
+              <div id="pack-zone" class="relative w-40 h-52 ${nonBaseCount ? "" : "pack-idle"} cursor-pointer" title="Drop gear here">
+                ${ART.packSvg(fillPct, nonBaseCount)}
+              </div>
+            </div>
+
+            <!-- Fill bar + live stats -->
+            <div class="w-56 max-w-full mt-4">
+              <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
+                <span class="${nonBaseCount ? "text-forest-deep" : "text-outline"}">${nonBaseCount ? nonBaseCount + " item" + (nonBaseCount !== 1 ? "s" : "") + " packed" : "Empty — add gear"}</span>
+                <span class="text-canyon-clay">${weight.toFixed(1)} lbs</span>
+              </div>
+              <div class="h-2.5 rounded-full bg-granite-wash overflow-hidden">
+                <div class="h-full rounded-full bg-gradient-to-r from-canyon-clay to-[#d24a12] transition-all duration-500 ease-out" style="width:${Math.max(pct, nonBaseCount ? 6 : 0)}%"></div>
+              </div>
+            </div>
+
             ${packedChips.length
-              ? `<div class="mt-3 flex flex-wrap gap-2 justify-center max-w-xs">${packedChips.join("")}</div>`
-              : `<p class="mt-3 text-[13px] text-outline text-center">Drag items below onto the pack ↑<br/>or tap <strong>+</strong> to add them</p>`}
+              ? `<div class="mt-4 flex flex-wrap gap-2 justify-center max-w-md">${packedChips.join("")}</div>`
+              : ""}
           </div>
 
           <!-- Category filter -->
-          <div class="flex gap-2 overflow-x-auto no-scrollbar mt-5 -mx-4 sm:-mx-6 px-4 sm:px-6">${pills}</div>
+          <div class="flex gap-2 overflow-x-auto no-scrollbar mt-6 -mx-4 sm:-mx-6 px-4 sm:px-6">${pills}</div>
 
           <!-- Gear drag grid -->
-          <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">${dragCards}</div>
+          <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5 mt-3">${dragCards}</div>
         </section>
       </main>
 
@@ -1080,8 +1056,8 @@ window.VIEWS = (function () {
               <p class="font-heading text-headline-md text-forest-deep leading-none">${fmt.money(price)}</p>
             </div>
           </div>
-          <button data-action="continue-pack" ${base ? "" : "disabled"}
-            class="w-full rounded-lg py-3.5 text-[14px] font-bold tracking-wide text-on-secondary press inner-shadow-stamped flex items-center justify-center gap-2 ${base ? "bg-canyon-clay hover:brightness-105" : "bg-canyon-clay/40 cursor-not-allowed"}">
+          <button data-action="continue-pack"
+            class="w-full rounded-lg py-3.5 text-[14px] font-bold tracking-wide text-on-secondary press inner-shadow-stamped flex items-center justify-center gap-2 bg-canyon-clay hover:brightness-105">
             Continue to Dates <span class="material-symbols-outlined text-[20px]">calendar_month</span>
           </button>
         </div>

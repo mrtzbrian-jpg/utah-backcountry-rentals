@@ -14,14 +14,14 @@ const { getSupabase } = require("./_supabase");
 
 // Pack-builder library: flat rental price (USD) per component item.
 const PACK_PRICES = {
-  "osprey-rook-65": 40, "naturehike-cloudup-1": 30, "kelty-cosmic-20": 25,
+  "teton-explorer-65": 40, "osprey-rook-65": 40, "naturehike-cloudup-1": 30, "kelty-cosmic-20": 25,
   "klymit-static-v": 15, "brs-3000t": 10, "garmin-inreach": 30,
   "bearvault-bv450": 15, "anker-10k": 12, "bear-spray": 12
 };
 
 // Pack-builder library: refundable deposit (USD) per component item.
 const PACK_DEPOSITS = {
-  "osprey-rook-65": 80, "naturehike-cloudup-1": 60, "kelty-cosmic-20": 50,
+  "teton-explorer-65": 80, "osprey-rook-65": 80, "naturehike-cloudup-1": 60, "kelty-cosmic-20": 50,
   "klymit-static-v": 30, "brs-3000t": 20, "garmin-inreach": 100,
   "bearvault-bv450": 25, "anker-10k": 15, "bear-spray": 15
 };

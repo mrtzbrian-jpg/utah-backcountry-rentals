@@ -127,6 +127,32 @@ body { overscroll-behavior-y: none; }
 }
 .fly-in { animation: flyIn 0.28s cubic-bezier(0.22,1,0.36,1) both; }
 
+/* Gentle idle float on the pack drop target */
+.pack-idle { animation: packFloat 3.2s ease-in-out infinite; }
+@keyframes packFloat {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-7px); }
+}
+/* Stronger, scaling glow while a drag hovers the zone */
+.pack-drop-active { animation: packGlowStrong 0.7s ease-in-out infinite alternate; }
+@keyframes packGlowStrong {
+  from { filter: drop-shadow(0 0 4px rgba(171,53,0,0.5)); transform: scale(1.02); }
+  to   { filter: drop-shadow(0 0 20px rgba(171,53,0,0.9)); transform: scale(1.07); }
+}
+/* Soft radial halo behind the pack; opacity set inline from fill % */
+.pack-halo {
+  position: absolute; inset: -22% -18%;
+  background: radial-gradient(closest-side, rgba(171,53,0,0.28), rgba(171,53,0,0) 72%);
+  border-radius: 50%; pointer-events: none;
+  transition: opacity .6s ease, transform .6s ease;
+}
+/* Draggable gear card: lift + grab affordance on hover */
+.pack-card { transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.pack-card:hover { transform: translateY(-3px); box-shadow: 0 10px 22px -10px rgba(6,27,14,0.28); }
+/* Count badge pop when incremented */
+@keyframes countPop { 0% { transform: scale(0.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.count-pop { animation: countPop .3s cubic-bezier(0.34,1.56,0.64,1) both; }
+
 /* ---- Print: work order only ---- */
 @media print {
   body { background: #fff !important; }
