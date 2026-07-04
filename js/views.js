@@ -949,28 +949,28 @@ window.VIEWS = (function () {
       return `<button data-action="pack-cat" data-cat="${c}" class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press ${on ? "bg-forest-deep text-paper-white inner-shadow-stamped" : "bg-paper-white border border-outline-variant text-forest-deep hover:bg-granite-wash"}">${c}</button>`;
     }).join("");
 
-    // Drag-and-drop gear cards
+    // Drag-and-drop gear cards — compact so the pack stays visible while dragging
     const dragCards = lib.map(x => {
       const count = chosen.get(x.id) || 0;
       return `
-      <div class="pack-card relative bg-paper-white rounded-xl border-2 ${count ? "border-canyon-clay" : "border-outline-variant"} overflow-hidden flex flex-col select-none cursor-grab active:cursor-grabbing"
+      <div class="pack-card relative bg-paper-white rounded-lg border ${count ? "border-canyon-clay ring-1 ring-canyon-clay" : "border-outline-variant"} overflow-hidden flex flex-col select-none cursor-grab active:cursor-grabbing"
         draggable="true" data-pack-drag="${x.id}">
-        <div class="relative aspect-square bg-surface-container flex items-center justify-center">
-          <img src="${imageFor(x, 300)}" alt="${x.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover pointer-events-none"/>
-          <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[36px]" style="color:${x.tint};font-variation-settings:'FILL' 1;">${x.icon}</span>
-          ${count ? `<span class="absolute top-1 right-1 bg-canyon-clay text-paper-white text-[11px] font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center shadow">${count}</span>` : `<span class="absolute top-1 left-1 bg-paper-white/85 text-outline rounded-full w-5 h-5 flex items-center justify-center"><span class="material-symbols-outlined text-[13px]">drag_indicator</span></span>`}
+        <div class="relative aspect-[4/3] bg-surface-container flex items-center justify-center">
+          <img src="${imageFor(x, 240)}" alt="${x.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover pointer-events-none"/>
+          <span class="gear-fallback-icon material-symbols-outlined opacity-0 text-[28px]" style="color:${x.tint};font-variation-settings:'FILL' 1;">${x.icon}</span>
+          ${count ? `<span class="absolute top-1 right-1 bg-canyon-clay text-paper-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center shadow">${count}</span>` : `<span class="absolute top-1 left-1 bg-paper-white/85 text-outline rounded-full w-[18px] h-[18px] flex items-center justify-center"><span class="material-symbols-outlined text-[12px]">drag_indicator</span></span>`}
         </div>
-        <div class="px-2 pt-1.5 flex-1">
-          <p class="text-[11px] font-bold text-forest-deep leading-tight line-clamp-2">${x.name}</p>
-          <p class="text-[11px] text-canyon-clay font-bold mt-0.5">${fmt.money(x.price)}</p>
+        <div class="px-1.5 pt-1">
+          <p class="text-[10px] font-bold text-forest-deep leading-tight line-clamp-1">${x.name}</p>
+          <p class="text-[10px] text-canyon-clay font-bold leading-tight">${fmt.money(x.price)}</p>
         </div>
-        <div class="flex items-center justify-between px-2 pb-2 gap-1">
-          <button data-action="pack-remove" data-id="${x.id}" class="w-6 h-6 rounded-full bg-surface-container press flex items-center justify-center text-earth-brown ${count ? "" : "opacity-30 pointer-events-none"}">
-            <span class="material-symbols-outlined text-[14px]">remove</span>
+        <div class="flex items-center justify-between px-1.5 pb-1.5 pt-1 gap-1">
+          <button data-action="pack-remove" data-id="${x.id}" class="w-5 h-5 rounded-full bg-surface-container press flex items-center justify-center text-earth-brown ${count ? "" : "opacity-30 pointer-events-none"}">
+            <span class="material-symbols-outlined text-[13px]">remove</span>
           </button>
-          <span class="text-[12px] font-bold w-4 text-center text-forest-deep">${count}</span>
-          <button data-action="pack-add" data-id="${x.id}" class="w-6 h-6 rounded-full bg-forest-deep text-on-primary press flex items-center justify-center">
-            <span class="material-symbols-outlined text-[14px]">add</span>
+          <span class="text-[11px] font-bold w-3 text-center text-forest-deep">${count}</span>
+          <button data-action="pack-add" data-id="${x.id}" class="w-5 h-5 rounded-full bg-forest-deep text-on-primary press flex items-center justify-center">
+            <span class="material-symbols-outlined text-[13px]">add</span>
           </button>
         </div>
       </div>`;
@@ -1040,7 +1040,7 @@ window.VIEWS = (function () {
           <div class="flex gap-2 overflow-x-auto no-scrollbar mt-6 -mx-4 sm:-mx-6 px-4 sm:px-6">${pills}</div>
 
           <!-- Gear drag grid -->
-          <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5 mt-3">${dragCards}</div>
+          <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 mt-3">${dragCards}</div>
         </section>
       </main>
 
