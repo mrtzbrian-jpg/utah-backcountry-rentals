@@ -431,7 +431,8 @@ window.VIEWS = (function () {
             <div class="mt-3 space-y-3 text-body-md text-on-surface-variant leading-relaxed">
               <p><strong class="text-forest-deep">Take a Hike Rentals</strong> is your local shop for affordable outdoor gear rentals in Utah. Skip the sticker shock of buying — rent premium <strong>camping gear, hiking and backpacking equipment</strong> by the day or weekend and hit the trail for a fraction of retail. We proudly serve Saratoga Springs, Lehi, American Fork, Eagle Mountain, Orem, Provo and the greater <strong>Utah County</strong> and <strong>Salt Lake City</strong> area, plus adventurers headed into the Wasatch and Uinta mountains.</p>
               <p>Our rental fleet covers everything you need for a night — or a week — in the backcountry: <strong>tents, backpacks, sleeping bags, camp stoves, coolers, bear canisters, satellite communicators and portable power stations</strong>. New to backpacking? Build a custom pack or grab one of our ready-made bundles and we'll have it packed and ready at pickup.</p>
-              <p>Whether you're searching for <a href="/camping-rentals-utah/" class="text-canyon-clay font-semibold hover:underline">camping rentals near me</a>, <a href="/backpacking-gear-rental-utah/" class="text-canyon-clay font-semibold hover:underline">backpacking gear rental in Utah</a>, or a <a href="/tent-rentals-utah/" class="text-canyon-clay font-semibold hover:underline">tent rental in Utah County</a>, reserve online in minutes, choose your trail dates, and pick up locally in Saratoga Springs.</p>
+              <p>Whether you're searching for <a href="/camping-rentals-utah/" class="text-canyon-clay font-semibold hover:underline">camping rentals near me</a>, <a href="/hiking-gear-rental-utah/" class="text-canyon-clay font-semibold hover:underline">hiking gear rental in Utah</a>, <a href="/backpacking-gear-rental-utah/" class="text-canyon-clay font-semibold hover:underline">backpacking gear rental</a>, or a <a href="/tent-rentals-utah/" class="text-canyon-clay font-semibold hover:underline">tent rental in Utah County</a>, reserve online in minutes, choose your trail dates, and pick up locally in Saratoga Springs.</p>
+              <p><strong class="text-forest-deep">Visiting Utah?</strong> Don't fly with a tent. <a href="/visiting-utah-gear-rental/" class="text-canyon-clay font-semibold hover:underline">Rent your camping and hiking gear here</a> — we're about 40 minutes from Salt Lake City International Airport, right on the way to the Wasatch, the Uintas and Utah's Mighty 5 national parks. Reserve before you fly, pick up when you land, and drop it off on your way home.</p>
             </div>
           </section>`}
 
@@ -499,12 +500,12 @@ window.VIEWS = (function () {
         <div>
           <h3 class="text-[11px] font-bold tracking-[0.14em] uppercase text-white/50 mb-3">Rentals</h3>
           <ul class="flex flex-col gap-1.5 text-[13px] text-primary-fixed-dim">
+            <li><a href="/hiking-gear-rental-utah/" class="hover:text-paper-white">Hiking Gear Rentals</a></li>
             <li><a href="/camping-rentals-utah/" class="hover:text-paper-white">Camping Gear Rentals</a></li>
             <li><a href="/backpacking-gear-rental-utah/" class="hover:text-paper-white">Backpacking Gear Rentals</a></li>
             <li><a href="/tent-rentals-utah/" class="hover:text-paper-white">Tent Rentals</a></li>
-            <li>Sleeping Bags</li>
-            <li>Camp Stoves &amp; Coolers</li>
-            <li>Portable Power Stations</li>
+            <li><a href="/gear-rental-utah-county/" class="hover:text-paper-white">Gear Rental in Utah County</a></li>
+            <li><a href="/visiting-utah-gear-rental/" class="hover:text-paper-white">Visiting Utah? Rent Here</a></li>
           </ul>
         </div>
       </div>
