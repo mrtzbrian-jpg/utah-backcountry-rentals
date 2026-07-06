@@ -401,22 +401,11 @@
     nav: (el) => go(el.dataset.route),
     back: () => history.length > 1 ? history.back() : go("#/"),
 
-    category: (el) => { STATE.category = el.dataset.cat; STATE.search = ""; render(); },
-    "search-input": (el) => { STATE.search = el.value; render(); document.getElementById("gear-search") && (document.getElementById("gear-search").focus()); },
-    "search-clear": () => { STATE.search = ""; render(); },
-
-    "browse-gear": () => {
-      STATE.category = "All";
-      STATE.search = "";
-      render();
-      requestAnimationFrame(() => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });
-    },
-
     "shop-bundles": () => {
-      STATE.category = "Bundles";
-      STATE.search = "";
-      render();
-      requestAnimationFrame(() => { const el = document.getElementById("gear-feed"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });
+      // The bundles showcase lives inline on the homepage now (no separate
+      // "all bundles" grid), so this just scrolls to it.
+      if (location.hash !== "#/" && location.hash !== "") { go("#/"); }
+      requestAnimationFrame(() => { const el = document.getElementById("bundles"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });
     },
 
     view: (el) => go("#/product/" + el.dataset.id),
@@ -1217,12 +1206,6 @@
   document.addEventListener("input", (e) => {
     if (!e.target) return;
     if (e.target.id === "renter-name") STATE.renterName = e.target.value;
-    if (e.target.id === "gear-search") {
-      STATE.search = e.target.value;
-      // Debounce re-render so fast typing doesn't flash
-      clearTimeout(window._searchTimer);
-      window._searchTimer = setTimeout(render, 200);
-    }
   });
 
   /* ---------------- drag-to-reorder (admin) ---------------- */

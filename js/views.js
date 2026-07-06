@@ -273,22 +273,10 @@ window.VIEWS = (function () {
   /* ---------- HOME ---------- */
 
   function home() {
-    const cat = window.STATE.category;
+    // "search" is retained: it still gates whether the SEO/FAQ copy shows,
+    // even though the homepage no longer has its own search input.
     const search = (window.STATE.search || "").toLowerCase().trim();
-    const all = window.CATALOG.gear();
-    const bundles = all.filter(g => g.category === "Bundles");
-    const singles = all.filter(g => g.category !== "Bundles");
-    const filtered = search
-      ? all.filter(g => (g.name + " " + (g.tagline || "") + " " + g.category).toLowerCase().includes(search))
-      : (cat === "All" ? singles : all.filter(g => g.category === cat));
-    const feed = filtered;
-
-    const pills = ["All", ...window.CATALOG.categories()].map(c => {
-      const on = c === cat;
-      return `<button data-action="category" data-cat="${c}"
-        class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press transition-colors
-        ${on ? "bg-forest-deep text-paper-white inner-shadow-stamped" : "bg-paper-white border border-outline-variant text-forest-deep hover:bg-granite-wash"}">${c}</button>`;
-    }).join("");
+    const bundles = window.CATALOG.gear().filter(g => g.category === "Bundles");
 
     const inner = `
       ${topBar({ title: "Take a Hike Rentals", location: true })}
@@ -336,13 +324,12 @@ window.VIEWS = (function () {
           <!-- Featured bundles showcase — promoted right after the trust strip so it's the
                first real content people see. Curated bundles reduce decision fatigue and
                convert better than an open item grid. -->
-          ${!search && cat !== "Bundles" && bundles.length > 0 ? `<section class="mt-8">
+          ${!search && bundles.length > 0 ? `<section id="bundles" class="mt-8 scroll-mt-20">
             <div class="flex items-end justify-between mb-1">
               <div>
                 <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-canyon-clay">Curated &amp; ready to go</p>
                 <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
               </div>
-              <button data-action="shop-bundles" class="text-[13px] font-bold text-canyon-clay press flex items-center gap-0.5 shrink-0">View all<span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
             </div>
             <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork — everything you need for your trip, packed as one booking.</p>
             <div class="-mx-4 sm:-mx-6 px-4 sm:px-6 flex gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
@@ -377,53 +364,6 @@ window.VIEWS = (function () {
               </div>
             </div>
           </section>` : ""}
-
-          <!-- Shop by category — photographic tiles (Backcountry-style) -->
-          <section class="mt-9">
-            <div class="flex items-end justify-between mb-3">
-              <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop by Category</h2>
-            </div>
-            <div class="-mx-4 sm:-mx-6 px-4 sm:px-6 flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
-              ${[
-                ["Camping", "tile-camping.jpg"],
-                ["Hiking", "tile-hiking.jpg"],
-                ["Sleeping", "tile-sleeping.jpg"],
-                ["Cooking", "tile-cooking.jpg"],
-                ["Storage", "tile-storage.jpg"],
-                ["Winter Gear", "tile-winter.jpg"]
-              ].map(([label, img]) => `
-                <button data-action="category" data-cat="${label}"
-                  class="group snap-start shrink-0 w-40 sm:w-52 relative rounded-2xl overflow-hidden aspect-[3/4] press">
-                  <img src="images/${img}" alt="${label}" loading="lazy" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(6,27,14,0.72) 0%,rgba(6,27,14,0.15) 45%,rgba(6,27,14,0) 75%);"></div>
-                  <span class="absolute left-3 bottom-3 right-3 text-left text-white leading-tight" style="font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:22px;text-shadow:0 1px 8px rgba(0,0,0,0.45);">${label}</span>
-                </button>`).join("")}
-            </div>
-          </section>
-
-          <!-- Search bar -->
-          <div class="mt-5 relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[20px] text-outline pointer-events-none">search</span>
-            <input id="gear-search" type="search" placeholder="Search gear…" value="${search}"
-              class="w-full rounded-xl border border-outline-variant bg-paper-white pl-10 pr-4 py-2.5 text-body-md focus:border-primary focus:ring-0" />
-            ${search ? `<button data-action="search-clear" class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-surface-container press"><span class="material-symbols-outlined text-[18px] text-outline">close</span></button>` : ""}
-          </div>
-
-          <!-- Category pills — hidden while searching -->
-          ${search ? "" : `<section class="mt-3 -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div class="flex gap-3 overflow-x-auto no-scrollbar py-1">${pills}</div>
-          </section>`}
-
-          <!-- Section header -->
-          ${search ? "" : `<div class="flex items-baseline justify-between mt-8 mb-1 scroll-mt-20">
-            <h2 class="font-heading text-headline-md text-forest-deep">${cat === "All" ? "Shop Gear" : cat === "Bundles" ? "Ready-Made Bundles" : cat}</h2>
-            <span class="text-[12px] font-semibold text-outline">${feed.length} item${feed.length === 1 ? "" : "s"}</span>
-          </div>`}
-
-          <!-- Feed -->
-          <section id="gear-feed" class="mt-3 pb-4 grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 scroll-mt-20">
-            ${feed.length ? feed.map((g, i) => gearCard(g, i)).join("") : `<div class="col-span-full text-center py-lg text-on-surface-variant"><span class="material-symbols-outlined text-[40px] opacity-40">search_off</span><p class="mt-2 text-body-md">${search ? `No gear matches "${search}"` : "Nothing here yet — check back soon."}</p></div>`}
-          </section>
 
           <!-- SEO content — crawlable, keyword-rich copy for local search -->
           ${search ? "" : `<section class="mt-12 max-w-3xl">
