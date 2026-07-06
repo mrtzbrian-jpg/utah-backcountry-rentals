@@ -1,9 +1,10 @@
 /* Customer-initiated cancellation — no admin passcode required.
- * Auth token: the PayPal orderId itself (a UUID-like secret the customer gets
+ * Auth token: the order id itself (a UUID-like secret the customer gets
  * on the confirmation page). Only allowed when status is "confirmed" or "prepped". */
 const { getSupabase } = require("./_supabase");
-const { voidAuthorization, refundCapture } = require("./_paypal");
+const { cancelPayment, refundPayment } = require("./_square");
 const { notifyCancellation } = require("./_email");
+const crypto = require("crypto");
 
 const CANCELLABLE = new Set(["confirmed", "prepped"]);
 
@@ -28,12 +29,12 @@ exports.handler = async (event) => {
   const result = { voided: false, refunded: false };
 
   if (row.authorization_id && row.hold_cents > 0) {
-    try { await voidAuthorization(row.authorization_id); result.voided = true; }
+    try { await cancelPayment(row.authorization_id); result.voided = true; }
     catch (_) {}
   }
 
   if (row.capture_id && row.amount_cents > 0) {
-    try { await refundCapture(row.capture_id, row.amount_cents); result.refunded = true; }
+    try { await refundPayment({ paymentId: row.capture_id, amountCents: row.amount_cents, idempotencyKey: crypto.randomUUID() }); result.refunded = true; }
     catch (e) { return json(502, { error: "Refund failed: " + e.message }); }
   }
 

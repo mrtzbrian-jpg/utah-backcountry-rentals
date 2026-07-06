@@ -3,8 +3,9 @@
  * Admin-only endpoint. */
 const { getSupabase } = require("./_supabase");
 const { checkAdmin } = require("./_auth");
-const { voidAuthorization, refundCapture } = require("./_paypal");
+const { cancelPayment, refundPayment } = require("./_square");
 const { notifyCancellation, notifyWaitlistEntry } = require("./_email");
+const crypto = require("crypto");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
@@ -24,15 +25,15 @@ exports.handler = async (event) => {
 
   const result = { voided: false, refunded: false };
 
-  // 1) Void the auth hold (releases customer's card)
+  // 1) Cancel the deposit hold (releases customer's card)
   if (row.authorization_id && row.hold_cents > 0) {
     try {
-      await voidAuthorization(row.authorization_id);
+      await cancelPayment(row.authorization_id);
       result.voided = true;
     } catch (e) {
-      // Already voided or expired — not a blocking error
-      if (!String(e.message).toLowerCase().includes("void")) {
-        console.error("Void error (non-fatal):", e.message);
+      // Already canceled or expired — not a blocking error
+      if (!String(e.message).toLowerCase().includes("cancel")) {
+        console.error("Cancel error (non-fatal):", e.message);
       }
     }
   }
@@ -40,7 +41,7 @@ exports.handler = async (event) => {
   // 2) Refund the captured rental fee
   if (row.capture_id && row.amount_cents > 0) {
     try {
-      await refundCapture(row.capture_id, row.amount_cents);
+      await refundPayment({ paymentId: row.capture_id, amountCents: row.amount_cents, idempotencyKey: crypto.randomUUID() });
       result.refunded = true;
     } catch (e) {
       return json(502, { error: "Refund failed: " + e.message });

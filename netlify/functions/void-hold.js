@@ -1,7 +1,7 @@
-/* Releases (voids) the PayPal authorization hold on a returned booking.
+/* Releases (cancels) the Square deposit hold on a returned booking.
  * Admin-only. Called when the owner taps "Release hold" after gear is returned.
  * Body: { orderId }  — the internal booking id (bigint from Supabase) */
-const { voidAuthorization } = require("./_paypal");
+const { cancelPayment } = require("./_square");
 const { getSupabase } = require("./_supabase");
 const { checkAdmin } = require("./_auth");
 
@@ -26,15 +26,16 @@ exports.handler = async (event) => {
     .single();
 
   if (fetchErr || !row) return json(404, { error: "Booking not found" });
-  if (!row.authorization_id) return json(400, { error: "No authorization hold on record for this booking" });
+  if (!row.authorization_id) return json(400, { error: "No hold on record for this booking" });
   if (!row.hold_cents) return json(400, { error: "Hold amount is $0 — nothing to release" });
 
   try {
-    await voidAuthorization(row.authorization_id);
+    await cancelPayment(row.authorization_id);
   } catch (e) {
-    // PayPal returns 422 if the auth is already voided/expired — treat that as success
-    if (!e.message?.includes("already") && !e.message?.includes("expired") && !e.message?.includes("AUTHORIZATION")) {
-      return json(502, { error: e.message || "PayPal void failed" });
+    // Square returns an error if the hold is already canceled/completed/expired — treat as success.
+    const msg = (e.message || "").toLowerCase();
+    if (!msg.includes("cancel") && !msg.includes("already") && !msg.includes("expired")) {
+      return json(502, { error: e.message || "Square hold release failed" });
     }
   }
 

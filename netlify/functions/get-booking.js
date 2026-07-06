@@ -1,5 +1,5 @@
-/* Returns a recorded booking by PayPal order id, so the confirmation page works
- * after a refresh. Reads from Supabase (written by capture-order). */
+/* Returns a recorded booking by order id, so the confirmation page works
+ * after a refresh. Reads from Supabase (written by create-checkout). */
 const { getSupabase } = require("./_supabase");
 
 exports.handler = async (event) => {
@@ -31,7 +31,7 @@ exports.handler = async (event) => {
     pickupTime: data.pickup_time,
     status: data.status
     // NOTE: customer email & phone are intentionally NOT returned here — this
-    // endpoint is unauthenticated (keyed only by the PayPal order id), so it
+    // endpoint is unauthenticated (keyed only by the order id), so it
     // exposes no contact PII. The owner sees full contact info via the
     // passcode-protected get-bookings endpoint.
   });

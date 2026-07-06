@@ -31,8 +31,12 @@
   };
 
   const now = fmt.midnight(new Date());
-  // Strip any seeded/fake bookings left over from demo mode (real PayPal IDs are long)
+  // Strip any seeded/fake bookings left over from demo mode (real order IDs are long)
   const storedBookings = (store.load("bookings", null) || []).filter(b => !/^UBR-\d{4}$/.test(b.orderId));
+
+  // Square Web Payments SDK instances — created lazily when the payment step
+  // mounts, and torn down/recreated each time it remounts (see mountSquareCard).
+  let squarePayments = null, squareCard = null;
   window.STATE = {
     category: "All",
     search: "",
@@ -51,6 +55,8 @@
     safetyAccepted: false,
     renterName: "",
     phone: "",
+    renterEmail: "",
+    paymentBusy: false,
     pickupTime: null,
     orders: [],
     ordersFilter: "upcoming",
@@ -107,7 +113,7 @@
     setTimeout(() => { el.style.transition = "opacity .3s"; el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 2200);
   }
 
-  /* ---------------- live order (PayPal) ---------------- */
+  /* ---------------- live order (Square) ---------------- */
   // Turn a server order record into a local booking and remember it.
   function storeServerBooking(d) {
     const ref = window.CATALOG.get(d.itemId) || {};
@@ -151,22 +157,28 @@
     if (changed) render();
   }
 
-  // Customer returns from PayPal approval → capture the payment, then confirm.
-  async function capturePayPalOrder(orderId) {
+  // Mount (or remount) the Square card element into the payment step. Called
+  // whenever the payment modal opens — any previous card instance is torn
+  // down first since its DOM container was just replaced.
+  async function mountSquareCard() {
+    const cfg = window.UBR_CONFIG || {};
+    const container = document.getElementById("sq-card-container");
+    if (!container) return;
+    if (!cfg.SQUARE_APP_ID || !cfg.SQUARE_LOCATION_ID) {
+      container.textContent = "Payments aren't configured yet.";
+      return;
+    }
+    if (!window.Square) {
+      container.textContent = "Payment form failed to load — check your connection and try again.";
+      return;
+    }
     try {
-      const cfg = window.UBR_CONFIG || {};
-      const res = await fetch(cfg.FUNCTIONS_BASE + "/capture-order", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId })
-      });
-      const d = await res.json();
-      if (!res.ok) { toast(d.error || "Payment could not be completed", "error"); go("#/"); return; }
-      storeServerBooking(d);
-      STATE.bookingTab = "Upcoming";
-      go("#/confirmation/" + d.orderId);
-      toast("Reservation confirmed!");
+      if (squareCard) { try { await squareCard.destroy(); } catch (_) {} squareCard = null; }
+      if (!squarePayments) squarePayments = window.Square.payments(cfg.SQUARE_APP_ID, cfg.SQUARE_LOCATION_ID);
+      squareCard = await squarePayments.card();
+      await squareCard.attach("#sq-card-container");
     } catch (e) {
-      toast("Network error finishing checkout", "error"); go("#/");
+      container.textContent = "Couldn't load the payment form — try again.";
     }
   }
 
@@ -220,7 +232,7 @@
   /* ---------------- router ---------------- */
   function parseHash() {
     const raw = location.hash.replace(/^#/, "") || "/";
-    const [path, queryStr] = raw.split("?");        // PayPal appends ?token=...&PayerID=...
+    const [path, queryStr] = raw.split("?");
     const parts = path.split("/").filter(Boolean);  // e.g. ["gear","master-safety-kit"]
     const query = new URLSearchParams(queryStr || "");
     return { parts, query };
@@ -253,15 +265,10 @@
       html = window.VIEWS.builder();
     } else if (parts[0] === "bookings") {
       html = window.VIEWS.bookings();
-    } else if (parts[0] === "paypal-return") {
-      // PayPal sends the customer back here with ?token=<orderId> after approval.
-      const orderId = query.get("token");
-      if (orderId) { capturePayPalOrder(orderId); html = window.VIEWS.confirmationLoading(); }
-      else html = window.VIEWS.notFound();
     } else if (parts[0] === "confirmation") {
       const id = parts[1];
       const cfg = window.UBR_CONFIG || {};
-      // A PayPal order id we don't have cached yet → fetch it. (Demo ids start "UBR-".)
+      // An order id we don't have cached yet → fetch it. (Demo ids start "UBR-".)
       if (id && cfg.BACKEND_ENABLED && !String(id).startsWith("UBR-") && !STATE.bookings.find(b => b.orderId === id)) {
         fetchOrder(id);
         html = window.VIEWS.confirmationLoading();
@@ -475,7 +482,7 @@
       }
     },
 
-    "proceed-checkout": async () => {
+    "proceed-checkout": () => {
       if (!STATE.safetyAccepted) return;
       const nameEl = document.getElementById("renter-name");
       const renterName = ((nameEl && nameEl.value) || STATE.renterName || "").trim();
@@ -488,55 +495,85 @@
       const phoneEl = document.getElementById("renter-phone");
       const phone = ((phoneEl && phoneEl.value) || STATE.phone || "").trim();
       STATE.phone = phone;
+      const emailEl = document.getElementById("renter-email");
+      const email = ((emailEl && emailEl.value) || STATE.renterEmail || "").trim();
+      if (!email || !email.includes("@")) {
+        toast("Enter a valid email for your confirmation", "error");
+        if (emailEl) emailEl.focus();
+        return;
+      }
+      STATE.renterEmail = email;
       const cfg = window.UBR_CONFIG || {};
 
-      // --- LIVE: hand off to PayPal via our serverless function ---
-      if (cfg.BACKEND_ENABLED) {
+      if (!cfg.BACKEND_ENABLED) {
         closeModal();
-        toast("Opening secure checkout…", "lock");
-        try {
-          let payload;
-          if (STATE.cartMode && STATE.cart.length) {
-            // Cart checkout — send all items in one order
-            payload = {
-              items: STATE.cart.map(e => ({ itemId: e.item.id, name: e.item.name, qty: e.qty })),
-              startDate: STATE.cartDates.start, endDate: STATE.cartDates.end,
-              renterName, agreedTerms: true,
-              phone, pickupTime: STATE.cartPickupTime || null
-            };
-          } else {
-            // Single-item checkout (existing flow)
-            const item = STATE.draft;
-            const qty = STATE.qty || 1;
-            payload = {
-              itemId: item.id, name: item.name, qty,
-              startDate: STATE.dates.start, endDate: STATE.dates.end,
-              components: item.components, addons: item.addons,
-              renterName, agreedTerms: true,
-              phone, pickupTime: STATE.pickupTime || null
-            };
-          }
-          const res = await fetch(cfg.FUNCTIONS_BASE + "/create-checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json();
-          if (res.ok && data.url) {
-            if (STATE.cartMode) { STATE.cart = []; STATE.cartDates = { start: null, end: null }; STATE.cartPickupTime = null; persist(); }
-            STATE.cartMode = false;
-            window.location.href = data.url; return;
-          }
-          toast(data.error || "Checkout couldn't start — try again", "error");
-        } catch (e) {
-          toast("Network error — please try again", "error");
-        }
-        STATE.cartMode = false;
+        toast("Checkout requires backend — set BACKEND_ENABLED: true", "error");
         return;
       }
 
-      closeModal();
-      toast("Checkout requires backend — set BACKEND_ENABLED: true", "error");
+      // --- LIVE: move to the on-page card form (Square Web Payments SDK) ---
+      openModal(window.VIEWS.paymentModal());
+      mountSquareCard();
+    },
+
+    "back-to-safety": () => openModal(window.VIEWS.safetyModal()),
+
+    "pay-now": async () => {
+      if (STATE.paymentBusy || !squareCard) return;
+      const btn = document.getElementById("pay-btn");
+      const originalLabel = btn ? btn.textContent : "";
+      STATE.paymentBusy = true;
+      if (btn) { btn.disabled = true; btn.textContent = "Processing…"; }
+
+      try {
+        const result = await squareCard.tokenize();
+        if (result.status !== "OK") {
+          throw new Error((result.errors && result.errors[0] && result.errors[0].message) || "Card was declined");
+        }
+        const cfg = window.UBR_CONFIG || {};
+        let payload;
+        if (STATE.cartMode && STATE.cart.length) {
+          payload = {
+            items: STATE.cart.map(e => ({ itemId: e.item.id, name: e.item.name, qty: e.qty })),
+            startDate: STATE.cartDates.start, endDate: STATE.cartDates.end,
+            renterName: STATE.renterName, agreedTerms: true,
+            phone: STATE.phone, pickupTime: STATE.cartPickupTime || null,
+            email: STATE.renterEmail, sourceId: result.token
+          };
+        } else {
+          const item = STATE.draft;
+          const qty = STATE.qty || 1;
+          payload = {
+            itemId: item.id, name: item.name, qty,
+            startDate: STATE.dates.start, endDate: STATE.dates.end,
+            components: item.components, addons: item.addons,
+            renterName: STATE.renterName, agreedTerms: true,
+            phone: STATE.phone, pickupTime: STATE.pickupTime || null,
+            email: STATE.renterEmail, sourceId: result.token
+          };
+        }
+
+        const res = await fetch(cfg.FUNCTIONS_BASE + "/create-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Payment was declined — try again");
+
+        if (STATE.cartMode) { STATE.cart = []; STATE.cartDates = { start: null, end: null }; STATE.cartPickupTime = null; persist(); }
+        STATE.cartMode = false;
+        STATE.paymentBusy = false;
+        closeModal();
+        storeServerBooking(data);
+        STATE.bookingTab = "Upcoming";
+        go("#/confirmation/" + data.orderId);
+        toast("Reservation confirmed!");
+      } catch (e) {
+        STATE.paymentBusy = false;
+        toast(e.message || "Payment failed — please try again", "error");
+        if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+      }
     },
 
     directions: () => toast("Opening directions to " + D.depot, "near_me"),
@@ -1251,6 +1288,7 @@
   document.addEventListener("input", (e) => {
     if (!e.target) return;
     if (e.target.id === "renter-name") STATE.renterName = e.target.value;
+    if (e.target.id === "renter-email") STATE.renterEmail = e.target.value;
   });
 
   /* ---------------- drag-to-reorder (admin) ---------------- */

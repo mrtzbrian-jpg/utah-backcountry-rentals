@@ -7,8 +7,9 @@
  * Admin-only. Body: { orderId, amountCents }. */
 const { getSupabase } = require("./_supabase");
 const { checkAdmin } = require("./_auth");
-const { refundCapture } = require("./_paypal");
+const { refundPayment } = require("./_square");
 const { notifyPartialRefund } = require("./_email");
+const crypto = require("crypto");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
@@ -35,7 +36,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    await refundCapture(row.capture_id, amount);
+    await refundPayment({ paymentId: row.capture_id, amountCents: amount, idempotencyKey: crypto.randomUUID() });
   } catch (e) {
     return json(502, { error: e.message || "Refund failed" });
   }

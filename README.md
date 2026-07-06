@@ -21,21 +21,21 @@ python3 -m http.server 4178
 The app ships in **demo mode** (`js/config.js` → `BACKEND_ENABLED: false`): the full
 experience works but checkout shows a sample confirmation instead of charging a card.
 
-To take real payments, deploy to **Netlify** and connect **PayPal** (the rental fee)
-and **Supabase** (Postgres). The refundable **security deposit is collected in person
-at pickup**, so there's no online hold. The serverless backend already lives in
-`netlify/functions/`. Follow **[SETUP.md](SETUP.md)** for the click-by-click steps,
-then flip `BACKEND_ENABLED` to `true`.
+To take real payments, deploy to **Netlify** and connect **Square** (the rental fee
++ a refundable online deposit hold) and **Supabase** (Postgres). The card form lives
+directly on the site (Square Web Payments SDK) — no redirect to a payment provider.
+The serverless backend already lives in `netlify/functions/`. Follow
+**[SETUP.md](SETUP.md)** for the click-by-click steps, then flip `BACKEND_ENABLED`
+to `true`.
 
 Backend pieces:
 
 | File | Purpose |
 |------|---------|
-| `netlify/functions/create-checkout.js` | Creates a PayPal order (server-priced) → approval URL |
-| `netlify/functions/capture-order.js` | Captures the approved payment, writes booking to Supabase |
-| `netlify/functions/get-booking.js` | Looks up a booking by PayPal order id (confirmation refresh) |
+| `netlify/functions/create-checkout.js` | Charges the rental fee + places the deposit hold (server-priced), writes booking to Supabase |
+| `netlify/functions/get-booking.js` | Looks up a booking by order id (confirmation refresh) |
 | `netlify/functions/availability.js` | Returns booked date ranges for an item |
-| `netlify/functions/_paypal.js` | PayPal REST helper (token / create / capture) |
+| `netlify/functions/_square.js` | Square Payments REST helper (create / complete / cancel / refund) |
 | `netlify/functions/_pricing.js` | Server-side price + deposit source of truth |
 | `db/schema.sql` | Supabase `bookings` table |
 | `netlify.toml` / `package.json` | Netlify config + function dependencies |

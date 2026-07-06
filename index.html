@@ -65,7 +65,7 @@
   "priceRange": "$$",
   "telephone": "+1-510-480-6761",
   "currenciesAccepted": "USD",
-  "paymentAccepted": "Credit Card, PayPal",
+  "paymentAccepted": "Credit Card",
   "address": {
     "@type": "PostalAddress",
     "addressLocality": "Saratoga Springs",
@@ -232,12 +232,21 @@
   <!-- Toast layer -->
   <div id="toast-root" class="fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4 pointer-events-none"></div>
 
-  <script src="js/config.js?v=48"></script>
-  <script src="js/data.js?v=48"></script>
-  <script src="js/icons.js?v=48"></script>
-  <script src="js/gear-icons.js?v=48"></script>
-  <script src="js/store.js?v=48"></script>
-  <script src="js/views.js?v=48"></script>
-  <script src="js/app.js?v=48"></script>
+  <script src="js/config.js?v=49"></script>
+  <!-- Square Web Payments SDK — sandbox vs production picked at load time from
+       config.js so this file never needs to change when you go live. -->
+  <script>
+    document.write('<script src="' + (
+      (window.UBR_CONFIG && window.UBR_CONFIG.SQUARE_ENV === "production")
+        ? "https://web.squareup.com/v1/square.js"
+        : "https://sandbox.web.squareup.com/v1/square.js"
+    ) + '"><' + '/script>');
+  </script>
+  <script src="js/data.js?v=49"></script>
+  <script src="js/icons.js?v=49"></script>
+  <script src="js/gear-icons.js?v=49"></script>
+  <script src="js/store.js?v=49"></script>
+  <script src="js/views.js?v=49"></script>
+  <script src="js/app.js?v=49"></script>
 </body>
 </html>

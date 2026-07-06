@@ -4,7 +4,7 @@
 create table if not exists bookings (
   id              bigint generated always as identity primary key,
   created_at      timestamptz not null default now(),
-  paypal_order    text unique,          -- ties the row to the PayPal payment
+  paypal_order    text unique,          -- ties the row to the payment (holds the Square payment id — column name is historical)
   item_id         text,
   item_name       text,
   qty             int not null default 1, -- units reserved (for inventory math)
@@ -14,9 +14,9 @@ create table if not exists bookings (
   amount_cents    int,                  -- rental fee actually charged online
   deposit_cents   int default 0,        -- full replacement-value deposit (for the record)
   hold_cents      int default 0,        -- amount actually held on the card (≤ $250)
-  authorization_id text,                -- PayPal authorization id (void to release / capture if damaged)
+  authorization_id text,                -- deposit hold payment id (cancel to release / complete if damaged)
   customer_email  text,
-  customer_name   text,                 -- name on the card / PayPal account (verify against ID)
+  customer_name   text,                 -- name on the payment card (verify against ID)
   renter_name     text,                 -- legal name the renter entered (must match their photo ID)
   agreed_terms    boolean not null default false, -- accepted the rental agreement
   agreed_at       timestamptz,          -- when they accepted (waiver record)

@@ -780,6 +780,13 @@ window.VIEWS = (function () {
               class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
           </label>
 
+          <!-- email -->
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant">Email <span class="text-outline">(for your confirmation &amp; receipt)</span></span>
+            <input id="renter-email" type="email" value="${String(window.STATE.renterEmail || "").replace(/"/g, "&quot;")}" placeholder="e.g. you@example.com"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
+          </label>
+
           <!-- terms -->
           <div class="rounded-md bg-surface-container p-sm text-label-sm text-on-surface-variant space-y-2">
             <p class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-primary shrink-0">badge</span>
@@ -802,6 +809,55 @@ window.VIEWS = (function () {
           <button id="proceed-btn" data-action="proceed-checkout" ${accepted ? "" : "disabled"}
             class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${okBtn}">
             Agree &amp; Continue to Payment
+          </button>
+          <button data-action="cancel-modal" class="w-full py-2 text-label-md text-on-surface-variant press">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function paymentModal() {
+    const qty = window.STATE.qty || 1;
+    let total = 0, hold = 0;
+    if (window.STATE.cartMode && (window.STATE.cart || []).length) {
+      const cartDays = Math.max(1, fmt.days(window.STATE.cartDates));
+      const depositFull = (window.STATE.cart || []).reduce((s, e) => s + (e.item.deposit || 0) * e.qty, 0);
+      total = (window.STATE.cart || []).reduce((s, e) => s + (e.item.price || 0) * e.qty * (e.item.perDay ? cartDays : 1), 0);
+      hold = Math.min(depositFull, MAX_HOLD);
+    } else if (window.STATE.draft) {
+      const item = window.STATE.draft;
+      const days = Math.max(1, fmt.days(window.STATE.dates));
+      total = (item.price || 0) * (item.perDay ? days : 1) * qty;
+      hold = Math.min((item.deposit || 0) * qty, MAX_HOLD);
+    }
+    const busy = window.STATE.paymentBusy;
+    return `
+    <div class="fixed inset-0 z-[55] flex items-end sm:items-center justify-center">
+      <div class="modal-backdrop absolute inset-0 bg-primary/40"></div>
+      <div class="modal-sheet relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto bg-surface-container-lowest rounded-t-2xl sm:rounded-2xl shadow-lift">
+        <div class="sticky top-0 bg-surface-container-lowest p-md border-b border-surface-container flex items-center gap-2">
+          <button data-action="back-to-safety" class="press w-8 h-8 flex items-center justify-center shrink-0" aria-label="Back">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h3 class="font-heading text-headline-sm text-on-surface">Payment</h3>
+        </div>
+        <div class="p-md space-y-md">
+          <div class="flex justify-between items-baseline">
+            <span class="text-label-md text-on-surface-variant">Charged now</span>
+            <span class="font-heading text-headline-sm text-forest-deep">${fmt.money(total)}</span>
+          </div>
+          ${hold ? `<p class="text-label-sm text-outline flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">lock</span>
+            + ${fmt.money(hold)} refundable hold placed on this card, released on return</p>` : ""}
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant block mb-1">Card details</span>
+            <div id="sq-card-container" class="rounded-lg border border-outline-variant px-sm py-2.5 min-h-[44px]"></div>
+          </label>
+        </div>
+        <div class="sticky bottom-0 bg-surface-container-low p-md flex flex-col gap-2">
+          <button id="pay-btn" data-action="pay-now" ${busy ? "disabled" : ""}
+            class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${busy ? "bg-secondary/40 cursor-not-allowed" : "bg-secondary hover:bg-secondary-container"}">
+            Pay ${fmt.money(total)}
           </button>
           <button data-action="cancel-modal" class="w-full py-2 text-label-md text-on-surface-variant press">Cancel</button>
         </div>
@@ -1783,7 +1839,7 @@ window.VIEWS = (function () {
 
         <table style="width:100%;border-collapse:collapse;margin-top:20px;font-size:14px;">
           <tr><td style="padding:6px 0;color:#5C5346;width:42%;">Renter (verify photo ID)</td><td style="padding:6px 0;font-weight:700;font-size:16px;">${esc(o.renterName || o.customerName || "—")}</td></tr>
-          <tr><td style="padding:6px 0;color:#5C5346;">Card / PayPal name</td><td style="padding:6px 0;font-weight:600;">${esc(o.customerName || "—")}</td></tr>
+          <tr><td style="padding:6px 0;color:#5C5346;">Name on card</td><td style="padding:6px 0;font-weight:600;">${esc(o.customerName || "—")}</td></tr>
           <tr><td style="padding:6px 0;color:#5C5346;">Phone</td><td style="padding:6px 0;font-weight:600;">${esc(o.phone || "—")}</td></tr>
           <tr><td style="padding:6px 0;color:#5C5346;">Email</td><td style="padding:6px 0;font-weight:600;">${esc(o.email || "—")}</td></tr>
         </table>
@@ -1826,7 +1882,7 @@ window.VIEWS = (function () {
           <div style="font-size:13px;font-weight:800;">At pickup checklist</div>
           <div style="font-size:13px;color:#5C5346;margin-top:8px;display:grid;gap:8px;">
             <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>Photo ID matches renter name above</div>
-            <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>ID name matches card / PayPal name</div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>ID name matches card</div>
             <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>All gear inspected &amp; handed over</div>
             <div style="display:flex;align-items:center;gap:10px;"><span style="display:inline-block;width:16px;height:16px;border:2px solid #061B0E;border-radius:3px;"></span>Return date confirmed with renter</div>
           </div>
@@ -2132,5 +2188,5 @@ window.VIEWS = (function () {
     </div>`;
   }
 
-  return { home, productDetail, gear, cart, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, pickupInfo, safetyWaivers, helpSupport, admin, adminGate, safetyModal, adminOrders, workOrder, notFound };
+  return { home, productDetail, gear, cart, builder, bookings, confirmation, confirmationLoading, howItWorks, profile, pickupInfo, safetyWaivers, helpSupport, admin, adminGate, safetyModal, paymentModal, adminOrders, workOrder, notFound };
 })();

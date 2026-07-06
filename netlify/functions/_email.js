@@ -129,7 +129,7 @@ function ownerHtml(b, ref) {
     ${gearChecklist(b)}
     <table style="width:100%;border-collapse:collapse;margin:14px 0 4px;">
       ${row("Renter (verify ID)", esc(b.renterName || "—"))}
-      ${row("Card / PayPal name", esc(b.customerName || "—"))}
+      ${row("Name on card", esc(b.customerName || "—"))}
       ${row("Email", esc(b.email || "—"))}
       ${row("Phone", esc(b.phone || "—"))}
       ${row("Pickup window", esc(b.pickupTime || "—"))}
@@ -137,11 +137,11 @@ function ownerHtml(b, ref) {
     </table>
     <div style="margin:12px 0 0;padding:12px 14px;background:#f6f3f2;border-left:3px solid #061B0E;border-radius:4px;">
       <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">At pickup, verify:</p>
-      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">Government photo ID matches <strong>${esc(b.renterName || "the renter")}</strong>, and the ID name matches the card/PayPal name above.</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">Government photo ID matches <strong>${esc(b.renterName || "the renter")}</strong>, and the ID name matches the card name above.</p>
     </div>
     <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">
-      A <strong>${money(b.hold)}</strong> refundable hold is on the customer's card. Release it (void the authorization)
-      when the gear is returned undamaged, or capture it from the PayPal dashboard if there's damage/theft.</p>`;
+      A <strong>${money(b.hold)}</strong> refundable hold is on the customer's card. Release it from the admin
+      dashboard when the gear is returned undamaged, or capture it there if there's damage/theft.</p>`;
   return shell("New rental to prepare", body, "#061B0E");
 }
 
@@ -155,7 +155,7 @@ function readyHtml(b, ref) {
     <div style="margin:14px 0 0;padding:12px 14px;background:#f6f3f2;border-left:3px solid #AB3500;border-radius:4px;">
       <p style="font-size:13px;color:#061B0E;line-height:1.5;margin:0;font-weight:600;">See you soon — bring to pickup:</p>
       <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">
-        A valid government photo ID${b.renterName ? " matching <strong>" + esc(b.renterName) + "</strong>" : ""} and the payment card used to book.
+        A valid government photo ID${b.renterName ? " matching <strong>" + esc(b.renterName) + "</strong>" : ""} and the card used to book.
         Pick up at <strong>${DEPOT}</strong>.
       </p>
     </div>`;
@@ -310,11 +310,11 @@ async function notifyDeclinedPayment(d) {
       ${row("Item", esc(d.itemName || "—"))}
       ${row("Attempted charge", money(d.amountAttempted))}
       ${d.holdAttempted ? row("Attempted hold", money(d.holdAttempted)) : ""}
-      ${row("Customer", esc(d.customerName || d.customerEmail || "Unknown — never reached PayPal payer step"))}
-      ${row("PayPal order", esc(d.orderId || "—"))}
+      ${row("Customer", esc(d.customerName || d.customerEmail || "Unknown — card was declined before checkout completed"))}
+      ${row("Order ID", esc(d.orderId || "—"))}
     </table>
     <div style="margin:14px 0 0;padding:12px 14px;background:#ffdad6;border-left:3px solid #ba1a1a;border-radius:4px;">
-      <p style="font-size:13px;color:#93000a;line-height:1.5;margin:0;font-weight:600;">Decline reason (from PayPal):</p>
+      <p style="font-size:13px;color:#93000a;line-height:1.5;margin:0;font-weight:600;">Decline reason:</p>
       <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">${esc(d.reason || "Not specified")}</p>
     </div>
     <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">This attempt is logged in your admin dashboard under Orders → All, with a "Declined" status, in case the same customer calls to ask what happened.</p>`;

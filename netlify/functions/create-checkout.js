@@ -1,16 +1,135 @@
-/* Starts a PayPal checkout for a rental.
+/* Charges a Square card (tokenized client-side by the Web Payments SDK) for a
+ * rental and, in the same request, places a separate hold for the refundable
+ * damage/theft deposit.
  *
- * We use intent=AUTHORIZE so we can do two things from one approval:
- *   1. capture the rental fee now (the customer is charged), and
- *   2. hold the refundable damage/theft deposit (up to $250) on their card.
+ * Square has no "authorize the total, capture part of it" primitive like
+ * PayPal's orders API, so this creates two independent payments:
+ *   1. an immediate-capture payment for the rental fee (charged now), and
+ *   2. a delayed-capture payment for the deposit (a pure hold — completed or
+ *      canceled later from the admin dashboard when the gear comes back).
+ * If step 2 fails after step 1 succeeded, step 1 is refunded so the customer
+ * is never charged for a reservation that didn't fully go through.
  *
- * The amount sent to PayPal is rental + hold. We also write a PENDING booking
- * row to Supabase keyed by the PayPal order id, so capture-order can read the
- * exact amounts back (this is what makes custom-bundle pricing reliable). */
-const { createOrder } = require("./_paypal");
+ * The whole checkout now happens in one request (no PayPal-style redirect),
+ * so this function also does what capture-order.js used to do: write the
+ * CONFIRMED booking row and send the confirmation emails. */
+const crypto = require("crypto");
+const { createPayment, refundPayment } = require("./_square");
 const { quoteCents, holdCents, depositCents } = require("./_pricing");
 const { rangeAvailable } = require("./_inventory");
 const { getSupabase, bookingUpsert } = require("./_supabase");
+const { notifyBooking, notifyDeclinedPayment } = require("./_email");
+
+// Records a failed charge attempt (row stays visible in the admin "All" filter
+// with a "Declined" status instead of vanishing) and alerts the owner by email.
+// Never throws — a notification failure must not mask the original decline.
+async function logDecline(supabase, { paymentRef, itemId, name, qty, startDate, endDate, rentalCents, holdC, reason, email, renterName, phone }) {
+  if (supabase) {
+    try {
+      await bookingUpsert(supabase, {
+        paypal_order: paymentRef || null,
+        item_id: itemId,
+        item_name: name,
+        qty: qty || 1,
+        start_date: startDate || null,
+        end_date: endDate || null,
+        amount_cents: rentalCents,
+        hold_cents: holdC,
+        customer_email: email || null,
+        renter_name: renterName || null,
+        phone: phone || null,
+        status: "declined",
+        decline_reason: String(reason || "").slice(0, 500)
+      }, paymentRef ? { onConflict: "paypal_order" } : undefined);
+    } catch (_) { /* logging failure must not mask the decline */ }
+  }
+  try {
+    await notifyDeclinedPayment({
+      itemName: name,
+      amountAttempted: rentalCents,
+      holdAttempted: holdC,
+      customerEmail: email,
+      customerName: renterName,
+      orderId: paymentRef,
+      reason
+    });
+  } catch (_) { /* email failure must not mask the decline */ }
+}
+
+async function chargeAndHold({ sourceId, rentalCents, holdC, note, referenceId }) {
+  const rentalPayment = await createPayment({
+    sourceId, amountCents: rentalCents, autocomplete: true, note, referenceId,
+    idempotencyKey: crypto.randomUUID()
+  });
+  if (holdC > 0) {
+    try {
+      const holdPayment = await createPayment({
+        sourceId, amountCents: holdC, autocomplete: false,
+        note: `Security deposit hold — ${note}`, referenceId,
+        idempotencyKey: crypto.randomUUID()
+      });
+      return { rentalPayment, holdPayment };
+    } catch (e) {
+      try {
+        await refundPayment({ paymentId: rentalPayment.id, amountCents: rentalCents, idempotencyKey: crypto.randomUUID(), reason: "Deposit hold failed" });
+      } catch (_) { /* best effort — logDecline still records the failure */ }
+      throw e;
+    }
+  }
+  return { rentalPayment, holdPayment: null };
+}
+
+async function persistConfirmed(supabase, b) {
+  const orderId = b.rentalPaymentId; // primary key for the booking, same role the PayPal order id used to play
+  const agreedAt = b.agreedTerms ? new Date().toISOString() : null;
+  if (supabase) {
+    await bookingUpsert(supabase, {
+      paypal_order: orderId,
+      item_id: b.itemId,
+      item_name: b.name,
+      qty: b.qty || 1,
+      start_date: b.startDate || null,
+      end_date: b.endDate || null,
+      days: b.days || null,
+      amount_cents: b.amount,
+      hold_cents: b.hold,
+      deposit_cents: b.deposit,
+      authorization_id: b.holdPaymentId,
+      capture_id: b.rentalPaymentId,
+      cart_items: b.cartItems ? JSON.stringify(b.cartItems) : null,
+      customer_email: b.email,
+      customer_name: b.customerName,
+      renter_name: (b.renterName || "").trim() || null,
+      agreed_terms: !!b.agreedTerms,
+      agreed_at: agreedAt,
+      phone: (b.phone || "").trim() || null,
+      pickup_time: (b.pickupTime || "").trim() || null,
+      status: "confirmed"
+    }, { onConflict: "paypal_order" });
+  }
+  return {
+    orderId, itemId: b.itemId, name: b.name, qty: b.qty,
+    startDate: b.startDate, endDate: b.endDate, days: b.days,
+    amount: b.amount, hold: b.hold, deposit: b.deposit,
+    email: b.email, customerName: b.customerName, renterName: b.renterName,
+    agreedTerms: !!b.agreedTerms, agreedAt,
+    phone: b.phone || null, pickupTime: b.pickupTime || null, status: "confirmed"
+  };
+}
+
+async function sendConfirmation(supabase, booking) {
+  if (supabase && booking.itemId) {
+    const { data: product } = await supabase.from("products").select("includes, weight").eq("id", booking.itemId).maybeSingle();
+    if (product) {
+      if (Array.isArray(product.includes) && product.includes.length) booking.includes = product.includes;
+      if (product.weight) booking.weight = product.weight;
+    }
+  }
+  try {
+    await notifyBooking(booking);
+    if (supabase) await supabase.from("bookings").update({ emailed: true }).eq("paypal_order", booking.orderId);
+  } catch (_) { /* email failure must never block confirmation */ }
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
@@ -20,67 +139,50 @@ exports.handler = async (event) => {
   catch { return json(400, { error: "Invalid request." }); }
 
   const { itemId, name, qty, startDate, endDate, components, addons,
-          renterName, agreedTerms, phone, pickupTime,
+          renterName, agreedTerms, phone, pickupTime, email, sourceId,
           items: cartItems } = body; // cartItems = [{itemId, name, qty}] for multi-item cart
 
+  if (!sourceId) return json(400, { error: "Missing payment information." });
+  const cleanEmail = (email || "").trim();
+  if (!cleanEmail || !cleanEmail.includes("@")) return json(400, { error: "Enter a valid email address." });
+
   const isCart = Array.isArray(cartItems) && cartItems.length > 0;
-  const origin = event.headers.origin || `https://${event.headers.host}`;
+  const supabase = getSupabase();
 
   // ----- CART CHECKOUT (multiple items) -----
   if (isCart) {
-    let rental = 0, depositFull = 0, hold = 0;
+    let rental = 0, depositFull = 0;
     const cDays = dayCount(startDate, endDate) || 1;
     for (const ci of cartItems) {
       const cq = Math.max(1, parseInt(ci.qty, 10) || 1);
-      rental      += await quoteCents({ itemId: ci.itemId, qty: cq, days: cDays });
+      rental += await quoteCents({ itemId: ci.itemId, qty: cq, days: cDays });
       depositFull += await depositCents({ itemId: ci.itemId, qty: cq });
     }
-    hold = Math.min(depositFull, 25000); // cap at $250
+    const hold = Math.min(depositFull, 25000); // cap at $250
     if (rental < 50) return json(400, { error: "Invalid order amount." });
 
     const cartLabel = cartItems.length === 1
       ? `${cartItems[0].name}${cartItems[0].qty > 1 ? ` ×${cartItems[0].qty}` : ""}`
       : `${cartItems.length}-item rental`;
+    const cartQty = cartItems.reduce((s, ci) => s + (ci.qty || 1), 0);
 
+    let payments;
     try {
-      const order = await createOrder({
-        intent: "AUTHORIZE",
-        amountCents: rental + hold,
-        description: cartLabel,
-        customId: `cart|${startDate || ""}|${endDate || ""}`,
-        returnUrl: `${origin}/#/paypal-return`,
-        cancelUrl: `${origin}/#/cart`
-      });
-
-      const supabase = getSupabase();
-      if (supabase) {
-        await bookingUpsert(supabase, {
-          paypal_order: order.id,
-          item_id: "cart",
-          item_name: cartLabel,
-          qty: cartItems.reduce((s, ci) => s + (ci.qty || 1), 0),
-          start_date: startDate || null,
-          end_date: endDate || null,
-          days: dayCount(startDate, endDate),
-          amount_cents: rental,
-          hold_cents: hold,
-          deposit_cents: depositFull,
-          cart_items: JSON.stringify(cartItems),
-          renter_name: (renterName || "").trim() || null,
-          agreed_terms: !!agreedTerms,
-          agreed_at: agreedTerms ? new Date().toISOString() : null,
-          phone: (phone || "").trim() || null,
-          pickup_time: (pickupTime || "").trim() || null,
-          status: "pending"
-        }, { onConflict: "paypal_order" });
-      }
-
-      const approve = (order.links || []).find(l => l.rel === "approve" || l.rel === "payer-action");
-      if (!approve) return json(500, { error: "PayPal did not return an approval link." });
-      return json(200, { url: approve.href, orderId: order.id });
+      payments = await chargeAndHold({ sourceId, rentalCents: rental, holdC: hold, note: cartLabel, referenceId: `cart-${Date.now()}`.slice(0, 40) });
     } catch (e) {
-      return json(500, { error: e.message || "Could not start checkout." });
+      const reason = e.message || "Payment was declined.";
+      await logDecline(supabase, { itemId: "cart", name: cartLabel, qty: cartQty, startDate, endDate, rentalCents: rental, holdC: hold, reason, email: cleanEmail, renterName, phone });
+      return json(502, { error: reason });
     }
+
+    const booking = await persistConfirmed(supabase, {
+      itemId: "cart", name: cartLabel, qty: cartQty, startDate, endDate,
+      days: dayCount(startDate, endDate), amount: rental, hold, deposit: depositFull,
+      cartItems, email: cleanEmail, customerName: renterName, renterName, agreedTerms, phone, pickupTime,
+      rentalPaymentId: payments.rentalPayment.id, holdPaymentId: payments.holdPayment ? payments.holdPayment.id : null
+    });
+    await sendConfirmation(supabase, booking);
+    return json(200, booking);
   }
 
   // ----- SINGLE-ITEM CHECKOUT (existing flow) -----
@@ -98,48 +200,25 @@ exports.handler = async (event) => {
   const hold = await holdCents({ itemId, qty: q, components });            // held on card, ≤ $250
   if (rental < 50) return json(400, { error: "Invalid order amount." });
 
-  const total = rental + hold;
-  const customId = [itemId || "", q, startDate || "", endDate || ""].join("|").slice(0, 127);
+  const label = `${name || "Gear rental"}${q > 1 ? ` ×${q}` : ""}`;
 
+  let payments;
   try {
-    const order = await createOrder({
-      intent: "AUTHORIZE",
-      amountCents: total,
-      description: `${name || "Gear rental"}${q > 1 ? ` ×${q}` : ""}`,
-      customId,
-      returnUrl: `${origin}/#/paypal-return`,
-      cancelUrl: `${origin}/#/gear/${itemId || ""}`
-    });
-
-    // Record the intended booking so capture-order can read the exact amounts.
-    const supabase = getSupabase();
-    if (supabase) {
-      await supabase.from("bookings").upsert({
-        paypal_order: order.id,
-        item_id: itemId,
-        item_name: name || "Gear rental",
-        qty: q,
-        start_date: startDate || null,
-        end_date: endDate || null,
-        days: dayCount(startDate, endDate),
-        amount_cents: rental,
-        hold_cents: hold,
-        deposit_cents: depositFull,
-        renter_name: (renterName || "").trim() || null,
-        agreed_terms: !!agreedTerms,
-        agreed_at: agreedTerms ? new Date().toISOString() : null,
-        phone: (phone || "").trim() || null,
-        pickup_time: (pickupTime || "").trim() || null,
-        status: "pending"
-      }, { onConflict: "paypal_order" });
-    }
-
-    const approve = (order.links || []).find((l) => l.rel === "approve" || l.rel === "payer-action");
-    if (!approve) return json(500, { error: "PayPal did not return an approval link." });
-    return json(200, { url: approve.href, orderId: order.id });
+    payments = await chargeAndHold({ sourceId, rentalCents: rental, holdC: hold, note: label, referenceId: `${itemId || "item"}-${Date.now()}`.slice(0, 40) });
   } catch (e) {
-    return json(500, { error: e.message || "Could not start checkout." });
+    const reason = e.message || "Payment was declined.";
+    await logDecline(supabase, { itemId, name: label, qty: q, startDate, endDate, rentalCents: rental, holdC: hold, reason, email: cleanEmail, renterName, phone });
+    return json(502, { error: reason });
   }
+
+  const booking = await persistConfirmed(supabase, {
+    itemId, name: label, qty: q, startDate, endDate, days: dayCount(startDate, endDate),
+    amount: rental, hold, deposit: depositFull,
+    email: cleanEmail, customerName: renterName, renterName, agreedTerms, phone, pickupTime,
+    rentalPaymentId: payments.rentalPayment.id, holdPaymentId: payments.holdPayment ? payments.holdPayment.id : null
+  });
+  await sendConfirmation(supabase, booking);
+  return json(200, booking);
 };
 
 function dayCount(s, e) {
@@ -148,5 +227,5 @@ function dayCount(s, e) {
 }
 
 function json(statusCode, obj) {
-  return { statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) };
+  return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(obj) };
 }

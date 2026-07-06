@@ -2,8 +2,8 @@
 -- partial damage-hold captures, and partial refunds. Safe to re-run.
 
 -- Records why a card was declined at authorization time (stolen/insufficient
--- funds/expired/etc — whatever PayPal's issuer response says), so declined
--- attempts show up in the admin dashboard instead of vanishing silently.
+-- funds/expired/etc — whatever the card issuer's decline response says), so
+-- declined attempts show up in the admin dashboard instead of vanishing silently.
 alter table bookings add column if not exists decline_reason text;
 
 -- How much of the original authorization hold was actually captured for

@@ -2,7 +2,7 @@
   "name": "utah-backcountry-rentals",
   "version": "1.0.0",
   "private": true,
-  "description": "Mobile-first hiking gear rental web app with PayPal checkout on Netlify.",
+  "description": "Mobile-first hiking gear rental web app with Square checkout on Netlify.",
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4"
   }
