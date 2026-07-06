@@ -19,7 +19,7 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body || "{}"); }
   catch { return json(400, { error: "Bad request." }); }
 
-  const { orderId, status, notifyCustomer } = body;
+  const { orderId, status, notifyCustomer, idVerified } = body;
   if (!orderId) return json(400, { error: "Missing orderId." });
 
   const supabase = getSupabase();
@@ -30,6 +30,10 @@ exports.handler = async (event) => {
 
   const patch = {};
   if (status) patch.status = status;
+  // Timestamped confirmation that the owner checked photo ID at pickup —
+  // we never store a copy of the ID itself, just that the check happened.
+  if (idVerified === true) patch.id_verified_at = new Date().toISOString();
+  else if (idVerified === false) patch.id_verified_at = null;
 
   let notifyResult = null;
   if (notifyCustomer) {

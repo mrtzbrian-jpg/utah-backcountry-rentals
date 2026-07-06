@@ -52,6 +52,7 @@ function fromRow(r) {
     capturedHoldCents: r.captured_hold_cents,
     refundedCents:   r.refunded_cents,
     refundedAt:      r.refunded_at,
+    idVerifiedAt:    r.id_verified_at,
     createdAt:       r.created_at
   };
 }

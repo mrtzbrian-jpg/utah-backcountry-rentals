@@ -242,7 +242,7 @@ window.VIEWS = (function () {
   function bundleMiniCard(item) {
     const count = (item.bundleItems || item.includes || []).length;
     return `
-    <article class="group snap-start shrink-0 w-60 sm:w-64 bg-paper-white border border-outline-variant/70 rounded-2xl overflow-hidden card-elevation press">
+    <article class="group w-full bg-paper-white border border-outline-variant/70 rounded-2xl overflow-hidden card-elevation press">
       <div class="relative aspect-[3/2] bg-surface-container overflow-hidden cursor-pointer" data-action="view" data-id="${item.id}">
         <img src="${imageFor(item, 600)}" alt="${item.name}" loading="lazy"
           class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -283,13 +283,12 @@ window.VIEWS = (function () {
       <main class="flex-grow max-w-container-max mx-auto w-full">
         <!-- Hero — full-bleed photographic, edge to edge -->
         <section class="relative min-h-[240px] sm:min-h-[320px] overflow-hidden flex flex-col justify-end">
-          <img src="images/hero.jpg" alt="Hikers on a Wasatch ridgeline at sunrise" width="1376" height="768" fetchpriority="high" decoding="async" class="absolute inset-0 w-full h-full object-cover" />
+          <img src="images/hero.jpg" alt="Welcome to Utah highway sign on a scenic desert road" width="1600" height="1066" fetchpriority="high" decoding="async" class="absolute inset-0 w-full h-full object-cover" />
           <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(90deg,rgba(6,27,14,0.82) 0%,rgba(6,27,14,0.55) 42%,rgba(6,27,14,0.12) 100%);"></div>
           <div class="relative z-10 p-4 sm:p-7 max-w-container-max mx-auto w-full">
-            <p class="text-white/70 text-[10px] font-bold tracking-[0.18em] uppercase mb-1.5 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1;">distance</span>Saratoga Springs · Utah</p>
             <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(21px,4vw,32px);line-height:1.12;letter-spacing:-0.02em;font-weight:800;"
               class="text-white drop-shadow-lg mb-1.5">The Trail Is Calling.<br/><span style="color:#f5c060;">Grab the Gear &amp; Go.</span></h2>
-            <p class="text-white/85 text-[13px] sm:text-body-md mb-3.5 max-w-md">Premium hiking, camping &amp; backpacking gear — rent it, reserve your dates, and hit the backcountry without the retail price tag.</p>
+            <p class="text-white/85 text-[13px] sm:text-body-md mb-3.5 max-w-md">Camping &amp; backpacking gear — rent it, reserve your dates, and hit the backcountry without the retail price tag.</p>
             <div class="flex flex-wrap gap-2.5">
               <button data-action="shop-bundles"
                 class="bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
@@ -332,7 +331,7 @@ window.VIEWS = (function () {
               </div>
             </div>
             <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork — everything you need for your trip, packed as one booking.</p>
-            <div class="-mx-4 sm:-mx-6 px-4 sm:px-6 flex gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
               ${bundles.map(b => bundleMiniCard(b)).join("")}
             </div>
           </section>` : ""}
@@ -344,12 +343,11 @@ window.VIEWS = (function () {
               <div class="relative p-6 sm:p-8">
                 <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-primary-fixed-dim">Prefer to choose your own?</p>
                 <h2 class="font-heading text-headline-md mt-1">Build Your Own Pack</h2>
-                <p class="text-body-md text-primary-fixed-dim mt-2 max-w-md">Pick your backpack size, then drag and drop exactly the gear you want. See total weight and price update live.</p>
-                <div class="grid grid-cols-3 gap-3 mt-5 max-w-xl">
+                <p class="text-body-md text-primary-fixed-dim mt-2 max-w-md">Pick your backpack, then fill it up with exactly the gear you want. See total weight and price update live.</p>
+                <div class="grid grid-cols-2 gap-3 mt-5 max-w-md">
                   ${[
-                    ["straighten", "1. Pick a size", "18L to 75L"],
-                    ["backpack", "2. Pick a pack", "Choose your model"],
-                    ["touch_app", "3. Drag &amp; drop", "Fill it with gear"]
+                    ["backpack", "1. Pick your backpack", "The TETON Explorer 65"],
+                    ["add_shopping_cart", "2. Fill it up", "Add the gear you need"]
                   ].map(([icon, title, sub]) => `
                     <div class="rounded-xl bg-white/10 p-3">
                       <span class="material-symbols-outlined text-[22px] text-primary-fixed-dim">${icon}</span>
@@ -1784,6 +1782,12 @@ window.VIEWS = (function () {
           <tr><td style="padding:6px 0;color:#5C5346;">Phone</td><td style="padding:6px 0;font-weight:600;">${esc(o.phone || "—")}</td></tr>
           <tr><td style="padding:6px 0;color:#5C5346;">Email</td><td style="padding:6px 0;font-weight:600;">${esc(o.email || "—")}</td></tr>
         </table>
+
+        <button data-action="toggle-id-verified" data-id="${o.orderId}" data-verified="${o.idVerifiedAt ? "1" : "0"}"
+          class="no-print press" style="margin-top:14px;width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:8px;border:2px solid ${o.idVerifiedAt ? "#1b3022" : "#c3c8c1"};background:${o.idVerifiedAt ? "#e8f0e9" : "#fff"};cursor:pointer;">
+          <span class="material-symbols-outlined" style="color:${o.idVerifiedAt ? "#1b3022" : "#737972"};">${o.idVerifiedAt ? "check_circle" : "radio_button_unchecked"}</span>
+          <span style="font-size:13px;font-weight:700;color:#061B0E;">${o.idVerifiedAt ? `ID verified at pickup · ${new Date(o.idVerifiedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "Tap to confirm: photo ID checked, name matches"}</span>
+        </button>
 
         <div style="display:flex;gap:16px;margin-top:16px;">
           <div style="flex:1;background:#f6f3f2;border-radius:8px;padding:14px;">

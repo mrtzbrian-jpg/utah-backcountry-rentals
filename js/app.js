@@ -932,6 +932,18 @@
       toast("Status updated", "check_circle");
     },
 
+    "toggle-id-verified": async (el) => {
+      const id = el.dataset.id;
+      const o = STATE.orders.find(x => x.orderId === id);
+      if (!o) return;
+      const next = el.dataset.verified !== "1"; // flip current state
+      const r = await updateBooking({ orderId: id, idVerified: next });
+      if (!r.ok) { toast(r.error || "Update failed", "error"); return; }
+      o.idVerifiedAt = next ? new Date().toISOString() : null;
+      render();
+      toast(next ? "ID verified — recorded" : "ID verification cleared", next ? "check_circle" : "radio_button_unchecked");
+    },
+
     "order-notify": async (el) => {
       const id = el.dataset.id;
       const o = STATE.orders.find(x => x.orderId === id);
