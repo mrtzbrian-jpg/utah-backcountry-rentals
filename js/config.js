@@ -19,7 +19,7 @@ window.UBR_CONFIG = {
   // FUNCTIONS_BASE) — the secret access token lives server-side only, in the
   // Netlify SQUARE_ACCESS_TOKEN env var. Set SQUARE_ENV to "production" to go
   // live; see SETUP.md.
-  SQUARE_APP_ID: "",
-  SQUARE_LOCATION_ID: "",
+  SQUARE_APP_ID: "sandbox-sq0idb-iajd921p7GyGuwF52-uI8g",
+  SQUARE_LOCATION_ID: "LZNHBZ5QRPDKN",
   SQUARE_ENV: "sandbox"
 };
