@@ -373,54 +373,36 @@ window.VIEWS = (function () {
   /* ---------- SITE FOOTER (local SEO / trust) ---------- */
 
   function siteFooter() {
-    const link = (route, label) => `<button data-action="nav" data-route="${route}" class="text-left text-[13px] text-primary-fixed-dim hover:text-paper-white press">${label}</button>`;
+    const link = (route, label) => `<button data-action="nav" data-route="${route}" class="text-left text-[12px] text-primary-fixed-dim hover:text-paper-white press">${label}</button>`;
     return `
-    <footer class="mt-12 bg-forest-deep text-paper-white">
-      <div class="max-w-container-max mx-auto px-6 py-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="sm:col-span-2 lg:col-span-1">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="material-symbols-outlined text-[22px] text-primary-fixed-dim">landscape</span>
-            <span class="font-heading text-headline-sm">Take a Hike Rentals</span>
+    <footer class="mt-10 bg-forest-deep text-paper-white">
+      <div class="max-w-container-max mx-auto px-6 py-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px] text-primary-fixed-dim">landscape</span>
+            <span class="font-heading text-[15px] font-bold">Take a Hike Rentals</span>
           </div>
-          <p class="text-[13px] text-primary-fixed-dim leading-relaxed">Affordable outdoor gear rentals in Utah. Camping, hiking &amp; backpacking equipment — reserved online, picked up local.</p>
-          <p class="text-[12px] text-primary-fixed-dim/80 mt-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px]">distance</span>Saratoga Springs, Utah</p>
-          <a href="tel:+15104806761" class="text-[13px] font-semibold text-paper-white mt-2 flex items-center gap-1.5 hover:text-primary-fixed-dim press"><span class="material-symbols-outlined text-[15px]">call</span>(510) 480-6761</a>
-          <p class="text-[12px] text-primary-fixed-dim/80 mt-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px]">schedule</span>By appointment only</p>
-        </div>
-        <div>
-          <h3 class="text-[11px] font-bold tracking-[0.14em] uppercase text-white/50 mb-3">Shop</h3>
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
             ${link("#/", "Browse Gear")}
-            ${link("#/builder", "Build a Bundle")}
+            ${link("#/builder", "Build a Pack")}
             ${link("#/bookings", "My Bookings")}
             ${link("#/how", "How It Works")}
           </div>
+          <a href="tel:+15104806761" class="text-[12px] font-semibold text-paper-white flex items-center gap-1.5 hover:text-primary-fixed-dim press"><span class="material-symbols-outlined text-[14px]">call</span>(510) 480-6761</a>
         </div>
-        <div>
-          <h3 class="text-[11px] font-bold tracking-[0.14em] uppercase text-white/50 mb-3">We Serve</h3>
-          <ul class="flex flex-col gap-1.5 text-[13px] text-primary-fixed-dim">
-            <li>Saratoga Springs &amp; Eagle Mountain</li>
-            <li>Lehi &amp; American Fork</li>
-            <li>Provo &amp; Orem</li>
-            <li>Salt Lake City &amp; Utah County</li>
-            <li>Wasatch &amp; Uinta Mountains</li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="text-[11px] font-bold tracking-[0.14em] uppercase text-white/50 mb-3">Rentals</h3>
-          <ul class="flex flex-col gap-1.5 text-[13px] text-primary-fixed-dim">
-            <li><a href="/hiking-gear-rental-utah/" class="hover:text-paper-white">Hiking Gear Rentals</a></li>
-            <li><a href="/camping-rentals-utah/" class="hover:text-paper-white">Camping Gear Rentals</a></li>
-            <li><a href="/backpacking-gear-rental-utah/" class="hover:text-paper-white">Backpacking Gear Rentals</a></li>
-            <li><a href="/tent-rentals-utah/" class="hover:text-paper-white">Tent Rentals</a></li>
-            <li><a href="/gear-rental-utah-county/" class="hover:text-paper-white">Gear Rental in Utah County</a></li>
-            <li><a href="/visiting-utah-gear-rental/" class="hover:text-paper-white">Visiting Utah? Rent Here</a></li>
-          </ul>
-        </div>
+        <p class="text-[11px] text-primary-fixed-dim/60 mt-4 leading-relaxed">
+          Saratoga Springs, Utah · By appointment only · Serving Lehi, American Fork, Provo, Orem &amp; all of Utah County ·
+          <a href="/camping-rentals-utah/" class="hover:text-paper-white">Camping</a> ·
+          <a href="/hiking-gear-rental-utah/" class="hover:text-paper-white">Hiking</a> ·
+          <a href="/backpacking-gear-rental-utah/" class="hover:text-paper-white">Backpacking</a> ·
+          <a href="/tent-rentals-utah/" class="hover:text-paper-white">Tents</a> ·
+          <a href="/gear-rental-utah-county/" class="hover:text-paper-white">Utah County</a> ·
+          <a href="/visiting-utah-gear-rental/" class="hover:text-paper-white">Visiting Utah</a>
+        </p>
       </div>
       <div class="border-t border-white/10">
-        <div class="max-w-container-max mx-auto px-6 py-4 text-[12px] text-primary-fixed-dim/70 text-center">
-          © ${new Date().getFullYear()} Take a Hike Rentals · Outdoor Gear Rentals in Saratoga Springs, Utah
+        <div class="max-w-container-max mx-auto px-6 py-3 text-[11px] text-primary-fixed-dim/70 text-center">
+          © ${new Date().getFullYear()} Take a Hike Rentals
         </div>
       </div>
     </footer>`;
