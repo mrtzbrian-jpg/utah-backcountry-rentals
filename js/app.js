@@ -168,6 +168,12 @@
       container.textContent = "Payments aren't configured yet.";
       return;
     }
+    // The SDK <script> is injected asynchronously (see index.html), so it may
+    // still be loading the first time a customer reaches this step — wait up
+    // to ~5s for it rather than failing immediately.
+    for (let i = 0; i < 25 && !window.Square && !window.__squareSdkFailed; i++) {
+      await new Promise((r) => setTimeout(r, 200));
+    }
     if (!window.Square) {
       container.textContent = "Payment form failed to load — check your connection and try again.";
       return;
