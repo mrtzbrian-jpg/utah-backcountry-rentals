@@ -261,7 +261,7 @@ window.DATA = (function () {
   // Auth hold amount (USD) per item = YOUR replacement cost. A hold (up to $250)
   // is placed on the card at checkout, released on return. Edit in the admin.
   const DEPOSITS = {
-    "solo-weekend-bundle": 200, "couples-weekend-bundle": 250, "family-weekend-bundle": 250,
+    "solo-weekend-bundle": 450, "couples-weekend-bundle": 650, "family-weekend-bundle": 800,
     "garmin-inreach": 100, "osprey-aether-65": 80, "teton-explorer-65": 80,
     "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,
     "winter-traction-kit": 100, "water-filter": 20,

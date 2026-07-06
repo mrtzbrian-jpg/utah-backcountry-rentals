@@ -97,10 +97,12 @@ async function depositCents({ itemId, qty = 1, components = [] }) {
   return Math.round(dollars * q * 100);
 }
 
-// Maximum authorization hold we ever place on a card (business rule: $250).
-const MAX_HOLD_CENTS = 25000;
+// Safety ceiling on any single authorization hold. The real hold is the
+// item/bundle's own deposit (set by the owner in admin); this just caps a
+// runaway custom-pack total. Set well above the largest bundle hold ($800).
+const MAX_HOLD_CENTS = 150000; // $1,500
 
-/** The card-hold amount in cents = the deposit, capped at $250 total. */
+/** The card-hold amount in cents = the deposit, capped at the safety ceiling. */
 async function holdCents(args) {
   const dep = await depositCents(args);
   return Math.min(dep, MAX_HOLD_CENTS);

@@ -4,6 +4,11 @@ window.VIEWS = (function () {
   const D = window.DATA;
   const ART = window.ART;
 
+  // Safety ceiling on any single auth hold shown to the customer. Must match
+  // MAX_HOLD_CENTS in netlify/functions/_pricing.js (server is authoritative).
+  // The real hold is each item/bundle's own deposit, set by the owner in admin.
+  const MAX_HOLD = 1500;
+
   /* HTML-escape any value that originates from a customer (renter name, phone,
      email, etc.) before injecting it into innerHTML. Without this, a customer
      could book under a name like "<img onerror=…>" and run script in the
@@ -414,7 +419,7 @@ window.VIEWS = (function () {
     const item = window.CATALOG.get(id);
     if (!item) return notFound();
     const fav = window.STATE.favs.has(item.id);
-    const hold = Math.min(item.deposit || 0, 250);
+    const hold = Math.min(item.deposit || 0, MAX_HOLD);
     const allImgs = [item.img, ...(item.imgs || [])].filter(Boolean);
     const primary = allImgs[0] || null;
 
@@ -495,7 +500,7 @@ window.VIEWS = (function () {
     if (!item) return notFound();
     if (item.category === "Bundles") return bundleDetail(id);
     const fav = window.STATE.favs.has(item.id);
-    const hold = Math.min(item.deposit || 0, 250);
+    const hold = Math.min(item.deposit || 0, MAX_HOLD);
     const includes = (item.includes || []).map(x =>
       `<li class="flex items-start gap-2 text-body-md text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-canyon-clay mt-0.5">check_circle</span>${x}</li>`).join("");
 
@@ -661,7 +666,7 @@ window.VIEWS = (function () {
     const days = Math.max(1, fmt.days(window.STATE.dates));
     const basePrice = (item.price || 0) * (item.perDay ? days : 1);
     const total = basePrice * qty;               // respects per-day pricing
-    const hold = Math.min((item.deposit || 0) * qty, 250); // refundable card hold, capped at $250
+    const hold = Math.min((item.deposit || 0) * qty, MAX_HOLD); // refundable card hold, capped at the safety ceiling
     const pickupTime = window.STATE.pickupTime;
     const ready = !!window.STATE.dates.start && !!pickupTime; // both date AND pickup window required
 
@@ -748,8 +753,8 @@ window.VIEWS = (function () {
     const name = window.STATE.renterName || "";
     const qty = window.STATE.qty || 1;
     const dep = window.STATE.cartMode
-      ? Math.min((window.STATE.cart || []).reduce((s, e) => s + (e.item.deposit || 0) * e.qty, 0), 250)
-      : (window.STATE.draft ? Math.min((window.STATE.draft.deposit || 0) * qty, 250) : 0);
+      ? Math.min((window.STATE.cart || []).reduce((s, e) => s + (e.item.deposit || 0) * e.qty, 0), MAX_HOLD)
+      : (window.STATE.draft ? Math.min((window.STATE.draft.deposit || 0) * qty, MAX_HOLD) : 0);
     const okBtn = accepted
       ? "bg-secondary hover:bg-secondary-container"
       : "bg-secondary/40 cursor-not-allowed";
@@ -782,7 +787,7 @@ window.VIEWS = (function () {
             <p class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-primary shrink-0">payments</span>
               <span>I am responsible for the <strong>full replacement cost</strong> of any lost, stolen, or damaged gear. Gear not returned may be reported stolen and the card charged up to its replacement value.</span></p>
             ${dep ? `<p class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-primary shrink-0">lock</span>
-              <span>The rental fee is charged now and a <strong>refundable hold of ${fmt.money(dep)}</strong> (max $250) is placed on my card, released when the gear is returned in good condition.</span></p>` : ""}
+              <span>The rental fee is charged now and a <strong>refundable hold of ${fmt.money(dep)}</strong> is placed on my card, released when the gear is returned in good condition.</span></p>` : ""}
             <p class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-primary shrink-0">hiking</span>
               <span>This equipment is for backcountry use and carries inherent risks, which I accept.</span></p>
           </div>
@@ -829,7 +834,7 @@ window.VIEWS = (function () {
       if (!g) return;
       price += (g.price || 0) * count; deposit += (g.deposit || 0) * count; weight += w(g) * count;
     });
-    const hold = Math.min(deposit, 250);
+    const hold = Math.min(deposit, MAX_HOLD);
     const nonBaseCount = [...chosen.values()].reduce((s, n) => s + n, 0);
     const totalItems = 1 + nonBaseCount;
     const MAX_REC_WEIGHT = 45;
@@ -1895,7 +1900,7 @@ window.VIEWS = (function () {
               <ul class="space-y-2 list-none">
                 <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>You are responsible for the full replacement cost of any lost, stolen, or damaged gear.</li>
                 <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>Gear must be returned clean, dry, and in the same condition it was received.</li>
-                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>An authorization hold (up to $250) is placed on your card at checkout and released upon safe return.</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>A refundable authorization hold is placed on your card at checkout — the amount is shown before you pay — and released upon safe return.</li>
                 <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>Gear not returned may be reported stolen and the card charged up to the full replacement value.</li>
                 <li class="flex gap-2"><span class="material-symbols-outlined text-[18px] text-forest-deep shrink-0 mt-0.5">check_circle</span>This equipment is for backcountry use and carries inherent risks, which you accept by renting.</li>
               </ul>
@@ -1927,7 +1932,7 @@ window.VIEWS = (function () {
     const email = info.email || "";
     const faqs = [
       ["Can I extend my rental?", "Contact us before your return date and we'll do our best to accommodate an extension, subject to availability."],
-      ["What if gear is damaged on the trail?", "Accidents happen. Contact us immediately. The auth hold covers damage up to $250 — anything beyond that may be billed separately."],
+      ["What if gear is damaged on the trail?", "Accidents happen. Contact us immediately. The refundable authorization hold placed at checkout covers minor damage — anything beyond the hold amount may be billed separately."],
       ["Can I cancel my booking?", "Cancellations must be requested at least 48 hours before pickup for a full refund. Contact us by phone or email."],
       ["Do you deliver gear?", "Currently we are pickup-only from our Saratoga Springs depot. We're exploring delivery options for the future."],
       ["Is there a minimum rental period?", "Our minimum rental is 1 day. Multi-day rentals are priced per day."],
@@ -2025,7 +2030,7 @@ window.VIEWS = (function () {
       const d = e.item.perDay ? daysCount : 1;
       return s + (e.item.price || 0) * e.qty * d;
     }, 0);
-    const holdAmt = Math.min(items.reduce((s, e) => s + (e.item.deposit || 0) * e.qty, 0), 250);
+    const holdAmt = Math.min(items.reduce((s, e) => s + (e.item.deposit || 0) * e.qty, 0), MAX_HOLD);
     const ready = items.length > 0 && dates.start && pickupTime;
 
     const itemRows = items.map(({ item, qty }) => `
