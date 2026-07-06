@@ -52,27 +52,6 @@ window.DATA = (function () {
       includes: ["2× TETON Explorer 65L backpacks", "MSR Hubba Hubba 2-person tent", "2× Nemo Disco 15° sleeping bags", "Katadyn BeFree water filter", "BearVault BV500 canister", "Garmin inReach Mini 2 satellite communicator"]
     },
     {
-      id: "budget-bundle",
-      name: "Wilding on a Budget",
-      category: "Bundles",
-      tagline: "Get out there without breaking the bank",
-      desc: "You don't need a $2,000 kit to have a killer weekend. This no-frills bundle covers the essentials — a reliable pack, shelter, sleep system, and water filter. Adventure first, gear second.",
-      price: 49,
-      unit: "weekend",
-      weight: 11.2,
-      icon: "savings",
-      tint: "#5d6b46",
-      badge: "Budget pick",
-      deposit: 150,
-      bundleItems: [
-        { id: "osprey-aether-65", qty: 1 },
-        { id: "msr-hubba-tent",   qty: 1 },
-        { id: "nemo-disco-15",    qty: 1 },
-        { id: "water-filter",     qty: 1 }
-      ],
-      includes: ["Osprey Aether 65L backpack", "MSR Hubba Hubba tent", "Nemo Disco 15° sleeping bag", "Katadyn BeFree water filter"]
-    },
-    {
       id: "family-weekend-bundle",
       name: "Family Weekend",
       category: "Bundles",
@@ -96,21 +75,6 @@ window.DATA = (function () {
       includes: ["2× Osprey Aether 65L backpacks (adult)", "2× MSR Hubba Hubba tents (sleeps 2 each)", "4× Nemo Disco 15° sleeping bags", "2× Katadyn BeFree water filters", "BearVault BV500 canister", "Garmin inReach Mini 2 satellite communicator", "Kids' gear available on request"]
     },
     /* ---- INDIVIDUAL GEAR ---- */
-    {
-      id: "master-safety-kit",
-      name: "The Master Safety Kit",
-      category: "Bundles",
-      tagline: "Includes Osprey 65L, BearVault & active satellite data",
-      desc: "Our flagship bundle for 3–5 day backcountry treks. Everything a first-timer needs to stay safe, fed, and connected — packed and trail-ready.",
-      price: 65,
-      unit: "weekend",
-      perDay: 22,
-      weight: 9.8,
-      icon: "backpack",
-      tint: "#1b3022",
-      badge: "Most booked",
-      includes: ["Osprey Aether 65L pack", "BearVault BV500 canister", "Garmin inReach satellite", "First-aid + water filter"]
-    },
     {
       id: "garmin-inreach",
       name: "Garmin inReach Mini 2",
@@ -285,8 +249,8 @@ window.DATA = (function () {
   // the sum of its items × quantity. ⚠️ PLACEHOLDERS: edit in the Manage Gear admin
   // (per item) and keep netlify/functions/_pricing.js PRICES in sync.
   const PRICES = {
-    "solo-weekend-bundle": 79, "couples-weekend-bundle": 145, "budget-bundle": 49, "family-weekend-bundle": 195,
-    "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40, "teton-explorer-65": 40,
+    "solo-weekend-bundle": 79, "couples-weekend-bundle": 145, "family-weekend-bundle": 195,
+    "garmin-inreach": 30, "osprey-aether-65": 40, "teton-explorer-65": 40,
     "bearvault-bv500": 12, "nemo-disco-15": 25, "msr-hubba-tent": 30,
     "winter-traction-kit": 35, "water-filter": 10,
     "osprey-rook-65": 40, "naturehike-cloudup-1": 30, "kelty-cosmic-20": 25,
@@ -297,8 +261,8 @@ window.DATA = (function () {
   // Auth hold amount (USD) per item = YOUR replacement cost. A hold (up to $250)
   // is placed on the card at checkout, released on return. Edit in the admin.
   const DEPOSITS = {
-    "solo-weekend-bundle": 200, "couples-weekend-bundle": 250, "budget-bundle": 150, "family-weekend-bundle": 250,
-    "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80, "teton-explorer-65": 80,
+    "solo-weekend-bundle": 200, "couples-weekend-bundle": 250, "family-weekend-bundle": 250,
+    "garmin-inreach": 100, "osprey-aether-65": 80, "teton-explorer-65": 80,
     "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,
     "winter-traction-kit": 100, "water-filter": 20,
     "osprey-rook-65": 80, "naturehike-cloudup-1": 60, "kelty-cosmic-20": 50,
