@@ -9,7 +9,40 @@
 const { authorizeOrder, captureAuthorization, getOrder } = require("./_paypal");
 const { getSupabase, bookingUpsert } = require("./_supabase");
 const { quoteCents, holdCents } = require("./_pricing");
-const { notifyBooking } = require("./_email");
+const { notifyBooking, notifyDeclinedPayment } = require("./_email");
+
+// Records a failed charge attempt (row stays visible in the admin "All" filter
+// with a "Declined" status instead of vanishing) and alerts the owner by email.
+// Never throws — a notification failure must not mask the original decline.
+async function logDecline(supabase, { orderId, meta, row, rentalCents, holdC, reason }) {
+  if (supabase) {
+    try {
+      await bookingUpsert(supabase, {
+        paypal_order: orderId,
+        item_id: row ? row.item_id : meta.itemId,
+        item_name: row ? row.item_name : meta.name,
+        qty: row ? row.qty : (meta.qty || 1),
+        start_date: row ? row.start_date : (meta.startDate || null),
+        end_date: row ? row.end_date : (meta.endDate || null),
+        amount_cents: rentalCents,
+        hold_cents: holdC,
+        status: "declined",
+        decline_reason: String(reason || "").slice(0, 500)
+      }, { onConflict: "paypal_order" });
+    } catch (_) { /* logging failure must not mask the decline */ }
+  }
+  try {
+    await notifyDeclinedPayment({
+      itemName: row ? row.item_name : meta.name,
+      amountAttempted: rentalCents,
+      holdAttempted: holdC,
+      customerEmail: row ? row.customer_email : null,
+      customerName: row ? (row.renter_name || row.customer_name) : null,
+      orderId,
+      reason
+    });
+  } catch (_) { /* email failure must not mask the decline */ }
+}
 
 exports.handler = async (event) => {
   const orderId = (event.queryStringParameters || {}).orderId ||
@@ -34,15 +67,25 @@ exports.handler = async (event) => {
   const holdC = row ? (row.hold_cents || 0) : await holdCents({ itemId: meta.itemId, qty: meta.qty });
 
   // 1) Authorize (place the hold) — unless the order is already authorized.
+  // This is the step where PayPal's own risk engine and the card issuer decide
+  // to decline: stolen card, insufficient funds for rental+hold, expired card,
+  // etc. We never see or store the card itself — PayPal handles that check.
   let authId = findAuthId(order);
   if (!authId) {
     try {
       const authed = await authorizeOrder(orderId);
       authId = findAuthId(authed);
       order = authed;
-    } catch (e) { return json(502, { error: e.message || "Could not authorize payment." }); }
+    } catch (e) {
+      const reason = e.message || "Could not authorize payment.";
+      await logDecline(supabase, { orderId, meta, row, rentalCents, holdC, reason });
+      return json(502, { error: reason });
+    }
   }
-  if (!authId) return json(502, { error: "No authorization returned by PayPal." });
+  if (!authId) {
+    await logDecline(supabase, { orderId, meta, row, rentalCents, holdC, reason: "No authorization returned by PayPal." });
+    return json(502, { error: "No authorization returned by PayPal." });
+  }
 
   // 2) Capture the rental fee, leaving the deposit held (final_capture only if no hold).
   let captureId = null;
@@ -51,7 +94,11 @@ exports.handler = async (event) => {
       const captured = await captureAuthorization(authId, rentalCents, holdC <= 0);
       captureId = captured ? captured.id : null;
     }
-    catch (e) { return json(502, { error: e.message || "Could not capture the rental fee." }); }
+    catch (e) {
+      const reason = e.message || "Could not capture the rental fee.";
+      await logDecline(supabase, { orderId, meta, row, rentalCents, holdC, reason });
+      return json(502, { error: reason });
+    }
   }
 
   const payer = order.payer || {};

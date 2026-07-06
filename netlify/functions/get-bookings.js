@@ -48,6 +48,10 @@ function fromRow(r) {
     status:          r.status,
     notifiedReadyAt: r.notified_ready_at,
     authorizationId: r.authorization_id,
+    declineReason:   r.decline_reason,
+    capturedHoldCents: r.captured_hold_cents,
+    refundedCents:   r.refunded_cents,
+    refundedAt:      r.refunded_at,
     createdAt:       r.created_at
   };
 }

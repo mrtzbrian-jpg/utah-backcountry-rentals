@@ -1632,7 +1632,14 @@ window.VIEWS = (function () {
     { key: "picked_up", label: "Picked up", icon: "directions_walk",  color: "#061B0E" },
     { key: "returned",  label: "Returned",  icon: "assignment_turned_in", color: "#5C5346" }
   ];
-  function statusMeta(k) { return STATUS_FLOW.find(s => s.key === k) || STATUS_FLOW[0]; }
+  // Terminal / off-pipeline statuses that must never fall back to looking like
+  // a fresh "New" order — a declined charge or a cancellation is not a booking.
+  const STATUS_OTHER = {
+    declined:  { key: "declined",  label: "Declined",  icon: "block",         color: "#ba1a1a" },
+    cancelled: { key: "cancelled", label: "Cancelled",  icon: "cancel",       color: "#737972" },
+    pending:   { key: "pending",   label: "Pending",   icon: "hourglass_empty", color: "#737972" }
+  };
+  function statusMeta(k) { return STATUS_FLOW.find(s => s.key === k) || STATUS_OTHER[k] || STATUS_FLOW[0]; }
   function fmtFullDate(iso) {
     if (!iso) return "Flexible";
     const [y, m, d] = iso.split("-").map(Number);
@@ -1686,25 +1693,34 @@ window.VIEWS = (function () {
             ${o.email ? `<p class="flex items-center gap-1.5 text-earth-brown min-w-0"><span class="material-symbols-outlined text-[15px] text-forest-deep">mail</span><span class="truncate">${esc(o.email)}</span></p>` : ""}
           </div>
 
+          ${o.status === "declined" && o.declineReason ? `<div class="mt-2.5 rounded-lg bg-error-container/40 border border-error/20 px-3 py-2">
+            <p class="text-[12px] font-bold text-error">Decline reason</p>
+            <p class="text-[12px] text-on-surface-variant mt-0.5">${esc(o.declineReason)}</p>
+          </div>` : ""}
+          ${o.refundedCents > 0 ? `<p class="mt-2.5 text-[12px] text-canyon-clay font-semibold flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px]">payments</span>${fmt.money(Math.round(o.refundedCents / 100))} refunded${o.refundedAt ? " · " + new Date(o.refundedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</p>` : ""}
+
           <div class="mt-3 flex flex-wrap gap-2">
-            ${next ? `<button data-action="order-advance" data-id="${o.orderId}" data-status="${next}"
+            ${next && o.status !== "declined" ? `<button data-action="order-advance" data-id="${o.orderId}" data-status="${next}"
               class="bg-forest-deep text-paper-white px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1">
               <span class="material-symbols-outlined text-[16px]">${nextMeta.icon}</span>Mark ${nextMeta.label}</button>` : ""}
-            <button data-action="order-notify" data-id="${o.orderId}"
+            ${o.status !== "declined" ? `<button data-action="order-notify" data-id="${o.orderId}"
               class="border-2 px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 ${notified ? "border-outline-variant text-earth-brown" : "border-canyon-clay text-canyon-clay hover:bg-canyon-clay/5"}">
-              <span class="material-symbols-outlined text-[16px]">${notified ? "mark_chat_read" : "send"}</span>${notified ? "Notify again" : "Gear ready"}</button>
-            <button data-action="work-order" data-id="${o.orderId}"
+              <span class="material-symbols-outlined text-[16px]">${notified ? "mark_chat_read" : "send"}</span>${notified ? "Notify again" : "Gear ready"}</button>` : ""}
+            ${o.status !== "declined" ? `<button data-action="work-order" data-id="${o.orderId}"
               class="border-2 border-forest-deep text-forest-deep px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-granite-wash">
-              <span class="material-symbols-outlined text-[16px]">print</span>Work order</button>
-            ${o.hold > 0 ? `<button data-action="order-void-hold" data-id="${o.orderId}"
+              <span class="material-symbols-outlined text-[16px]">print</span>Work order</button>` : ""}
+            ${o.hold > 0 && o.authorizationId ? `<button data-action="order-void-hold" data-id="${o.orderId}"
               class="border-2 border-secondary text-secondary px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-secondary/5">
               <span class="material-symbols-outlined text-[16px]">lock_open</span>Release hold</button>` : ""}
-            ${o.hold > 0 ? `<button data-action="order-capture-hold" data-id="${o.orderId}"
+            ${o.hold > 0 && o.authorizationId ? `<button data-action="order-capture-hold" data-id="${o.orderId}"
               class="border-2 border-error text-error px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-error/5">
               <span class="material-symbols-outlined text-[16px]">warning</span>Charge damage</button>` : ""}
-            ${o.status !== "cancelled" && o.status !== "returned" ? `<button data-action="order-cancel" data-id="${o.orderId}"
+            ${o.status !== "cancelled" && o.status !== "returned" && o.status !== "declined" ? `<button data-action="order-cancel" data-id="${o.orderId}"
               class="border-2 border-outline-variant text-on-surface-variant px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-surface-container">
               <span class="material-symbols-outlined text-[16px]">cancel</span>Cancel &amp; refund</button>` : ""}
+            ${o.status !== "declined" && o.status !== "pending" ? `<button data-action="order-refund-partial" data-id="${o.orderId}"
+              class="border-2 border-outline-variant text-on-surface-variant px-3 py-2 rounded-lg text-[12px] font-bold tracking-wide press flex items-center gap-1 hover:bg-surface-container">
+              <span class="material-symbols-outlined text-[16px]">payments</span>Partial refund</button>` : ""}
           </div>
           ${notified ? `<p class="text-[11px] text-outline mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">schedule</span>Customer notified ${new Date(o.notifiedReadyAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>` : ""}
         </div>

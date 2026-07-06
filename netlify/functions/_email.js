@@ -296,4 +296,51 @@ async function notifyWaitlistEntry({ email, itemName, startDate, endDate }) {
   });
 }
 
-module.exports = { sendEmail, notifyBooking, notifyReady, notifyReturnReminder, notifyCancellation, notifyReturn, notifyWaitlistEntry };
+// Sent to the owner only, when a card fails at the authorization step (stolen,
+// insufficient funds, expired, etc). The booking never confirms — this is the
+// only record of the attempt outside the admin dashboard's "Declined" filter.
+async function notifyDeclinedPayment(d) {
+  const owner = process.env.OWNER_EMAIL;
+  if (!owner) return { skipped: true };
+  const body = `
+    <p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">
+      A checkout attempt was <strong style="color:#ba1a1a;">declined by the customer's card</strong> and did not go through. No charge was made and no booking was created.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:8px 0 4px;">
+      ${row("Item", esc(d.itemName || "—"))}
+      ${row("Attempted charge", money(d.amountAttempted))}
+      ${d.holdAttempted ? row("Attempted hold", money(d.holdAttempted)) : ""}
+      ${row("Customer", esc(d.customerName || d.customerEmail || "Unknown — never reached PayPal payer step"))}
+      ${row("PayPal order", esc(d.orderId || "—"))}
+    </table>
+    <div style="margin:14px 0 0;padding:12px 14px;background:#ffdad6;border-left:3px solid #ba1a1a;border-radius:4px;">
+      <p style="font-size:13px;color:#93000a;line-height:1.5;margin:0;font-weight:600;">Decline reason (from PayPal):</p>
+      <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:4px 0 0;">${esc(d.reason || "Not specified")}</p>
+    </div>
+    <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">This attempt is logged in your admin dashboard under Orders → All, with a "Declined" status, in case the same customer calls to ask what happened.</p>`;
+  try {
+    return await sendEmail({ to: owner, subject: `⚠️ Payment declined: ${d.itemName || "Gear rental"}`, html: shell("Payment declined", body, "#ba1a1a") });
+  } catch (e) { return { error: e.message }; }
+}
+
+// Sent to the customer confirming a partial refund (damage waiver reduction,
+// goodwill credit, etc) that isn't a full cancellation.
+async function notifyPartialRefund(b) {
+  if (!b.email) return { skipped: true };
+  const ref = "UBR-" + String(b.paypal_order || b.orderId || "").slice(-6).toUpperCase();
+  const body = `
+    <p style="font-size:15px;color:#1b1c1c;line-height:1.5;margin:0 0 14px;">
+      Hi${b.renterName ? ", " + esc(b.renterName) : ""} — we've issued a partial refund to your original payment method for booking <strong>${ref}</strong>.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:8px 0 4px;">
+      ${row("Gear", esc(b.name || "Gear rental"))}
+      ${row("Refund amount", money(b.refundAmount))}
+      ${row("Total refunded so far", money(b.totalRefunded))}
+    </table>
+    <p style="font-size:13px;color:#5C5346;line-height:1.5;margin:14px 0 0;">Refunds typically take 3–5 business days to appear on your statement, depending on your bank. Reply to this email with any questions.</p>`;
+  try {
+    return await sendEmail({ to: b.email, subject: `Partial refund issued — ${ref}`, html: shell("Partial refund issued", body, "#5C5346") });
+  } catch (e) { return { error: e.message }; }
+}
+
+module.exports = { sendEmail, notifyBooking, notifyReady, notifyReturnReminder, notifyCancellation, notifyReturn, notifyWaitlistEntry, notifyDeclinedPayment, notifyPartialRefund };

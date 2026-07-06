@@ -967,20 +967,53 @@
     "order-capture-hold": async (el) => {
       const id = el.dataset.id;
       const o = STATE.orders.find(x => x.orderId === id);
-      const holdAmt = o ? fmt.money(Math.round((o.hold || 0) / 100)) : "the hold";
-      if (!window.confirm(`Charge ${holdAmt} for damage? This captures the auth hold on the customer's card and cannot be undone.`)) return;
+      const holdDollars = o ? Math.round((o.hold || 0) / 100) : 0;
+      const input = window.prompt(
+        `Charge how much for damage? Enter a dollar amount up to the full $${holdDollars} hold. Anything you don't charge is automatically released back to the customer.`,
+        String(holdDollars)
+      );
+      if (input === null) return; // cancelled
+      const dollars = parseFloat(input);
+      if (!Number.isFinite(dollars) || dollars <= 0) { toast("Enter a valid amount", "error"); return; }
+      if (dollars > holdDollars) { toast(`Can't charge more than the $${holdDollars} hold`, "error"); return; }
+      const amountCents = Math.round(dollars * 100);
+      if (!window.confirm(`Charge ${fmt.money(dollars)} for damage${amountCents < (o?.hold || 0) ? ` (releasing the remaining $${(holdDollars - dollars).toFixed(2)})` : ""}? This cannot be undone.`)) return;
       const cfg = window.UBR_CONFIG || {};
-      toast("Capturing damage hold…", "warning");
+      toast("Capturing damage charge…", "warning");
       try {
         const r = await fetch(cfg.FUNCTIONS_BASE + "/capture-hold", {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-admin-passcode": adminPass() },
-          body: JSON.stringify({ orderId: id })
+          body: JSON.stringify({ orderId: id, amountCents })
         });
         const d = await r.json();
         if (!r.ok) { toast(d.error || "Capture failed", "error"); return; }
         if (o) { o.hold = 0; o.status = "returned"; render(); }
-        toast("Hold captured — customer charged for damage", "warning");
+        toast(`Charged ${fmt.money(dollars)} for damage`, "warning");
+      } catch (e) { toast("Network error", "error"); }
+    },
+
+    "order-refund-partial": async (el) => {
+      const id = el.dataset.id;
+      const o = STATE.orders.find(x => x.orderId === id);
+      const rentalDollars = o ? Math.round((o.amount || 0) / 100) : 0;
+      const input = window.prompt(`Refund how much to the customer's card? (Rental charge was $${rentalDollars})`, "");
+      if (input === null) return;
+      const dollars = parseFloat(input);
+      if (!Number.isFinite(dollars) || dollars <= 0) { toast("Enter a valid amount", "error"); return; }
+      const amountCents = Math.round(dollars * 100);
+      if (!window.confirm(`Refund ${fmt.money(dollars)} to the customer's original payment method? This cannot be undone.`)) return;
+      const cfg = window.UBR_CONFIG || {};
+      toast("Processing refund…", "undo");
+      try {
+        const r = await fetch(cfg.FUNCTIONS_BASE + "/refund-partial", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-admin-passcode": adminPass() },
+          body: JSON.stringify({ orderId: id, amountCents })
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error || "Refund failed", "error"); return; }
+        toast(`Refunded ${fmt.money(dollars)}`, "check_circle");
       } catch (e) { toast("Network error", "error"); }
     },
 
