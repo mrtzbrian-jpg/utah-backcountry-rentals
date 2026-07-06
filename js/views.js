@@ -918,6 +918,7 @@ window.VIEWS = (function () {
   /* ---------- PACK BUILDER ---------- */
 
   function builder() {
+    const serif = "font-family:'Fraunces',Georgia,serif;";
     const all = window.CATALOG.gear();
     // The TETON Explorer 65L is the guaranteed foundation of every custom pack.
     // Resolve from the live catalog first, else fall back to the built-in object
@@ -942,130 +943,194 @@ window.VIEWS = (function () {
     const hold = Math.min(deposit, 250);
     const nonBaseCount = [...chosen.values()].reduce((s, n) => s + n, 0);
     const totalItems = 1 + nonBaseCount;
-    const fillPct = Math.min(1, nonBaseCount / 8);
-    const pct = Math.round(fillPct * 100);
+    const MAX_REC_WEIGHT = 45;
+    const weightPct = Math.min(100, (weight / MAX_REC_WEIGHT) * 100);
+    const overWeight = weight > MAX_REC_WEIGHT;
 
     const pills = cats.map(c => {
       const on = c === cat;
-      return `<button data-action="pack-cat" data-cat="${c}" class="shrink-0 px-4 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press ${on ? "bg-forest-deep text-paper-white inner-shadow-stamped" : "bg-paper-white border border-outline-variant text-forest-deep hover:bg-granite-wash"}">${c}</button>`;
+      return `<button data-action="pack-cat" data-cat="${c}" class="shrink-0 px-5 py-2 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap press ${on ? "bg-forest-deep text-paper-white" : "bg-transparent text-earth-brown hover:bg-granite-wash"}">${c}</button>`;
     }).join("");
 
-    // Drag-and-drop gear cards — compact so the pack stays visible while dragging
-    const dragCards = lib.map(x => {
+    // Group the gear library by category — "All" shows every group stacked
+    // (first-seen order); a specific tab shows just that one group.
+    let groups;
+    if (cat === "All") {
+      const order = [], byCat = {};
+      addable.forEach(g => {
+        const c = g.category || "Gear";
+        if (!byCat[c]) { byCat[c] = []; order.push(c); }
+        byCat[c].push(g);
+      });
+      groups = order.map(name => ({ name, items: byCat[name] }));
+    } else {
+      groups = [{ name: cat, items: lib }];
+    }
+
+    function gearRow(x) {
       const count = chosen.get(x.id) || 0;
       const stock = x.quantity != null ? x.quantity : 1;
       const outOfStock = stock <= 0;
       const atMax = count >= stock;
+      const disabled = outOfStock || atMax;
+      const label = outOfStock ? "Out of Stock" : (atMax ? "Max in Pack" : "Add to Pack");
       return `
-      <div class="pack-card relative bg-paper-white rounded-lg border ${count ? "border-canyon-clay ring-1 ring-canyon-clay" : "border-outline-variant"} overflow-hidden flex flex-col select-none ${outOfStock ? "opacity-45" : "cursor-grab active:cursor-grabbing"}"
-        draggable="${outOfStock ? "false" : "true"}" data-pack-drag="${x.id}" data-stock="${stock}">
-        <div class="relative aspect-[4/3] bg-surface-container flex items-center justify-center p-2.5" data-action="view" data-id="${x.id}" title="Tap to see photo &amp; details">
-          <div class="w-full h-full pointer-events-none">${window.GEAR_ICONS.get(x.graphic)}</div>
-          ${count ? `<span class="absolute top-1 right-1 bg-canyon-clay text-paper-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center shadow">${count}</span>` : `<span class="absolute top-1 left-1 bg-paper-white/85 text-outline rounded-full w-[18px] h-[18px] flex items-center justify-center"><span class="material-symbols-outlined text-[12px]">drag_indicator</span></span>`}
-          ${outOfStock ? `<span class="absolute inset-x-0 bottom-0 bg-forest-deep/85 text-paper-white text-[8px] font-bold uppercase tracking-wide text-center py-0.5">Out of stock</span>` : ""}
+      <div class="flex gap-4 sm:gap-5 bg-paper-white p-4 rounded-xl border border-outline-variant items-center ${outOfStock ? "opacity-50" : ""}">
+        <div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-lg overflow-hidden bg-granite-wash relative cursor-pointer" data-action="view" data-id="${x.id}" title="Tap to see photo &amp; details">
+          <img src="${imageFor(x, 240)}" alt="${x.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover"/>
+          <span class="gear-fallback-icon material-symbols-outlined opacity-0 absolute inset-0 flex items-center justify-center text-[32px]" style="color:${x.tint};font-variation-settings:'FILL' 1;">${x.icon}</span>
         </div>
-        <div class="px-1.5 pt-1">
-          <p class="text-[10px] font-bold text-forest-deep leading-tight line-clamp-1">${x.name}</p>
-          <p class="text-[10px] text-canyon-clay font-bold leading-tight">${fmt.money(x.price)}</p>
-        </div>
-        <div class="flex items-center justify-between px-1.5 pb-1.5 pt-1 gap-1">
-          <button data-action="pack-remove" data-id="${x.id}" class="w-5 h-5 rounded-full bg-surface-container press flex items-center justify-center text-earth-brown ${count ? "" : "opacity-30 pointer-events-none"}">
-            <span class="material-symbols-outlined text-[13px]">remove</span>
-          </button>
-          <span class="text-[11px] font-bold w-3 text-center text-forest-deep">${count}</span>
-          <button data-action="pack-add" data-id="${x.id}" class="w-5 h-5 rounded-full bg-forest-deep text-on-primary press flex items-center justify-center ${atMax ? "opacity-30 pointer-events-none" : ""}" title="${atMax ? "Only " + stock + " in stock" : ""}">
-            <span class="material-symbols-outlined text-[13px]">add</span>
-          </button>
+        <div class="flex-grow min-w-0">
+          <div class="flex justify-between gap-2">
+            <h4 style="${serif}" class="text-forest-deep font-medium text-[16px] sm:text-[18px] leading-tight">${x.name}</h4>
+            <span class="text-canyon-clay font-bold text-[14px] shrink-0">${fmt.money(x.price)}</span>
+          </div>
+          <p class="text-[12px] text-earth-brown mt-1 mb-3 line-clamp-1">${w(x) ? w(x) + " lbs" : ""}${w(x) && x.tagline ? " • " : ""}${x.tagline || ""}</p>
+          <div class="flex items-center gap-2">
+            <button data-action="pack-add" data-id="${x.id}"
+              class="px-3.5 py-2 rounded-md text-[12px] font-bold tracking-wide flex items-center gap-1.5 transition-colors ${disabled ? "bg-granite-wash text-outline pointer-events-none" : "bg-paper-white border border-forest-deep text-forest-deep hover:bg-forest-deep hover:text-paper-white"}">
+              <span class="material-symbols-outlined text-[15px]">${disabled ? "block" : "add"}</span>${label}
+            </button>
+            ${count > 0 ? `<span class="text-[11px] font-bold text-forest-deep">${count} in pack</span>` : ""}
+          </div>
         </div>
       </div>`;
-    }).join("");
+    }
 
-    // Packed items chips (non-base only — the base pack is shown in the foundation card)
-    const packedChips = [];
+    const groupsHtml = groups.map(g => `
+      <div class="mb-10 last:mb-0">
+        <h3 class="text-[12px] font-bold text-canyon-clay tracking-[0.15em] uppercase mb-4">${g.name}</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${g.items.length ? g.items.map(gearRow).join("") : `<p class="text-[13px] text-outline italic">Nothing here yet.</p>`}
+        </div>
+      </div>`).join("");
+
+    // Sidebar cart lines: foundation first (not removable), then added gear
+    const cartLines = [`
+      <div class="flex items-center gap-3">
+        <div class="w-14 h-14 rounded-lg overflow-hidden bg-granite-wash shrink-0 relative">
+          <img src="${imageFor(base, 150)}" alt="${base.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover"/>
+          <span class="gear-fallback-icon material-symbols-outlined opacity-0 absolute inset-0 flex items-center justify-center text-[22px]" style="color:${base.tint};font-variation-settings:'FILL' 1;">${base.icon}</span>
+        </div>
+        <div class="flex-grow min-w-0">
+          <h4 style="${serif}" class="text-forest-deep text-[14px] font-medium leading-tight line-clamp-1">${base.name}</h4>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-[11px] text-outline uppercase tracking-wide font-semibold">Foundation</span>
+            <span class="text-[12px] font-bold text-canyon-clay">${fmt.money(base.price)}</span>
+          </div>
+        </div>
+      </div>`];
     chosen.forEach((count, id) => {
       const g = window.CATALOG.get(id); if (!g) return;
-      packedChips.push(`<span class="inline-flex items-center gap-1 bg-canyon-clay/10 text-canyon-clay text-[12px] font-semibold px-2.5 py-1 rounded-full fly-in">
-        ${count > 1 ? count + "× " : ""}${g.name}
-        <button data-action="pack-remove-all" data-id="${id}" class="press ml-0.5 opacity-60 hover:opacity-100"><span class="material-symbols-outlined text-[13px]">close</span></button>
-      </span>`);
+      cartLines.push(`
+      <div class="flex items-center gap-3 group">
+        <div class="w-14 h-14 rounded-lg overflow-hidden bg-granite-wash shrink-0 relative">
+          <img src="${imageFor(g, 150)}" alt="${g.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover"/>
+          <span class="gear-fallback-icon material-symbols-outlined opacity-0 absolute inset-0 flex items-center justify-center text-[22px]" style="color:${g.tint};font-variation-settings:'FILL' 1;">${g.icon}</span>
+        </div>
+        <div class="flex-grow min-w-0">
+          <h4 style="${serif}" class="text-forest-deep text-[14px] font-medium leading-tight line-clamp-1">${count > 1 ? count + "× " : ""}${g.name}</h4>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-[11px] text-outline">${w(g) ? w(g) + " lbs" : ""}</span>
+            <span class="text-[12px] font-bold text-canyon-clay">${fmt.money(g.price * count)}</span>
+          </div>
+        </div>
+        <button data-action="pack-remove-all" data-id="${id}" class="material-symbols-outlined text-outline-variant hover:text-error transition-colors p-1 shrink-0" title="Remove">delete</button>
+      </div>`);
     });
 
     const inner = `
       ${topBar({ title: "Build Your Pack", back: true, trailing: `<button data-action="pack-reset" class="text-[13px] text-earth-brown press px-2">Reset</button>` })}
-      <main class="flex-grow max-w-container-max mx-auto w-full pb-[200px]">
+      <main class="flex-grow max-w-container-max mx-auto w-full px-4 sm:px-6 pb-16">
 
-        <!-- Foundation: TETON is always included -->
-        <section class="px-4 sm:px-6 mt-5">
-          <div class="rounded-2xl border border-outline-variant bg-paper-white overflow-hidden flex items-stretch">
-            <div class="w-28 sm:w-36 shrink-0 bg-surface-container relative">
-              <img src="${imageFor(base, 400)}" alt="${base.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-contain p-2"/>
-              <span class="gear-fallback-icon material-symbols-outlined opacity-0 absolute inset-0 flex items-center justify-center text-[44px]" style="color:${base.tint};font-variation-settings:'FILL' 1;">${base.icon}</span>
-            </div>
-            <div class="flex-1 p-4 flex flex-col justify-center min-w-0">
-              <span class="inline-flex items-center gap-1 self-start text-[10px] font-bold tracking-[0.12em] uppercase text-canyon-clay"><span class="material-symbols-outlined text-[14px]">verified</span>Your foundation</span>
-              <h2 class="font-heading text-headline-sm text-forest-deep leading-tight mt-1">${base.name}</h2>
-              <p class="text-[12px] text-earth-brown leading-snug mt-0.5 line-clamp-2">${base.tagline || "Adjustable, unisex fit"}</p>
-              <p class="text-[12px] font-bold text-forest-deep mt-1.5">${fmt.money(base.price)} <span class="text-canyon-clay">· always included</span></p>
-            </div>
-          </div>
+        <!-- Hero -->
+        <section class="max-w-2xl pt-6 pb-9 sm:pb-12">
+          <h1 style="${serif}" class="text-forest-deep font-bold text-[30px] sm:text-[42px] leading-[1.1] mb-3">Build Your Pack</h1>
+          <p class="text-earth-brown text-[15px] sm:text-body-lg leading-relaxed">Every custom pack starts with the TETON Explorer 65 as its foundation. Add exactly the gear you need for your trip, watch the weight update live, and reserve it all in one booking.</p>
         </section>
 
-        <!-- Fill your pack (drop zone + gear grid) -->
-        <section class="px-4 sm:px-6 mt-7">
-          <h2 class="font-heading text-headline-sm text-forest-deep">Fill your pack</h2>
-          <p class="text-[13px] text-earth-brown mt-0.5">Drag gear onto the pack — or tap <strong class="text-forest-deep">+</strong> to add it.</p>
+        <div class="flex flex-col lg:flex-row gap-8 lg:gap-10 relative">
+          <!-- Main column -->
+          <div class="flex-grow lg:w-2/3 space-y-14">
 
-          <!-- Animated drop zone -->
-          <div class="mt-5 flex flex-col items-center">
-            <div class="relative flex items-center justify-center">
-              <div class="pack-halo" style="opacity:${(0.12 + fillPct * 0.8).toFixed(2)};transform:scale(${(0.85 + fillPct * 0.25).toFixed(2)})"></div>
-              <div id="pack-zone" class="relative w-40 h-52 ${nonBaseCount ? "" : "pack-idle"} cursor-pointer" title="Drop gear here">
-                ${ART.tetonPackSvg(fillPct, nonBaseCount)}
+            <!-- Step 1: Foundation -->
+            <div>
+              <div class="flex items-center gap-3 mb-6">
+                <span style="${serif}" class="flex items-center justify-center w-9 h-9 rounded-full bg-forest-deep text-paper-white font-bold shrink-0">1</span>
+                <h2 style="${serif}" class="text-forest-deep font-semibold text-[21px] sm:text-[25px]">The Foundation</h2>
+              </div>
+              <div class="bg-paper-white rounded-2xl overflow-hidden border border-outline-variant max-w-sm">
+                <div class="aspect-square relative bg-granite-wash">
+                  <img src="${imageFor(base, 500)}" alt="${base.name}" loading="lazy" onerror="imgFallback(this)" class="absolute inset-0 w-full h-full object-cover"/>
+                  <span class="gear-fallback-icon material-symbols-outlined opacity-0 absolute inset-0 flex items-center justify-center text-[64px]" style="color:${base.tint};font-variation-settings:'FILL' 1;">${base.icon}</span>
+                  <span class="absolute top-3 right-3 bg-forest-deep/90 text-paper-white px-3 py-1 rounded text-[11px] font-bold uppercase tracking-wide">65L Capacity</span>
+                </div>
+                <div class="p-5">
+                  <div class="flex justify-between items-start mb-3 gap-2">
+                    <h3 style="${serif}" class="text-forest-deep font-semibold text-[19px] leading-tight">${base.name}</h3>
+                    <span class="text-canyon-clay font-bold text-[17px] shrink-0">${fmt.money(base.price)}<span class="text-[11px] text-outline font-normal">/trip</span></span>
+                  </div>
+                  <div class="flex gap-4 mb-5">
+                    <span class="flex items-center gap-1.5 text-earth-brown text-[12px]"><span class="material-symbols-outlined text-[16px]">scale</span>${w(base)} lbs</span>
+                    <span class="flex items-center gap-1.5 text-earth-brown text-[12px]"><span class="material-symbols-outlined text-[16px]">terrain</span>Multi-day</span>
+                  </div>
+                  <div class="w-full py-3 bg-forest-deep/[0.07] border border-forest-deep/20 text-forest-deep rounded-lg font-bold text-[13px] tracking-wide flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-[17px]">check_circle</span>Included With Every Pack
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Fill bar + live stats -->
-            <div class="w-56 max-w-full mt-4">
-              <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
-                <span class="${nonBaseCount ? "text-forest-deep" : "text-outline"}">${nonBaseCount ? nonBaseCount + " item" + (nonBaseCount !== 1 ? "s" : "") + " packed" : "Empty — add gear"}</span>
-                <span class="text-canyon-clay">${weight.toFixed(1)} lbs</span>
+            <!-- Step 2: Equip -->
+            <div>
+              <div class="flex items-center gap-3 mb-6">
+                <span style="${serif}" class="flex items-center justify-center w-9 h-9 rounded-full bg-forest-deep text-paper-white font-bold shrink-0">2</span>
+                <h2 style="${serif}" class="text-forest-deep font-semibold text-[21px] sm:text-[25px]">Equip Your Journey</h2>
               </div>
-              <div class="h-2.5 rounded-full bg-granite-wash overflow-hidden">
-                <div class="h-full rounded-full bg-gradient-to-r from-canyon-clay to-[#d24a12] transition-all duration-500 ease-out" style="width:${Math.max(pct, nonBaseCount ? 6 : 0)}%"></div>
-              </div>
+              <div class="flex flex-wrap gap-2 mb-8 border-b border-outline-variant pb-5 -mx-1 px-1 overflow-x-auto no-scrollbar">${pills}</div>
+              ${groupsHtml}
             </div>
-
-            ${packedChips.length
-              ? `<div class="mt-4 flex flex-wrap gap-2 justify-center max-w-md">${packedChips.join("")}</div>`
-              : ""}
           </div>
 
-          <!-- Category filter -->
-          <div class="flex gap-2 overflow-x-auto no-scrollbar mt-6 -mx-4 sm:-mx-6 px-4 sm:px-6">${pills}</div>
+          <!-- Sidebar summary -->
+          <aside class="lg:w-1/3">
+            <div class="lg:sticky lg:top-24 bg-paper-white p-6 sm:p-7 rounded-2xl border border-outline-variant shadow-[0_16px_40px_-16px_rgba(6,27,14,0.18)]">
+              <h3 style="${serif}" class="text-forest-deep font-semibold text-[20px] mb-5 pb-4 border-b border-outline-variant">Pack Summary</h3>
 
-          <!-- Gear drag grid -->
-          <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 mt-3">${dragCards}</div>
-        </section>
-      </main>
+              <div class="space-y-4 mb-6 max-h-[360px] overflow-y-auto pr-1">${cartLines.join("")}</div>
 
-      <div class="fixed bottom-0 inset-x-0 z-40 bg-paper-white border-t-2 border-granite-wash safe-bottom">
-        <div class="max-w-container-max mx-auto px-4 sm:px-6 pt-3">
-          <div class="flex items-center justify-between mb-2">
-            <div class="text-[12px] text-earth-brown">
-              <p class="font-bold text-forest-deep">${totalItems} item${totalItems !== 1 ? "s" : ""} in your bundle</p>
-              ${weight ? `<p>${weight.toFixed(1)} lbs${hold ? ` · ${fmt.money(hold)} hold` : ""}</p>` : (hold ? `<p>${fmt.money(hold)} refundable hold</p>` : "")}
+              <div class="space-y-5 pt-2">
+                <div>
+                  <div class="flex justify-between text-[12px] font-bold mb-1.5">
+                    <span class="text-forest-deep">Total Weight</span>
+                    <span class="${overWeight ? "text-error" : "text-earth-brown"}">${weight.toFixed(1)} lbs</span>
+                  </div>
+                  <div class="h-2 bg-granite-wash rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500 ${overWeight ? "bg-error" : "bg-forest-deep"}" style="width:${weightPct}%"></div>
+                  </div>
+                  <div class="flex justify-between text-[10px] text-outline uppercase tracking-wider mt-1.5">
+                    <span>Lighter</span><span>Max Rec: ${MAX_REC_WEIGHT} lbs</span>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-center bg-granite-wash/60 p-4 rounded-lg">
+                  <div>
+                    <p class="text-[11px] text-outline uppercase tracking-wide font-semibold">Rental Total</p>
+                    <p style="${serif}" class="text-canyon-clay font-bold text-[27px] leading-tight">${fmt.money(price)}</p>
+                  </div>
+                  ${hold ? `<span class="text-[11px] text-earth-brown text-right leading-snug">${fmt.money(hold)}<br/>refundable hold</span>` : ""}
+                </div>
+
+                <button data-action="continue-pack"
+                  class="w-full py-3.5 bg-canyon-clay text-paper-white rounded-xl font-bold text-[14px] tracking-wide press hover:brightness-105 transition-all shadow-lg flex items-center justify-center gap-2">
+                  Review &amp; Book Pack <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </button>
+                <p class="text-center text-[11px] text-outline">${totalItems} item${totalItems !== 1 ? "s" : ""} · deposit calculated at checkout</p>
+              </div>
             </div>
-            <div class="text-right">
-              <p class="text-[11px] text-outline uppercase tracking-wider font-semibold">Rental total</p>
-              <p class="font-heading text-headline-md text-forest-deep leading-none">${fmt.money(price)}</p>
-            </div>
-          </div>
-          <button data-action="continue-pack"
-            class="w-full rounded-lg py-3.5 text-[14px] font-bold tracking-wide text-on-secondary press inner-shadow-stamped flex items-center justify-center gap-2 bg-canyon-clay hover:brightness-105">
-            Continue to Dates <span class="material-symbols-outlined text-[20px]">calendar_month</span>
-          </button>
+          </aside>
         </div>
-      </div>`;
+      </main>`;
     return `<div class="view-enter min-h-screen flex flex-col">${inner}</div>`;
   }
 
