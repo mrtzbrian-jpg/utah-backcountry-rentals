@@ -22,7 +22,7 @@ exports.handler = async (event) => {
   const { data: row, error: fetchErr } = await supabase
     .from("bookings")
     .select("authorization_id, hold_cents, status")
-    .eq("id", orderId)
+    .eq("paypal_order", orderId)
     .single();
 
   if (fetchErr || !row) return json(404, { error: "Booking not found" });
