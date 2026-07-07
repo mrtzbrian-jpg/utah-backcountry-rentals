@@ -325,7 +325,29 @@ window.VIEWS = (function () {
               </div>`).join("")}
           </section>
 
-          <!-- Visiting Utah / tourist section — compact strip -->
+          <!-- Budget statement header — above bundles -->
+          ${!search ? `<section class="mt-8 mb-2 text-center px-2">
+            <p class="text-[11px] font-bold tracking-[0.18em] uppercase text-canyon-clay mb-2">Real gear · real adventures</p>
+            <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(28px,6vw,48px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;"
+              class="text-forest-deep">We Keep It Budget<br/><span style="color:#ab3500;">Around Here.</span></h2>
+            <p class="text-body-md text-earth-brown mt-3 max-w-md mx-auto">Full backpacking kits from $79 — spend your money on the trip, not the gear store.</p>
+          </section>` : ""}
+
+          <!-- Featured bundles showcase -->
+          ${!search && bundles.length > 0 ? `<section id="bundles" class="mt-6 scroll-mt-20">
+            <div class="flex items-end justify-between mb-1">
+              <div>
+                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-canyon-clay">Curated &amp; ready to go</p>
+                <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
+              </div>
+            </div>
+            <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork, no overpaying — budget-friendly gear for your trip, packed as one booking.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
+              ${bundles.map(b => bundleMiniCard(b)).join("")}
+            </div>
+          </section>` : ""}
+
+          <!-- Visiting Utah / tourist section — compact strip, below bundles -->
           ${!search ? `<section class="mt-8">
             <div class="rounded-2xl border border-outline-variant bg-paper-white overflow-hidden">
               <div class="flex items-center gap-3 px-4 py-3 border-b border-outline-variant" style="background:linear-gradient(90deg,rgba(6,27,14,0.92),rgba(6,27,14,0.78));">
@@ -348,28 +370,6 @@ window.VIEWS = (function () {
                     <p class="text-[10px] text-earth-brown leading-tight">${sub}</p>
                   </div>`).join("")}
               </div>
-            </div>
-          </section>` : ""}
-
-          <!-- Budget statement header — above bundles -->
-          ${!search ? `<section class="mt-10 mb-2 text-center px-2">
-            <p class="text-[11px] font-bold tracking-[0.18em] uppercase text-canyon-clay mb-2">Walmart &amp; Amazon gear · real adventures</p>
-            <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(28px,6vw,48px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;"
-              class="text-forest-deep">We Keep It Budget<br/><span style="color:#ab3500;">Around Here.</span></h2>
-            <p class="text-body-md text-earth-brown mt-3 max-w-md mx-auto">Full backpacking kits from $79 — sourced from Walmart and Amazon so you spend your money on the trip, not the gear store.</p>
-          </section>` : ""}
-
-          <!-- Featured bundles showcase -->
-          ${!search && bundles.length > 0 ? `<section id="bundles" class="mt-6 scroll-mt-20">
-            <div class="flex items-end justify-between mb-1">
-              <div>
-                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-canyon-clay">Curated &amp; ready to go</p>
-                <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
-              </div>
-            </div>
-            <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork, no overpaying — budget-friendly gear for your trip, packed as one booking.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
-              ${bundles.map(b => bundleMiniCard(b)).join("")}
             </div>
           </section>` : ""}
 
