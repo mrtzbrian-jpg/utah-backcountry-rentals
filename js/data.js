@@ -27,17 +27,19 @@ window.DATA = (function () {
         { id: "sawyer-squeeze",       qty: 1 },
         { id: "headlamp-200l",        qty: 1 },
         { id: "brs-stove-kit",        qty: 1 },
-        { id: "titanium-cookpot",     qty: 1 }
+        { id: "titanium-cookpot",     qty: 1 },
+        { id: "trail-essentials",     qty: 1 }
       ],
       includes: [
         "Budget 50L Hiking Pack (Walmart)",
         "Ozark Trail 2-Person Backpacking Tent ($80 Walmart)",
         "30°F Mummy Sleeping Bag (Walmart)",
         "Foam Sleeping Pad (Walmart)",
-        "Sawyer Squeeze Water Filter (Walmart ~$35)",
+        "Sawyer Squeeze Water Filter + 2 squeeze pouches (Walmart)",
         "200-Lumen Headlamp + batteries (Walmart)",
-        "BRS-3000T Ultralight Stove + isobutane fuel (Amazon)",
-        "Titanium Cookpot 750ml + lid (Amazon)"
+        "BRS-3000T Ultralight Stove + isobutane fuel + lighter (Amazon)",
+        "Titanium Cookpot 750ml + lid + camp spork (Amazon)",
+        "Trail Safety Kit: first aid, space blanket, knife, whistle, trowel, LNT waste bags"
       ]
     },
     {
@@ -61,17 +63,19 @@ window.DATA = (function () {
         { id: "sawyer-squeeze",       qty: 1 },
         { id: "headlamp-200l",        qty: 2 },
         { id: "brs-stove-kit",        qty: 1 },
-        { id: "titanium-cookpot",     qty: 1 }
+        { id: "titanium-cookpot",     qty: 1 },
+        { id: "trail-essentials",     qty: 1 }
       ],
       includes: [
         "2× Budget 50L Hiking Packs",
         "Ozark Trail 2-Person Backpacking Tent",
         "2× 30°F Mummy Sleeping Bags",
         "2× Foam Sleeping Pads",
-        "Sawyer Squeeze Water Filter",
+        "Sawyer Squeeze Water Filter + 2 squeeze pouches",
         "2× 200-Lumen Headlamps",
-        "BRS-3000T Ultralight Stove + isobutane fuel",
-        "Titanium Cookpot 750ml"
+        "BRS-3000T Ultralight Stove + isobutane fuel + lighter",
+        "Titanium Cookpot 750ml + lid + 2× camp sporks",
+        "Trail Safety Kit: first aid, space blanket, knife, whistle, trowel, LNT waste bags"
       ]
     },
     {
@@ -94,9 +98,10 @@ window.DATA = (function () {
         { id: "ozark-sleeping-bag",   qty: 4 },
         { id: "foam-sleep-pad",       qty: 4 },
         { id: "sawyer-squeeze",       qty: 1 },
-        { id: "headlamp-200l",        qty: 3 },
+        { id: "headlamp-200l",        qty: 4 },
         { id: "brs-stove-kit",        qty: 1 },
-        { id: "titanium-cookpot",     qty: 1 }
+        { id: "titanium-cookpot",     qty: 1 },
+        { id: "trail-essentials",     qty: 1 }
       ],
       includes: [
         "2× Budget 50L Adult Hiking Packs",
@@ -104,10 +109,11 @@ window.DATA = (function () {
         "2× Ozark Trail 2-Person Tents",
         "4× 30°F Mummy Sleeping Bags",
         "4× Foam Sleeping Pads",
-        "Sawyer Squeeze Water Filter",
-        "3× 200-Lumen Headlamps",
-        "BRS-3000T Ultralight Stove + isobutane fuel",
-        "Titanium Cookpot 750ml"
+        "Sawyer Squeeze Water Filter + 2 squeeze pouches",
+        "4× 200-Lumen Headlamps (one per person)",
+        "BRS-3000T Ultralight Stove + isobutane fuel + lighter",
+        "Titanium Cookpot 750ml + lid + 4× camp sporks",
+        "Trail Safety Kit: first aid, space blanket, knife, whistle, trowel, LNT waste bags"
       ]
     },
 
@@ -201,28 +207,50 @@ window.DATA = (function () {
       name: "BRS-3000T Stove + Fuel",
       category: "Cooking",
       tagline: "Ultralight titanium stove — boils water in 3 min, weighs less than a AA battery",
-      desc: "The BRS-3000T ultralight titanium canister stove (Amazon, ~$16), paired with a 100g isobutane/propane fuel canister. Folds to the size of a matchbox. Perfect for one or two people.",
+      desc: "The BRS-3000T ultralight titanium canister stove (Amazon, ~$16), paired with a 100g isobutane/propane fuel canister and a lighter. Folds to the size of a matchbox. Perfect for one or two people.",
       price: 8,
       unit: "day",
       perDay: 8,
       weight: 0.2,
       icon: "outdoor_grill",
       tint: "#ab3500",
-      includes: ["BRS-3000T titanium canister stove", "100g isobutane fuel canister", "Protective case"]
+      includes: ["BRS-3000T titanium canister stove", "100g isobutane fuel canister", "Lighter + waterproof matches", "Protective case"]
     },
     {
       id: "titanium-cookpot",
-      name: "Titanium Cookpot 750ml",
+      name: "Titanium Cookpot + Utensils",
       category: "Cooking",
-      tagline: "Lightweight titanium pot with lid — boils 2 freeze-dried meals at once",
-      desc: "Budget titanium 750ml cookpot from Amazon. Lightweight, folding handles, vented lid that doubles as a strainer. Fits perfectly over the BRS-3000T stove.",
+      tagline: "Lightweight titanium pot with lid and camp spork — ready to eat",
+      desc: "Budget titanium 750ml cookpot from Amazon with vented lid/strainer, folding handles, and a camp spork. Everything you need to cook and eat a backcountry meal.",
       price: 5,
       unit: "day",
       perDay: 5,
-      weight: 0.3,
+      weight: 0.4,
       icon: "soup_kitchen",
       tint: "#5d6b46",
-      includes: ["Titanium 750ml pot", "Vented lid / strainer", "Folding handles"]
+      includes: ["Titanium 750ml pot", "Vented lid / strainer", "Folding handles", "Camp spork"]
+    },
+    {
+      id: "trail-essentials",
+      name: "Trail Safety & Essentials Kit",
+      category: "Safety",
+      tagline: "First aid, emergency shelter, knife, fire starter, LNT — the 10 Essentials covered",
+      desc: "Covers every REI safety category your pack can't go without: 100-piece first aid kit, emergency space blanket, folding knife, safety whistle, trowel, Leave No Trace waste bags, and duct tape for gear repair. Everything packed in a single ditty bag.",
+      price: 5,
+      unit: "day",
+      perDay: 5,
+      weight: 1.2,
+      icon: "health_and_safety",
+      tint: "#ba1a1a",
+      includes: [
+        "100-piece first aid kit (Walmart ~$10)",
+        "Emergency space blanket 2-pack (Walmart ~$3)",
+        "Folding knife / multi-tool (Walmart ~$10)",
+        "Safety whistle",
+        "Trowel for cat holes",
+        "Leave No Trace waste bags (3-pack)",
+        "Duct tape 6ft roll (gear repair)"
+      ]
     },
     {
       id: "headlamp-200l",
@@ -318,6 +346,9 @@ window.DATA = (function () {
       tips: ["Shield from wind — even a light breeze triples boil time", "Simmer by slightly lifting the pot off the burner"] },
     { id: "titanium-cookpot", name: "Titanium Cookpot 750ml", cat: "Cooking", weight: 0.3, perDay: 5, icon: "soup_kitchen", tint: "#5d6b46",
       spec: "750ml · titanium · folding handles · vented lid / strainer" },
+    { id: "trail-essentials", name: "Trail Safety & Essentials Kit", cat: "Safety", weight: 1.2, perDay: 5, icon: "health_and_safety", tint: "#ba1a1a",
+      spec: "First aid · space blanket · knife · whistle · trowel · LNT bags · duct tape",
+      tips: ["Keep the first aid kit at the top of your pack for quick access", "The space blanket is also a signaling device — shiny side reflects sunlight"] },
     { id: "trekking-poles", name: "Collapsible Trekking Poles", cat: "Extras", weight: 1.1, perDay: 6, icon: "hiking", tint: "#4a4a4a",
       spec: "Aluminum · adjustable 95–135cm · EVA foam grips",
       tips: ["Shorten poles going uphill, lengthen going downhill", "Poles reduce knee strain by ~25% on descents"] },
@@ -370,6 +401,7 @@ window.DATA = (function () {
     "trekking-poles":         6,
     "garmin-inreach":         30,
     "bear-canister":          5,
+    "trail-essentials":       5,
     "winter-traction-kit":    35
   };
 
@@ -391,6 +423,7 @@ window.DATA = (function () {
     "trekking-poles":         25,
     "garmin-inreach":         100,
     "bear-canister":          85,
+    "trail-essentials":       45,
     "winter-traction-kit":    100
   };
 
