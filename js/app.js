@@ -61,6 +61,8 @@
     orders: [],
     ordersFilter: "upcoming",
     ordersLoading: false,
+    inPersonMode: false,
+    inPersonBusy: false,
     adminAuthed: sessionStorage.getItem("ubr:admin") === "1",
     blockedDates: [],   // ISO dates the owner has blocked
     businessInfo: {},   // phone, email, hours, address
@@ -965,6 +967,93 @@
     /* ---- admin: Orders dashboard ---- */
     "orders-filter": (el) => { STATE.ordersFilter = el.dataset.filter; loadOrders(); },
     "orders-refresh": () => { loadOrders(); },
+
+    /* ---- In-Person Booking (POS) ---- */
+    "in-person-new": async () => {
+      STATE.inPersonMode = true;
+      STATE.inPersonBusy = false;
+      render();
+      await mountSquareCard();
+    },
+    "in-person-cancel": () => {
+      STATE.inPersonMode = false;
+      STATE.inPersonBusy = false;
+      if (squareCard) { try { squareCard.destroy(); } catch (_) {} squareCard = null; }
+      render();
+    },
+    "in-person-item-change": () => {
+      const itemId = (document.getElementById("ip-item") || {}).value;
+      const qty = Math.max(1, parseInt((document.getElementById("ip-qty") || {}).value, 10) || 1);
+      const start = (document.getElementById("ip-start") || {}).value;
+      const end = (document.getElementById("ip-end") || {}).value;
+      const summary = document.getElementById("ip-summary");
+      if (!itemId) { if (summary) summary.classList.add("hidden"); return; }
+      const item = CATALOG.get(itemId);
+      if (!item) return;
+      const days = (start && end) ? Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1) : 1;
+      const total = (item.price || 0) * (item.perDay ? days : 1) * qty;
+      const hold = Math.min((item.deposit || 0) * qty, 1500);
+      const totalEl = document.getElementById("ip-total");
+      const holdRow = document.getElementById("ip-hold-row");
+      const holdEl = document.getElementById("ip-hold");
+      const payLbl = document.getElementById("ip-pay-label");
+      if (summary) summary.classList.remove("hidden");
+      if (totalEl) totalEl.textContent = fmt.money(total);
+      if (holdRow) holdRow.classList.toggle("hidden", hold === 0);
+      if (holdEl) holdEl.textContent = fmt.money(hold) + " — released on return";
+      if (payLbl && total > 0) payLbl.textContent = "Charge " + fmt.money(total) + (hold > 0 ? " + " + fmt.money(hold) + " hold" : "");
+    },
+    "in-person-pay": async () => {
+      if (STATE.inPersonBusy) return;
+      const itemId = (document.getElementById("ip-item") || {}).value;
+      const qty = Math.max(1, parseInt((document.getElementById("ip-qty") || {}).value, 10) || 1);
+      const start = (document.getElementById("ip-start") || {}).value;
+      const end = (document.getElementById("ip-end") || {}).value;
+      const name = ((document.getElementById("ip-name") || {}).value || "").trim();
+      const email = ((document.getElementById("ip-email") || {}).value || "").trim();
+      const phone = ((document.getElementById("ip-phone") || {}).value || "").trim();
+      const item = CATALOG.get(itemId);
+      if (!item) { toast("Select an item", "error"); return; }
+      if (!name) { toast("Enter customer name", "error"); return; }
+      if (!email || !email.includes("@")) { toast("Enter a valid email", "error"); return; }
+      if (!squareCard) { toast("Card form not ready — wait a moment", "error"); return; }
+      STATE.inPersonBusy = true;
+      render();
+      let tokenResult;
+      try { tokenResult = await squareCard.tokenize(); }
+      catch (e) {
+        STATE.inPersonBusy = false; render();
+        toast("Card error: " + (e.message || "try again"), "error"); return;
+      }
+      if (tokenResult.status !== "OK") {
+        STATE.inPersonBusy = false; render();
+        const errs = (tokenResult.errors || []).map(e => e.message).join(", ");
+        toast(errs || "Card declined — try again", "error"); return;
+      }
+      try {
+        const r = await fetch((cfg.FUNCTIONS_BASE) + "/create-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            itemId, name: item.name, qty,
+            startDate: start || null, endDate: end || null,
+            renterName: name, email, phone,
+            agreedTerms: true, sourceId: tokenResult.token
+          })
+        });
+        const d = await r.json();
+        STATE.inPersonBusy = false;
+        if (!r.ok) { render(); toast(d.error || "Payment failed", "error"); return; }
+        STATE.inPersonMode = false;
+        if (squareCard) { try { squareCard.destroy(); } catch (_) {} squareCard = null; }
+        render();
+        toast("Booking created! Ref #" + String(d.orderId).slice(-6).toUpperCase(), "check_circle");
+        loadOrders();
+      } catch (e) {
+        STATE.inPersonBusy = false; render();
+        toast("Network error — check connection", "error");
+      }
+    },
 
     "order-advance": async (el) => {
       const id = el.dataset.id, status = el.dataset.status;

@@ -1807,12 +1807,115 @@ window.VIEWS = (function () {
         </div>
       </header>
       <main class="flex-grow px-4 sm:px-6 max-w-container-max mx-auto w-full pb-[40px]">
+        <button data-action="in-person-new"
+          class="w-full mt-4 bg-canyon-clay text-on-secondary rounded-xl p-4 flex items-center gap-3 press hover:brightness-105 inner-shadow-stamped">
+          <span class="material-symbols-outlined text-[28px] shrink-0" style="font-variation-settings:'FILL' 1;">point_of_sale</span>
+          <div class="flex-1 text-left">
+            <p class="font-heading text-[15px] font-bold">New In-Person Booking</p>
+            <p class="text-[12px] text-on-secondary/80 mt-0.5">Charge a card in person — rental + deposit hold</p>
+          </div>
+          <span class="material-symbols-outlined shrink-0">chevron_right</span>
+        </button>
         <div class="flex gap-2 overflow-x-auto no-scrollbar mt-4 -mx-4 sm:-mx-6 px-4 sm:px-6">
           ${filterBtn("today", "Today's pickups")}${filterBtn("upcoming", "Upcoming")}${filterBtn("all", "All")}
         </div>
         ${body}
-      </main>`;
+      </main>
+      ${window.STATE.inPersonMode ? inPersonModal() : ""}`;
     return `<div class="view-enter min-h-screen flex flex-col">${inner}</div>`;
+  }
+
+  /* ---------- IN-PERSON BOOKING MODAL ---------- */
+
+  function inPersonModal() {
+    const items = window.CATALOG.gear();
+    const bundles = items.filter(g => g.category === "Bundles");
+    const singles = items.filter(g => g.category !== "Bundles");
+    const busy = window.STATE.inPersonBusy;
+    const opts = [
+      `<option value="">— Select item —</option>`,
+      bundles.length
+        ? `<optgroup label="Bundles">${bundles.map(i => `<option value="${i.id}">${i.name} — ${fmt.money(i.price)}</option>`).join("")}</optgroup>`
+        : "",
+      singles.length
+        ? `<optgroup label="Individual Gear">${singles.map(i => `<option value="${i.id}">${i.name} — ${fmt.money(i.price)}${i.perDay ? "/day" : ""}</option>`).join("")}</optgroup>`
+        : ""
+    ].join("");
+    return `
+    <div class="fixed inset-0 z-[55] flex items-end sm:items-center justify-center">
+      <div data-action="in-person-cancel" class="modal-backdrop absolute inset-0 bg-primary/40"></div>
+      <div class="modal-sheet relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto bg-surface-container-lowest rounded-t-2xl sm:rounded-2xl shadow-lift">
+        <div class="sticky top-0 bg-surface-container-lowest p-md border-b border-surface-container flex items-center gap-2">
+          <button data-action="in-person-cancel" class="press w-8 h-8 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+          <h3 class="font-heading text-headline-sm text-on-surface flex-1">In-Person Booking</h3>
+          <span class="inline-flex items-center gap-1 bg-canyon-clay/10 text-canyon-clay text-[11px] font-bold px-2 py-0.5 rounded-full">
+            <span class="material-symbols-outlined text-[13px]">point_of_sale</span>POS
+          </span>
+        </div>
+        <div class="p-md space-y-4">
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant">Item</span>
+            <select id="ip-item" data-action="in-person-item-change"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5 text-label-md bg-paper-white">${opts}</select>
+          </label>
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant">Quantity</span>
+            <input id="ip-qty" type="number" min="1" max="10" value="1" data-action="in-person-item-change"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5 text-label-md" />
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="text-label-md text-on-surface-variant">Pickup date</span>
+              <input id="ip-start" type="date" data-action="in-person-item-change"
+                class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5 text-label-md" />
+            </label>
+            <label class="block">
+              <span class="text-label-md text-on-surface-variant">Return date</span>
+              <input id="ip-end" type="date" data-action="in-person-item-change"
+                class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5 text-label-md" />
+            </label>
+          </div>
+          <div id="ip-summary" class="hidden rounded-xl bg-granite-wash border border-outline-variant p-3 text-[13px] space-y-1.5">
+            <div class="flex justify-between items-center">
+              <span class="text-earth-brown">Rental charge now</span>
+              <span id="ip-total" class="font-bold text-forest-deep"></span>
+            </div>
+            <div id="ip-hold-row" class="hidden flex justify-between items-center">
+              <span class="text-earth-brown flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">lock</span>Refundable hold</span>
+              <span id="ip-hold" class="font-bold text-earth-brown"></span>
+            </div>
+          </div>
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant">Customer name</span>
+            <input id="ip-name" type="text" placeholder="Full name"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
+          </label>
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant">Email <span class="text-outline">(confirmation sent here)</span></span>
+            <input id="ip-email" type="email" placeholder="customer@email.com"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
+          </label>
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant">Phone <span class="text-outline">(optional)</span></span>
+            <input id="ip-phone" type="tel" placeholder="(801) 555-0123"
+              class="mt-1 w-full rounded-lg border border-outline-variant focus:border-secondary focus:ring-0 px-sm py-2.5" />
+          </label>
+          <label class="block">
+            <span class="text-label-md text-on-surface-variant block mb-1">Card details</span>
+            <div id="sq-card-container" class="rounded-lg border border-outline-variant px-sm py-2.5 min-h-[44px]"></div>
+          </label>
+        </div>
+        <div class="sticky bottom-0 bg-surface-container-low p-md flex flex-col gap-2">
+          <button id="ip-pay-btn" data-action="in-person-pay" ${busy ? "disabled" : ""}
+            class="w-full rounded-full py-3.5 text-label-md text-on-secondary press transition-colors ${busy ? "bg-secondary/40 cursor-not-allowed" : "bg-secondary hover:bg-secondary-container"}">
+            <span id="ip-pay-label">${busy ? "Processing…" : "Charge Customer"}</span>
+          </button>
+          <button data-action="in-person-cancel" class="w-full py-2 text-label-md text-on-surface-variant press">Cancel</button>
+        </div>
+      </div>
+    </div>`;
   }
 
   function workOrder(orderId) {
