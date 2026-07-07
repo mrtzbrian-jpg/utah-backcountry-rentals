@@ -291,9 +291,13 @@ window.VIEWS = (function () {
           <img src="images/hero.jpg" alt="Welcome to Utah highway sign on a scenic desert road" width="1600" height="1066" fetchpriority="high" decoding="async" class="absolute inset-0 w-full h-full object-cover" />
           <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(90deg,rgba(6,27,14,0.82) 0%,rgba(6,27,14,0.55) 42%,rgba(6,27,14,0.12) 100%);"></div>
           <div class="relative z-10 p-4 sm:p-7 max-w-container-max mx-auto w-full">
+            <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur border border-white/30 text-white/90 text-[11px] font-bold tracking-[0.12em] uppercase px-3 py-1 rounded-full mb-3">
+              <span class="material-symbols-outlined text-[13px]">savings</span>
+              Where budget meets the outdoors
+            </span>
             <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(21px,4vw,32px);line-height:1.12;letter-spacing:-0.02em;font-weight:800;"
               class="text-white drop-shadow-lg mb-1.5">The Trail Is Calling.<br/><span style="color:#f5c060;">Grab the Gear &amp; Go.</span></h2>
-            <p class="text-white/85 text-[13px] sm:text-body-md mb-3.5 max-w-md">Camping &amp; backpacking gear — rent it, reserve your dates, and hit the backcountry without the retail price tag.</p>
+            <p class="text-white/85 text-[13px] sm:text-body-md mb-3.5 max-w-md">Affordable camping &amp; backpacking gear — rent for the weekend and hit the backcountry without spending hundreds at REI.</p>
             <div class="flex flex-wrap gap-2.5">
               <button data-action="shop-bundles"
                 class="bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
@@ -311,10 +315,10 @@ window.VIEWS = (function () {
           <!-- Value props strip (REI-style trust bar) -->
           <section class="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
             ${[
-              ["forest", "Trail-Tested Gear", "Top brands, ready to roll"],
+              ["savings", "Budget-Smart Gear", "Fraction of retail cost"],
               ["distance", "Local Pickup", "Saratoga Springs, UT"],
               ["event_available", "Reserve Online", "Pick your trail dates"],
-              ["verified_user", "Refundable Hold", "Back when you return"]
+              ["verified_user", "No Surprises", "Hold shown upfront, always"]
             ].map(([icon, title, sub]) => `
               <div class="flex items-center gap-2.5 rounded-xl border border-outline-variant bg-paper-white px-3 py-2.5">
                 <span class="material-symbols-outlined text-[24px] text-forest-deep shrink-0" style="font-variation-settings:'FILL' 1;">${icon}</span>
@@ -335,7 +339,7 @@ window.VIEWS = (function () {
                 <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
               </div>
             </div>
-            <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork — everything you need for your trip, packed as one booking.</p>
+            <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork, no overpaying — budget-friendly gear for your trip, packed as one booking.</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
               ${bundles.map(b => bundleMiniCard(b)).join("")}
             </div>
@@ -346,9 +350,9 @@ window.VIEWS = (function () {
             <div class="rounded-2xl bg-forest-deep text-paper-white overflow-hidden relative">
               <div class="absolute inset-0 opacity-[0.07] pointer-events-none">${ART.mountainBand ? ART.mountainBand(1) : ""}</div>
               <div class="relative p-6 sm:p-8">
-                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-primary-fixed-dim">Prefer to choose your own?</p>
+                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-primary-fixed-dim">Only pay for what you need</p>
                 <h2 class="font-heading text-headline-md mt-1">Build Your Own Pack</h2>
-                <p class="text-body-md text-primary-fixed-dim mt-2 max-w-md">Pick your backpack, then fill it up with exactly the gear you want. See total weight and price update live.</p>
+                <p class="text-body-md text-primary-fixed-dim mt-2 max-w-md">Pick your backpack, add only the gear you actually need, and watch the price update live. No bundle markups — pay for exactly what you take.</p>
                 <div class="grid grid-cols-2 gap-3 mt-5 max-w-md">
                   ${[
                     ["backpack", "1. Pick your backpack", "The TETON Explorer 65"],
@@ -1140,7 +1144,7 @@ window.VIEWS = (function () {
       <main class="flex-grow flex flex-col items-center justify-center text-center px-md">
         <div class="w-16 h-16 rounded-full border-4 border-surface-container-highest border-t-secondary animate-spin"></div>
         <p class="font-heading text-headline-sm mt-md">Finalizing your reservation</p>
-        <p class="text-body-md text-on-surface-variant mt-1">Confirming your payment with Stripe…</p>
+        <p class="text-body-md text-on-surface-variant mt-1">Confirming your payment…</p>
       </main>`;
     return page(inner, { active: "#/bookings" });
   }
@@ -1269,9 +1273,11 @@ window.VIEWS = (function () {
       </div>`).join(`<div class="ml-6 my-2 h-6 border-l-2 border-dashed border-outline-variant"></div>`);
 
     const faqs = [
-      ["What if I damage the gear?", "Normal trail wear is on us. You're only responsible for the replacement cost of lost or significantly damaged items, per the rental agreement."],
+      ["What's the card hold and will I be charged?", "The hold is a temporary freeze on your card — not a charge. It's placed when you book and released automatically when you return the gear. You only ever pay the rental fee. The exact hold amount is always shown before you pay, so there are no surprises."],
+      ["Why is the gear so affordable?", "We source gear from Walmart, Amazon, and other budget-friendly suppliers and pass the savings directly to you. Our goal is to get people outdoors without the $500+ REI price tag."],
+      ["What if I damage the gear?", "Normal trail wear is on us. You're only responsible for the replacement cost of lost or significantly damaged items, per the rental agreement signed at booking."],
       ["Where do I pick up?", "All gear is picked up and returned at our Saratoga Springs, UT depot. We'll text you the exact details after booking."],
-      ["Is the gear clean?", "Always. Every item is inspected, sanitized, and trail-tested between rentals."]
+      ["Is the gear clean?", "Always. Every item is inspected, sanitized, and ready to go between rentals."]
     ].map(([q, a]) => `
       <details class="bg-surface-container-lowest rounded-xl shadow-card p-md group">
         <summary class="flex items-center justify-between cursor-pointer list-none text-label-md"><span>${q}</span><span class="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span></summary>
@@ -1284,7 +1290,7 @@ window.VIEWS = (function () {
         <section class="relative mt-md rounded-xl overflow-hidden h-40 shadow-card">
           ${ART.heroScene()}
           <div class="absolute inset-0 bg-primary/30 flex items-center justify-center">
-            <p class="font-heading text-headline-md text-white text-center px-md drop-shadow">Gear up in three easy steps</p>
+            <p class="font-heading text-headline-md text-white text-center px-md drop-shadow">Affordable gear, three easy steps</p>
           </div>
         </section>
         <section class="mt-lg">${steps}</section>
