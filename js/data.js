@@ -241,7 +241,7 @@ window.DATA = (function () {
 
   const steps = [
     { icon: "calendar_month", title: "Pick your dates", text: "Choose your gear and the days you'll be on the trail. Pay only for the days you rent." },
-    { icon: "inventory_2", title: "Grab your pack", text: "Pick up trail-ready, sanitized gear at our Saratoga Springs depot — or build your own custom pack." },
+    { icon: "inventory_2", title: "Get your gear", text: "Pick up at our Saratoga Springs depot, get hotel / Airbnb delivery, or arrange SLC airport pickup — whatever works best for your trip." },
     { icon: "forest", title: "Hit the backcountry", text: "Go explore. When you're back, just drop the gear off. We handle the cleaning." }
   ];
 

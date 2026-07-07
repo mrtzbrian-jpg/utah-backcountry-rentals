@@ -75,7 +75,9 @@
     cart: store.load("cart", []),  // [{item, qty}]
     cartDates: { start: null, end: null },
     cartPickupTime: null,
-    cartMode: false           // true when safety modal was opened from cart
+    cartMode: false,          // true when safety modal was opened from cart
+    deliveryMethod: "pickup", // "pickup" | "hotel" | "airport"
+    deliveryAddress: ""       // hotel name/address or flight details
   };
 
   const persist = () => {
@@ -511,6 +513,16 @@
         return;
       }
       STATE.renterEmail = email;
+
+      // Capture delivery address if hotel or airport delivery was chosen
+      const addrEl = document.getElementById("delivery-address");
+      if (addrEl) STATE.deliveryAddress = addrEl.value.trim();
+      if ((STATE.deliveryMethod === "hotel" || STATE.deliveryMethod === "airport") && !STATE.deliveryAddress) {
+        toast("Enter your " + (STATE.deliveryMethod === "hotel" ? "hotel address" : "flight details + meet point"), "error");
+        if (addrEl) addrEl.focus();
+        return;
+      }
+
       const cfg = window.UBR_CONFIG || {};
 
       if (!cfg.BACKEND_ENABLED) {
@@ -522,6 +534,14 @@
       // --- LIVE: move to the on-page card form (Square Web Payments SDK) ---
       openModal(window.VIEWS.paymentModal());
       mountSquareCard();
+    },
+
+    "delivery-method": (el) => {
+      STATE.deliveryMethod = el.dataset.method;
+      // Persist any address already typed before re-render
+      const addrEl = document.getElementById("delivery-address");
+      if (addrEl) STATE.deliveryAddress = addrEl.value;
+      openModal(window.VIEWS.safetyModal());
     },
 
     "back-to-safety": () => openModal(window.VIEWS.safetyModal()),
@@ -539,13 +559,21 @@
           throw new Error((result.errors && result.errors[0] && result.errors[0].message) || "Card was declined");
         }
         const cfg = window.UBR_CONFIG || {};
+
+        // Encode delivery method into pickupTime so it surfaces in admin/work orders
+        const deliveryLabel = STATE.deliveryMethod === "hotel"
+          ? "Hotel delivery: " + (STATE.deliveryAddress || "TBD")
+          : STATE.deliveryMethod === "airport"
+            ? "Airport pickup: " + (STATE.deliveryAddress || "TBD")
+            : STATE.pickupTime || null;
+
         let payload;
         if (STATE.cartMode && STATE.cart.length) {
           payload = {
             items: STATE.cart.map(e => ({ itemId: e.item.id, name: e.item.name, qty: e.qty })),
             startDate: STATE.cartDates.start, endDate: STATE.cartDates.end,
             renterName: STATE.renterName, agreedTerms: true,
-            phone: STATE.phone, pickupTime: STATE.cartPickupTime || null,
+            phone: STATE.phone, pickupTime: deliveryLabel,
             email: STATE.renterEmail, sourceId: result.token
           };
         } else {
@@ -556,7 +584,7 @@
             startDate: STATE.dates.start, endDate: STATE.dates.end,
             components: item.components, addons: item.addons,
             renterName: STATE.renterName, agreedTerms: true,
-            phone: STATE.phone, pickupTime: STATE.pickupTime || null,
+            phone: STATE.phone, pickupTime: deliveryLabel,
             email: STATE.renterEmail, sourceId: result.token
           };
         }
