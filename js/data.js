@@ -298,20 +298,6 @@ window.DATA = (function () {
       includes: ["Pair of collapsible trekking poles", "Wrist straps", "Tip protectors"]
     },
     {
-      id: "garmin-inreach",
-      name: "Garmin inReach Mini 2",
-      category: "Safety",
-      tagline: "Two-way satellite messaging + SOS — works where your phone doesn't",
-      desc: "Stay connected anywhere on Earth with global satellite messaging and interactive SOS. Essential for remote Utah backcountry far beyond cell service. Pre-activated plan included for the duration of your rental.",
-      price: 30,
-      unit: "weekend",
-      perDay: 12,
-      weight: 0.2,
-      icon: "satellite_alt",
-      tint: "#ab3500",
-      includes: ["Garmin inReach Mini 2", "USB-C charge cable", "Carabiner clip", "Pre-activated satellite plan"]
-    },
-    {
       id: "bear-canister",
       name: "BearVault BV500 Bear Canister",
       category: "Safety",
@@ -369,9 +355,6 @@ window.DATA = (function () {
     { id: "trekking-poles", name: "Collapsible Trekking Poles", cat: "Extras", weight: 1.1, perDay: 6, icon: "hiking", tint: "#4a4a4a",
       spec: "Aluminum · adjustable 95–135cm · EVA foam grips",
       tips: ["Shorten poles going uphill, lengthen going downhill", "Poles reduce knee strain by ~25% on descents"] },
-    { id: "garmin-inreach", name: "Garmin inReach Mini 2", cat: "Safety", weight: 0.2, perDay: 12, icon: "satellite_alt", tint: "#ab3500",
-      spec: "Two-way satellite messaging · interactive SOS · live tracking",
-      tips: ["Charge to 100% the night before your trip", "Keep a clear view of sky — works poorly under dense tree cover", "Clip to shoulder strap, not buried in your pack"] },
     { id: "bear-canister", name: "BearVault BV500", cat: "Safety", weight: 2.5, perDay: 5, icon: "lunch_dining", tint: "#5d6b46",
       spec: "Bear-resistant certified · 700 cu in · holds 7 days of food",
       tips: ["Store 200ft from camp in all directions", "Keep ALL scented items inside — sunscreen, lip balm, trash counts too"] }
@@ -417,7 +400,6 @@ window.DATA = (function () {
     "titanium-cookpot":       5,
     "headlamp-200l":          3,
     "trekking-poles":         6,
-    "garmin-inreach":         30,
     "bear-canister":          5,
     "trail-essentials":       5,
     "winter-traction-kit":    35
@@ -440,7 +422,6 @@ window.DATA = (function () {
     "titanium-cookpot":       22,
     "headlamp-200l":          12,
     "trekking-poles":         25,
-    "garmin-inreach":         100,
     "bear-canister":          85,
     "trail-essentials":       45,
     "winter-traction-kit":    100

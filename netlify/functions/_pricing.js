@@ -17,7 +17,7 @@ const PACK_PRICES = {
   "budget-pack-50l": 15, "ozark-trail-tent": 20, "ozark-sleeping-bag": 8,
   "foam-sleep-pad": 3, "sawyer-squeeze": 5, "headlamp-200l": 3,
   "brs-stove-kit": 8, "titanium-cookpot": 5, "trekking-poles": 6,
-  "garmin-inreach": 30, "bear-canister": 5, "trail-essentials": 5
+  "bear-canister": 5, "trail-essentials": 5
 };
 
 // Pack-builder library: refundable deposit (USD) per component item.
@@ -25,7 +25,7 @@ const PACK_DEPOSITS = {
   "budget-pack-50l": 55, "ozark-trail-tent": 90, "ozark-sleeping-bag": 40,
   "foam-sleep-pad": 18, "sawyer-squeeze": 38, "headlamp-200l": 12,
   "brs-stove-kit": 25, "titanium-cookpot": 22, "trekking-poles": 25,
-  "garmin-inreach": 100, "bear-canister": 85, "trail-essentials": 45
+  "bear-canister": 85, "trail-essentials": 45
 };
 
 const ADDONS = { batteries: 5, poncho: 3, "map-kit": 10 }; // add-ons carry no deposit
@@ -36,7 +36,7 @@ const FALLBACK_PRICES = {
   "budget-pack-50l": 15, "kid-daypack": 8, "ozark-trail-tent": 20, "cabin-tent-10p": 25,
   "ozark-sleeping-bag": 8, "foam-sleep-pad": 3, "sawyer-squeeze": 5,
   "brs-stove-kit": 8, "titanium-cookpot": 5, "headlamp-200l": 3,
-  "trekking-poles": 6, "garmin-inreach": 30, "bear-canister": 5,
+  "trekking-poles": 6, "bear-canister": 5,
   "trail-essentials": 5, "winter-traction-kit": 35
 };
 const FALLBACK_DEPOSITS = {
@@ -44,7 +44,7 @@ const FALLBACK_DEPOSITS = {
   "budget-pack-50l": 55, "kid-daypack": 22, "ozark-trail-tent": 90, "cabin-tent-10p": 150,
   "ozark-sleeping-bag": 40, "foam-sleep-pad": 18, "sawyer-squeeze": 38,
   "brs-stove-kit": 25, "titanium-cookpot": 22, "headlamp-200l": 12,
-  "trekking-poles": 25, "garmin-inreach": 100, "bear-canister": 85,
+  "trekking-poles": 25, "bear-canister": 85,
   "trail-essentials": 45, "winter-traction-kit": 100
 };
 

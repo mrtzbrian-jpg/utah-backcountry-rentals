@@ -12,7 +12,7 @@ WHERE id IN (
   'nemo-disco-15', 'bearvault-bv500', 'water-filter',
   'master-safety-kit', 'osprey-rook-65', 'naturehike-cloudup-1',
   'kelty-cosmic-20', 'klymit-static-v', 'brs-3000t',
-  'bearvault-bv450', 'anker-10k', 'bear-spray'
+  'bearvault-bv450', 'anker-10k', 'bear-spray', 'garmin-inreach'
 );
 
 -- Step 2: Upsert all current products with correct prices and deposit holds
@@ -158,7 +158,7 @@ ON CONFLICT (id) DO UPDATE SET
   active      = EXCLUDED.active,
   updated_at  = now();
 
--- Verify: should return 18 active rows
+-- Verify: should return 17 active rows
 SELECT id, name, price, deposit, quantity, active
 FROM products
 WHERE active = true
