@@ -325,46 +325,28 @@ window.VIEWS = (function () {
               </div>`).join("")}
           </section>
 
-          <!-- Visiting Utah / tourist section — shown first so airport/visitor traffic sees pickup options immediately -->
+          <!-- Visiting Utah / tourist section — compact strip -->
           ${!search ? `<section class="mt-8">
-            <div class="rounded-2xl border border-outline-variant overflow-hidden bg-paper-white">
-              <!-- Photo banner -->
-              <div class="relative h-44 sm:h-52 overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1527489377706-5bf97e608852?auto=format&fit=crop&q=70&w=1200"
-                  alt="Zion National Park canyon Utah" loading="lazy"
-                  class="absolute inset-0 w-full h-full object-cover" />
-                <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(6,27,14,0.5) 0%,rgba(6,27,14,0.78) 100%);"></div>
-                <div class="absolute inset-0 flex flex-col justify-center px-5 sm:px-8">
-                  <span class="text-[11px] font-bold tracking-[0.15em] uppercase text-primary-fixed-dim mb-1">For visitors &amp; out-of-staters</span>
-                  <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(20px,4vw,30px);font-weight:800;line-height:1.15;"
-                    class="text-white">Flying into Utah?<br/><span style="color:#f5c060;">We'll have your gear waiting.</span></h2>
-                  <p class="text-white/80 text-[13px] mt-2 max-w-sm">Don't check a 60L bag. Rent everything you need — delivered to your hotel or near SLC airport, or free self-pickup on your way to the trail.</p>
+            <div class="rounded-2xl border border-outline-variant bg-paper-white overflow-hidden">
+              <div class="flex items-center gap-3 px-4 py-3 border-b border-outline-variant" style="background:linear-gradient(90deg,rgba(6,27,14,0.92),rgba(6,27,14,0.78));">
+                <span class="material-symbols-outlined text-[22px] shrink-0" style="color:#f5c060;">flight_takeoff</span>
+                <div class="min-w-0">
+                  <p class="text-white font-bold text-[14px] leading-tight">Flying into Utah?</p>
+                  <p class="text-white/70 text-[12px] leading-tight">Don't check a bag — we deliver gear so you hit the trail the same day.</p>
                 </div>
               </div>
-              <!-- Content -->
-              <div class="px-5 sm:px-6 py-5">
-                <p class="text-[11px] font-bold tracking-[0.13em] uppercase text-canyon-clay mb-3">Popular Utah destinations we gear up for</p>
-                <div class="flex flex-wrap gap-2 mb-5">
-                  ${["Zion National Park", "Arches NP", "Bryce Canyon", "Canyonlands", "Capitol Reef", "Wasatch Front", "Grand Staircase"].map(p =>
-                    `<span class="text-[12px] bg-granite-wash border border-outline-variant text-forest-deep px-3 py-1 rounded-full font-semibold">${p}</span>`
-                  ).join("")}
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-                  ${[
-                    ["store", "Self-Pickup · Free", "Pick up at our Saratoga Springs depot — always free. Grab your pack and hit the trail same day."],
-                    ["local_shipping", "Hotel &amp; Airbnb Delivery · +$25", "We deliver to your hotel, Airbnb, or campground. Book online, we handle the rest."],
-                    ["flight_takeoff", "Near SLC Airport · +$25", "Flying in? We meet you near SLC airport — specify your hotel or a nearby meeting point at checkout."]
-                  ].map(([icon, title, desc]) => `
-                    <div class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
-                      <span class="material-symbols-outlined text-[22px] text-canyon-clay mb-2 block" style="font-variation-settings:'FILL' 1;">${icon}</span>
-                      <p class="text-[13px] font-bold text-forest-deep leading-tight">${title}</p>
-                      <p class="text-[12px] text-earth-brown mt-1 leading-snug">${desc}</p>
-                    </div>`).join("")}
-                </div>
-                <button data-action="shop-bundles"
-                  class="w-full sm:w-auto bg-canyon-clay text-on-secondary px-6 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press hover:brightness-105 inline-flex items-center gap-1.5">
-                  Reserve Before You Fly<span class="material-symbols-outlined text-[18px]">flight_takeoff</span>
-                </button>
+              <div class="grid grid-cols-3 divide-x divide-outline-variant">
+                ${[
+                  ["store",         "Self-Pickup",       "Free",  "Saratoga Springs"],
+                  ["local_shipping","Hotel / Airbnb",    "+$25",  "We deliver to you"],
+                  ["flight_takeoff","Near SLC Airport",  "+$25",  "We meet you nearby"]
+                ].map(([icon, title, price, sub]) => `
+                  <div class="flex flex-col items-center text-center px-2 py-3 gap-1">
+                    <span class="material-symbols-outlined text-[20px] text-canyon-clay" style="font-variation-settings:'FILL' 1;">${icon}</span>
+                    <p class="text-[11px] font-bold text-forest-deep leading-tight">${title}</p>
+                    <p class="text-[12px] font-bold text-canyon-clay leading-tight">${price}</p>
+                    <p class="text-[10px] text-earth-brown leading-tight">${sub}</p>
+                  </div>`).join("")}
               </div>
             </div>
           </section>` : ""}
