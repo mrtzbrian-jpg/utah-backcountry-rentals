@@ -1620,7 +1620,7 @@ window.VIEWS = (function () {
           <div id="admin-bundle-section" style="${(item.category === "Bundles" || (e.cat === "Bundles")) ? "" : "display:none"}">
             <span class="text-label-md text-on-surface-variant">Bundle items <span class="text-outline font-normal">(items this bundle includes — one per line: <code>product-id × qty</code>)</span></span>
             <textarea id="admin-bundle-items" rows="4"
-              placeholder="osprey-aether-65 × 1&#10;msr-hubba-tent × 1&#10;nemo-disco-15 × 1"
+              placeholder="budget-pack-50l × 1&#10;ozark-trail-tent × 1&#10;ozark-sleeping-bag × 1"
               class="mt-1 w-full rounded-lg border border-outline-variant focus:border-primary focus:ring-0 px-sm py-2.5 resize-y text-[13px] font-mono">${((item.bundleItems || e.bundleItems) || []).map(bi => `${bi.id} × ${bi.qty || 1}`).join("\n")}</textarea>
             <span class="text-label-sm text-outline mt-1 block">Optional — used for bundle pricing detail display. Each line: <code class="text-[11px]">product-id × qty</code></span>
           </div>

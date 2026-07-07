@@ -14,31 +14,38 @@ const { getSupabase } = require("./_supabase");
 
 // Pack-builder library: flat rental price (USD) per component item.
 const PACK_PRICES = {
-  "teton-explorer-65": 40, "osprey-rook-65": 40, "naturehike-cloudup-1": 30, "kelty-cosmic-20": 25,
-  "klymit-static-v": 15, "brs-3000t": 10, "garmin-inreach": 30,
-  "bearvault-bv450": 15, "anker-10k": 12, "bear-spray": 12
+  "budget-pack-50l": 15, "ozark-trail-tent": 20, "ozark-sleeping-bag": 8,
+  "foam-sleep-pad": 3, "sawyer-squeeze": 5, "headlamp-200l": 3,
+  "brs-stove-kit": 8, "titanium-cookpot": 5, "trekking-poles": 6,
+  "garmin-inreach": 30, "bear-canister": 5
 };
 
 // Pack-builder library: refundable deposit (USD) per component item.
 const PACK_DEPOSITS = {
-  "teton-explorer-65": 80, "osprey-rook-65": 80, "naturehike-cloudup-1": 60, "kelty-cosmic-20": 50,
-  "klymit-static-v": 30, "brs-3000t": 20, "garmin-inreach": 100,
-  "bearvault-bv450": 25, "anker-10k": 15, "bear-spray": 15
+  "budget-pack-50l": 55, "ozark-trail-tent": 90, "ozark-sleeping-bag": 40,
+  "foam-sleep-pad": 18, "sawyer-squeeze": 38, "headlamp-200l": 12,
+  "brs-stove-kit": 25, "titanium-cookpot": 22, "trekking-poles": 25,
+  "garmin-inreach": 100, "bear-canister": 85
 };
 
 const ADDONS = { batteries: 5, poncho: 3, "map-kit": 10 }; // add-ons carry no deposit
 
-// Last-resort fallback for the original built-in catalog ids, used only if the
-// database is unreachable. The live catalog normally comes from Supabase.
+// Last-resort fallback used only if the database is unreachable.
 const FALLBACK_PRICES = {
-  "master-safety-kit": 65, "garmin-inreach": 30, "osprey-aether-65": 40, "teton-explorer-65": 40,
-  "bearvault-bv500": 12, "nemo-disco-15": 25, "msr-hubba-tent": 30,
-  "winter-traction-kit": 35, "water-filter": 10
+  "solo-weekend-bundle": 79, "couples-weekend-bundle": 145, "family-weekend-bundle": 195,
+  "budget-pack-50l": 15, "kid-daypack": 8, "ozark-trail-tent": 20,
+  "ozark-sleeping-bag": 8, "foam-sleep-pad": 3, "sawyer-squeeze": 5,
+  "brs-stove-kit": 8, "titanium-cookpot": 5, "headlamp-200l": 3,
+  "trekking-poles": 6, "garmin-inreach": 30, "bear-canister": 5,
+  "winter-traction-kit": 35
 };
 const FALLBACK_DEPOSITS = {
-  "master-safety-kit": 250, "garmin-inreach": 100, "osprey-aether-65": 80, "teton-explorer-65": 80,
-  "bearvault-bv500": 30, "nemo-disco-15": 60, "msr-hubba-tent": 120,
-  "winter-traction-kit": 100, "water-filter": 20
+  "solo-weekend-bundle": 250, "couples-weekend-bundle": 350, "family-weekend-bundle": 500,
+  "budget-pack-50l": 55, "kid-daypack": 22, "ozark-trail-tent": 90,
+  "ozark-sleeping-bag": 40, "foam-sleep-pad": 18, "sawyer-squeeze": 38,
+  "brs-stove-kit": 25, "titanium-cookpot": 22, "headlamp-200l": 12,
+  "trekking-poles": 25, "garmin-inreach": 100, "bear-canister": 85,
+  "winter-traction-kit": 100
 };
 
 // Read a published product's price/deposit/quantity/per_day straight from the DB.
