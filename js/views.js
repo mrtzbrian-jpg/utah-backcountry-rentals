@@ -85,7 +85,7 @@ window.VIEWS = (function () {
   function bottomNav(active) {
     const items = [
       { route: "#/", icon: "home", label: "Home" },
-      { route: "#/builder", icon: "backpack", label: "Build" },
+      // { route: "#/builder", icon: "backpack", label: "Build" }, // temporarily hidden — accessible at #/builder directly
       { route: "#/bookings", icon: "calendar_today", label: "Bookings" },
       { route: "#/how", icon: "info", label: "Guide" }
     ];
@@ -303,10 +303,6 @@ window.VIEWS = (function () {
                 class="bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press">
                 Shop Bundles
               </button>
-              <button data-action="nav" data-route="#/builder"
-                class="bg-paper-white text-forest-deep px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide press inner-shadow-stamped">
-                Build Your Own Pack
-              </button>
             </div>
           </div>
         </section>
@@ -329,50 +325,8 @@ window.VIEWS = (function () {
               </div>`).join("")}
           </section>
 
-          <!-- Featured bundles showcase — promoted right after the trust strip so it's the
-               first real content people see. Curated bundles reduce decision fatigue and
-               convert better than an open item grid. -->
-          ${!search && bundles.length > 0 ? `<section id="bundles" class="mt-8 scroll-mt-20">
-            <div class="flex items-end justify-between mb-1">
-              <div>
-                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-canyon-clay">Curated &amp; ready to go</p>
-                <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
-              </div>
-            </div>
-            <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork, no overpaying — budget-friendly gear for your trip, packed as one booking.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
-              ${bundles.map(b => bundleMiniCard(b)).join("")}
-            </div>
-          </section>` : ""}
-
-          <!-- Build Your Own Pack — promoted section, not just a banner -->
-          ${!search ? `<section class="mt-9">
-            <div class="rounded-2xl bg-forest-deep text-paper-white overflow-hidden relative">
-              <div class="absolute inset-0 opacity-[0.07] pointer-events-none">${ART.mountainBand ? ART.mountainBand(1) : ""}</div>
-              <div class="relative p-6 sm:p-8">
-                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-primary-fixed-dim">Only pay for what you need</p>
-                <h2 class="font-heading text-headline-md mt-1">Build Your Own Pack</h2>
-                <p class="text-body-md text-primary-fixed-dim mt-2 max-w-md">Pick your backpack, add only the gear you actually need, and watch the price update live. No bundle markups — pay for exactly what you take.</p>
-                <div class="grid grid-cols-2 gap-3 mt-5 max-w-md">
-                  ${[
-                    ["backpack", "1. Pick your backpack", "The TETON Explorer 65"],
-                    ["add_shopping_cart", "2. Fill it up", "Add the gear you need"]
-                  ].map(([icon, title, sub]) => `
-                    <div class="rounded-xl bg-white/10 p-3">
-                      <span class="material-symbols-outlined text-[22px] text-primary-fixed-dim">${icon}</span>
-                      <p class="text-[12px] font-bold mt-1.5 leading-tight">${title}</p>
-                      <p class="text-[11px] text-primary-fixed-dim/80 leading-tight mt-0.5">${sub}</p>
-                    </div>`).join("")}
-                </div>
-                <button data-action="nav" data-route="#/builder"
-                  class="mt-6 bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press inline-flex items-center gap-1.5">
-                  Start Building<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </button>
-              </div>
-            </div>
-          </section>` : ""}
-          <!-- Visiting Utah / tourist section -->
-          ${!search ? `<section class="mt-9">
+          <!-- Visiting Utah / tourist section — shown first so airport/visitor traffic sees pickup options immediately -->
+          ${!search ? `<section class="mt-8">
             <div class="rounded-2xl border border-outline-variant overflow-hidden bg-paper-white">
               <!-- Photo banner -->
               <div class="relative h-44 sm:h-52 overflow-hidden">
@@ -384,7 +338,7 @@ window.VIEWS = (function () {
                   <span class="text-[11px] font-bold tracking-[0.15em] uppercase text-primary-fixed-dim mb-1">For visitors &amp; out-of-staters</span>
                   <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(20px,4vw,30px);font-weight:800;line-height:1.15;"
                     class="text-white">Flying into Utah?<br/><span style="color:#f5c060;">We'll have your gear waiting.</span></h2>
-                  <p class="text-white/80 text-[13px] mt-2 max-w-sm">Don't check a 60L bag. Rent everything you need — delivered to your hotel, or pick up on your way to the trailhead.</p>
+                  <p class="text-white/80 text-[13px] mt-2 max-w-sm">Don't check a 60L bag. Rent everything you need — delivered to your hotel or near SLC airport, or free self-pickup on your way to the trail.</p>
                 </div>
               </div>
               <!-- Content -->
@@ -397,9 +351,9 @@ window.VIEWS = (function () {
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                   ${[
-                    ["local_shipping", "Hotel &amp; Airbnb Delivery", "We bring gear to your hotel, Airbnb, or campground. Book online, we handle the rest."],
-                    ["flight_takeoff", "SLC Airport Pickup", "Flying in? We meet you at or near SLC airport so you're geared up from the moment you land."],
-                    ["store", "Self-Pickup (Free)", "On your way through Saratoga Springs? Grab your pack and hit the trail — no shipping wait."]
+                    ["store", "Self-Pickup · Free", "Pick up at our Saratoga Springs depot — always free. Grab your pack and hit the trail same day."],
+                    ["local_shipping", "Hotel &amp; Airbnb Delivery · +$25", "We deliver to your hotel, Airbnb, or campground. Book online, we handle the rest."],
+                    ["flight_takeoff", "Near SLC Airport · +$25", "Flying in? We meet you near SLC airport — specify your hotel or a nearby meeting point at checkout."]
                   ].map(([icon, title, desc]) => `
                     <div class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
                       <span class="material-symbols-outlined text-[22px] text-canyon-clay mb-2 block" style="font-variation-settings:'FILL' 1;">${icon}</span>
@@ -414,6 +368,44 @@ window.VIEWS = (function () {
               </div>
             </div>
           </section>` : ""}
+
+          <!-- Budget statement header — above bundles -->
+          ${!search ? `<section class="mt-10 mb-2 text-center px-2">
+            <p class="text-[11px] font-bold tracking-[0.18em] uppercase text-canyon-clay mb-2">Walmart &amp; Amazon gear · real adventures</p>
+            <h2 style="font-family:Montserrat,system-ui,sans-serif;font-size:clamp(28px,6vw,48px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;"
+              class="text-forest-deep">We Keep It Budget<br/><span style="color:#ab3500;">Around Here.</span></h2>
+            <p class="text-body-md text-earth-brown mt-3 max-w-md mx-auto">Full backpacking kits from $79 — sourced from Walmart and Amazon so you spend your money on the trip, not the gear store.</p>
+          </section>` : ""}
+
+          <!-- Featured bundles showcase -->
+          ${!search && bundles.length > 0 ? `<section id="bundles" class="mt-6 scroll-mt-20">
+            <div class="flex items-end justify-between mb-1">
+              <div>
+                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-canyon-clay">Curated &amp; ready to go</p>
+                <h2 class="font-heading text-headline-md text-forest-deep leading-tight">Shop Bundles</h2>
+              </div>
+            </div>
+            <p class="text-[13px] text-earth-brown mt-1 mb-4">No guesswork, no overpaying — budget-friendly gear for your trip, packed as one booking.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
+              ${bundles.map(b => bundleMiniCard(b)).join("")}
+            </div>
+          </section>` : ""}
+
+          <!-- Build Your Own Pack — temporarily hidden, accessible at #/builder directly -->
+          <!-- ${!search ? `<section class="mt-9">
+            <div class="rounded-2xl bg-forest-deep text-paper-white overflow-hidden relative">
+              <div class="absolute inset-0 opacity-[0.07] pointer-events-none">${ART.mountainBand ? ART.mountainBand(1) : ""}</div>
+              <div class="relative p-6 sm:p-8">
+                <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-primary-fixed-dim">Only pay for what you need</p>
+                <h2 class="font-heading text-headline-md mt-1">Build Your Own Pack</h2>
+                <p class="text-body-md text-primary-fixed-dim mt-2 max-w-md">Pick your backpack, add only the gear you actually need, and watch the price update live. No bundle markups — pay for exactly what you take.</p>
+                <button data-action="nav" data-route="#/builder"
+                  class="mt-6 bg-canyon-clay text-on-secondary px-5 py-3 rounded-lg text-[13px] font-bold tracking-wide inner-shadow-stamped press inline-flex items-center gap-1.5">
+                  Start Building<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+          </section>` : ""} -->
         </div>
         ${siteFooter()}
       </main>`;
@@ -434,7 +426,6 @@ window.VIEWS = (function () {
           </div>
           <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
             ${link("#/", "Browse Gear")}
-            ${link("#/builder", "Build a Pack")}
             ${link("#/bookings", "My Bookings")}
             ${link("#/how", "How It Works")}
           </div>
@@ -839,9 +830,9 @@ window.VIEWS = (function () {
             <span class="text-label-md text-on-surface-variant block mb-2">How would you like to get your gear?</span>
             <div class="grid gap-2">
               ${[
-                ["pickup",  "store",         "Self-pickup · Free",                "Saratoga Springs, UT — bring photo ID"],
+                ["pickup",  "store",         "Self-pickup · Free",                "Saratoga Springs, UT — always free, bring photo ID"],
                 ["hotel",   "local_shipping", "Hotel / Airbnb delivery · +$25",   "We deliver to your hotel, Airbnb, or campground"],
-                ["airport", "flight_takeoff", "SLC Airport pickup · +$25",        "Meet us at or near SLC airport"]
+                ["airport", "flight_takeoff", "Near SLC Airport · +$25",          "We meet you near SLC airport — add your hotel or meeting point below"]
               ].map(([method, icon, label, sub]) => {
                 const on = (window.STATE.deliveryMethod || "pickup") === method;
                 return `<button data-action="delivery-method" data-method="${method}"
@@ -1349,7 +1340,7 @@ window.VIEWS = (function () {
       ["What's the card hold and will I be charged?", "The hold is a temporary freeze on your card — not a charge. It's placed when you book and released automatically when you return the gear. You only ever pay the rental fee. The exact hold amount is always shown before you pay, so there are no surprises."],
       ["Why is the gear so affordable?", "We source gear from Walmart, Amazon, and other budget-friendly suppliers and pass the savings directly to you. Our goal is to get people outdoors without the $500+ REI price tag."],
       ["What if I damage the gear?", "Normal trail wear is on us. You're only responsible for the replacement cost of lost or significantly damaged items, per the rental agreement signed at booking."],
-      ["Where do I pick up?", "All gear is picked up and returned at our Saratoga Springs, UT depot. We'll text you the exact details after booking."],
+      ["Where do I pick up?", "Self-pickup is free at our Saratoga Springs, UT depot — we'll text you the exact address after booking. Delivery to your hotel, Airbnb, campground, or near SLC airport is available for a flat $25 fee."],
       ["Is the gear clean?", "Always. Every item is inspected, sanitized, and ready to go between rentals."]
     ].map(([q, a]) => `
       <details class="bg-surface-container-lowest rounded-xl shadow-card p-md group">
@@ -1373,9 +1364,9 @@ window.VIEWS = (function () {
           <p class="text-[13px] text-earth-brown mb-4">Three ways to pick up — choose at checkout.</p>
           <div class="grid gap-3">
             ${[
-              ["store",         "Self-Pickup (Free)",              "Saratoga Springs, UT",          "Stop by our depot. Bring your photo ID and the card you paid with. Great if you're driving through on your way to the trailhead."],
-              ["local_shipping","Hotel / Airbnb Delivery (+$25)",  "We come to you",                "Tell us where you're staying and we'll drop gear at your door. Perfect for visitors flying in who want zero hassle."],
-              ["flight_takeoff","SLC Airport Pickup (+$25)",       "Salt Lake City International",  "Flying in light? We meet you at or near SLC airport so you're geared up before you hit the highway. Book at least 24 hrs ahead."]
+              ["store",         "Self-Pickup · Always Free",       "Saratoga Springs, UT",          "Stop by our depot — no fee, ever. Bring your photo ID and the card you paid with. Great if you're driving through on your way to the trailhead."],
+              ["local_shipping","Hotel / Airbnb Delivery · +$25",  "We come to you",                "Tell us where you're staying and we'll drop gear at your door. Perfect for visitors flying in who want zero hassle."],
+              ["flight_takeoff","Near SLC Airport · +$25",         "Salt Lake City area",           "Flying in? We meet you near SLC airport — at your hotel, rideshare pickup zone, or a nearby agreed spot. Book at least 24 hrs ahead."]
             ].map(([icon, title, sub, desc]) => `
               <div class="bg-paper-white rounded-xl border border-outline-variant p-4 flex gap-4">
                 <div class="w-10 h-10 rounded-full bg-granite-wash flex items-center justify-center shrink-0">
@@ -2195,7 +2186,7 @@ window.VIEWS = (function () {
       ["Can I extend my rental?", "Contact us before your return date and we'll do our best to accommodate an extension, subject to availability."],
       ["What if gear is damaged on the trail?", "Accidents happen. Contact us immediately. The refundable authorization hold placed at checkout covers minor damage — anything beyond the hold amount may be billed separately."],
       ["Can I cancel my booking?", "Cancellations must be requested at least 48 hours before pickup for a full refund. Contact us by phone or email."],
-      ["Do you deliver gear?", "Currently we are pickup-only from our Saratoga Springs depot. We're exploring delivery options for the future."],
+      ["Do you deliver gear?", "Yes! Self-pickup at our Saratoga Springs depot is always free. Hotel, Airbnb, campground, and near-SLC airport delivery is available for a flat $25 fee — choose your option at checkout."],
       ["Is there a minimum rental period?", "Our minimum rental is 1 day. Multi-day rentals are priced per day."],
       ["What ID do I need at pickup?", "A valid government-issued photo ID (driver's license or passport). The name must match your booking and payment card."],
     ];

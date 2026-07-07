@@ -41,10 +41,10 @@ VALUES
 
   ('family-weekend-bundle', 30,
    'Family Weekend Bundle', 'Bundles',
-   'The whole family outdoors — gear for 4, budget for real life',
-   'Take the whole family off-grid without the sticker shock. Two adult packs, two kid daypacks, two tents, four sleeping bags, four pads, water filter, stove, cookpot, and trail safety kit.',
-   195.00, 500.00, 'family_restroom', '#2b4a57', 'weekend', 44.2, 1, 'Family pick',
-   '["2× Budget 50L Adult Hiking Packs","2× Kid Daypacks 20L","2× Ozark Trail 2-Person Tents","4× 30°F Mummy Sleeping Bags","4× Foam Sleeping Pads","Sawyer Squeeze Water Filter + 2 squeeze pouches","4× 200-Lumen Headlamps (one per person)","BRS-3000T Stove + isobutane fuel + lighter","Titanium Cookpot 750ml + lid + 4× camp sporks","Trail Safety Kit: first aid, space blanket, knife, whistle, trowel, LNT waste bags"]',
+   '4 matching packs, one big tent, shared gear — smart not heavy',
+   'Four matching 50L packs (one per person), plus the 10-person Ozark Trail cabin tent with 3 rooms and full standing height. Sleep systems for all four, one shared water filter, one stove, and two cookpots. No doubling up on gear the family shares.',
+   199.00, 550.00, 'family_restroom', '#2b4a57', 'weekend', 62.0, 1, 'Family pick',
+   '["4× Budget 50L Hiking Packs — one per person, all matching","10-Person Ozark Trail Cabin Tent — 3 rooms, full standing height","4× 30°F Mummy Sleeping Bags","4× Foam Sleeping Pads","Sawyer Squeeze Water Filter — one filter handles the whole family","4× 200-Lumen Headlamps","BRS-3000T Stove + isobutane fuel + lighter","2× Titanium Cookpots — boil water and cook simultaneously","Trail Safety Kit: first aid, space blanket, knife, whistle, trowel, LNT waste bags"]',
    true),
 
   -- ── INDIVIDUAL GEAR ──────────────────────────────────────────────────────
@@ -66,6 +66,14 @@ VALUES
    'Lightweight freestanding tent — $80 from Walmart',
    'The Ozark Trail 2-person backpacking tent from Walmart. Freestanding, full-coverage rainfly, vestibule for gear storage. Sets up in minutes, packs down small.',
    20.00, 90.00, 'cabin', '#3c6168', 'weekend', 4.9, 5, null, null, true),
+
+  ('cabin-tent-10p', 55,
+   '10-Person Family Cabin Tent', 'Shelter',
+   'Stand-up room for the whole crew — 3 rooms, fits 4 air mattresses',
+   'Ozark Trail 10-person 3-room cabin tent. Full standing height, divides into 3 separate rooms or opens as one big space. Front awning, gear loft, and E-port for power cords. Built for drive-in campsite comfort — pairs perfectly with the Family Bundle.',
+   25.00, 150.00, 'holiday_village', '#2b4a57', 'weekend', 28.0, 1, null,
+   '["Ozark Trail 10-person cabin tent","3 removable room dividers","Front awning porch","Stakes, guylines, and carry bag"]',
+   true),
 
   ('ozark-sleeping-bag', 60,
    'Ozark Trail 30°F Mummy Bag', 'Sleep',
@@ -150,7 +158,7 @@ ON CONFLICT (id) DO UPDATE SET
   active      = EXCLUDED.active,
   updated_at  = now();
 
--- Verify: should return 17 active rows
+-- Verify: should return 18 active rows
 SELECT id, name, price, deposit, quantity, active
 FROM products
 WHERE active = true
